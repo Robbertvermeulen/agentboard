@@ -1,0 +1,25 @@
+{
+  "name": "agentboard",
+  "version": "0.1.0",
+  "description": "Lean CLI for an agent-driven Kanban board. Cards in SQLite, context in markdown + git.",
+  "type": "module",
+  "bin": {
+    "agentboard": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "commander": "^15.0.0",
+    "gray-matter": "^4.0.3",
+    "simple-git": "^3.36.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  }
+}
