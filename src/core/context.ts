@@ -105,6 +105,41 @@ export async function writeContext(
   }
 }
 
+// Value must never travel as a CLI argument; the CLI feeds it in via hidden
+// prompt or stdin. A future UI/API calls this same function.
+export function setSecret(name: string, value: string): { name: string; action: 'add' | 'update' } {
+  const file = secretsPath();
+  if (!fs.existsSync(file)) {
+    throw new Error(`No secrets.env at ${file}. Run 'agentboard init' first.`);
+  }
+  const key = name.toUpperCase();
+  if (!/^[A-Z][A-Z0-9_]*$/.test(key)) {
+    throw new Error(`Invalid secret name '${name}'. Use letters, digits and underscores, e.g. trello_api_key`);
+  }
+  if (!value) throw new Error('Value is empty');
+  if (/[\r\n]/.test(value)) throw new Error('Value cannot contain newlines');
+
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  let action: 'add' | 'update' = 'add';
+  const out = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return line;
+    const eq = trimmed.indexOf('=');
+    if (eq !== -1 && trimmed.slice(0, eq).trim() === key) {
+      action = 'update';
+      return `${key}=${value}`;
+    }
+    return line;
+  });
+  if (action === 'add') {
+    while (out.length && out[out.length - 1].trim() === '') out.pop();
+    out.push(`${key}=${value}`);
+  }
+  fs.writeFileSync(file, out.join('\n') + '\n', { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+  return { name: key, action };
+}
+
 export function getSecret(name: string): string {
   const file = secretsPath();
   if (!fs.existsSync(file)) {

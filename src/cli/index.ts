@@ -12,7 +12,7 @@ import {
   editCard,
   moveCard,
 } from '../core/cards.js';
-import { getSecret, listContextFiles, readContext, writeContext } from '../core/context.js';
+import { getSecret, listContextFiles, readContext, setSecret, writeContext } from '../core/context.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -267,7 +267,53 @@ ctx
     })
   );
 
+// Echo off so the value never shows on screen; raw mode gives us that
+// without extra dependencies.
+function promptHidden(question: string): Promise<string> {
+  process.stdout.write(question);
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    stdin.resume();
+    stdin.setRawMode(true);
+    let value = '';
+    const onData = (buf: Buffer) => {
+      for (const ch of buf.toString('utf8')) {
+        if (ch === '\r' || ch === '\n' || ch === '\u0004') {
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.off('data', onData);
+          process.stdout.write('\n');
+          resolve(value);
+          return;
+        }
+        if (ch === '\u0003') {
+          stdin.setRawMode(false);
+          process.stdout.write('\n');
+          process.exit(130);
+        }
+        if (ch === '\u007f' || ch === '\b') value = value.slice(0, -1);
+        else value += ch;
+      }
+    };
+    stdin.on('data', onData);
+  });
+}
+
 const secret = program.command('secret').description('secrets.env access');
+
+secret
+  .command('set <naam>')
+  .description('set a secret; value via hidden prompt (or piped stdin), never as an argument')
+  .option('--json', 'JSON output')
+  .action(
+    run(async (opts, naam: string) => {
+      const value = process.stdin.isTTY
+        ? await promptHidden(`Value for ${naam.toUpperCase()}: `)
+        : (await readStdin()).trim();
+      const result = setSecret(naam, value);
+      output(opts, `${result.action === 'add' ? 'Added' : 'Updated'} ${result.name} in secrets.env`, result);
+    })
+  );
 
 secret
   .command('get <naam>')

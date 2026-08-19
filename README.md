@@ -37,8 +37,12 @@ agentboard card edit task_a3f2 --labels wp,dns --context-refs chris/vakantiewoni
 agentboard ctx list [pad]
 agentboard ctx show chris/_client.md
 cat file.md | agentboard ctx write chris/_client.md --content - --card ops_b71c --as agent
+agentboard secret set ssh_chris_web03   # hidden prompt; or: echo "..." | agentboard secret set naam
 agentboard secret get ssh_chris_web03
 ```
+
+`secret set` never takes the value as an argument (shell history, process
+list). On a TTY it prompts with echo off; otherwise it reads stdin.
 
 Every command takes `--json`. Errors go to stderr with exit code 1.
 
