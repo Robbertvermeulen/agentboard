@@ -310,6 +310,11 @@ secret
       const value = process.stdin.isTTY
         ? await promptHidden(`Value for ${naam.toUpperCase()}: `)
         : (await readStdin()).trim();
+      if (!value && !process.stdin.isTTY) {
+        throw new Error(
+          `No value on stdin. Run 'agentboard secret set ${naam}' in an interactive terminal for a hidden prompt, or pipe: echo <value> | agentboard secret set ${naam}`
+        );
+      }
       const result = setSecret(naam, value);
       output(opts, `${result.action === 'add' ? 'Added' : 'Updated'} ${result.name} in secrets.env`, result);
     })
