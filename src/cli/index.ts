@@ -12,6 +12,7 @@ import {
   editCard,
   moveCard,
 } from '../core/cards.js';
+import { getSecret, listContextFiles, readContext, writeContext } from '../core/context.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -200,6 +201,82 @@ card
         contextRefs: opts.contextRefs !== undefined ? splitList(opts.contextRefs) : undefined,
       });
       output(opts, `Updated ${c.id}`, c);
+    })
+  );
+
+function renderTree(paths: string[]): string[] {
+  const lines: string[] = [];
+  const seenDirs = new Set<string>();
+  for (const p of paths) {
+    const parts = p.split('/');
+    for (let i = 0; i < parts.length - 1; i++) {
+      const dir = parts.slice(0, i + 1).join('/');
+      if (!seenDirs.has(dir)) {
+        seenDirs.add(dir);
+        lines.push('  '.repeat(i) + parts[i] + '/');
+      }
+    }
+    lines.push('  '.repeat(parts.length - 1) + parts[parts.length - 1]);
+  }
+  return lines;
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+const ctx = program.command('ctx').description('markdown context files (git-backed)');
+
+ctx
+  .command('list [pad]')
+  .description('tree of context files')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, pad?: string) => {
+      const files = listContextFiles(pad);
+      output(opts, files.length ? renderTree(files).join('\n') : 'No context files yet', { files });
+    })
+  );
+
+ctx
+  .command('show <pad>')
+  .description('print a context file')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, pad: string) => {
+      const file = readContext(pad);
+      output(opts, file.raw, { path: file.path, frontmatter: file.frontmatter, content: file.content });
+    })
+  );
+
+ctx
+  .command('write <pad>')
+  .description('write a context file + git commit + event on the card')
+  .requiredOption('--content <content>', "file content, '-' reads stdin")
+  .requiredOption('--card <id>', 'card this write belongs to (goes in commit message + event)')
+  .option('--message <message>', 'commit message override')
+  .option('--as <actor>', 'human | agent', 'human')
+  .option('--json', 'JSON output')
+  .action(
+    run(async (opts, pad: string) => {
+      const content = opts.content === '-' ? await readStdin() : opts.content;
+      const result = await writeContext(pad, content, { cardId: opts.card, actor: opts.as, message: opts.message });
+      output(opts, `${result.action === 'add' ? 'Added' : 'Updated'} ${result.path}\ncommitted: ${result.message}`, result);
+    })
+  );
+
+const secret = program.command('secret').description('secrets.env access');
+
+secret
+  .command('get <naam>')
+  .description('read a secret by name (case-insensitive) from secrets.env')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, naam: string) => {
+      const value = getSecret(naam);
+      output(opts, value, { name: naam.toUpperCase(), value });
     })
   );
 
