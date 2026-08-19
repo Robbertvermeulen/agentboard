@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from 'node:fs';
 import { Command } from 'commander';
 import { initData } from '../core/db.js';
 import {
@@ -12,7 +13,15 @@ import {
   editCard,
   moveCard,
 } from '../core/cards.js';
-import { getSecret, listContextFiles, readContext, setSecret, writeContext } from '../core/context.js';
+import {
+  getSecret,
+  listContextFiles,
+  readContext,
+  resolveSecret,
+  setSecret,
+  setSecretFromFile,
+  writeContext,
+} from '../core/context.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -303,31 +312,50 @@ const secret = program.command('secret').description('secrets.env access');
 
 secret
   .command('set <naam>')
-  .description('set a secret; value via hidden prompt (or piped stdin), never as an argument')
+  .description('set a secret; value via hidden prompt, piped stdin or --file — never as an argument')
+  .option('--file <pad>', 'read value from file, stored base64 on one line (for SSH keys etc.)')
   .option('--json', 'JSON output')
   .action(
     run(async (opts, naam: string) => {
-      const value = process.stdin.isTTY
-        ? await promptHidden(`Value for ${naam.toUpperCase()}: `)
-        : (await readStdin()).trim();
-      if (!value && !process.stdin.isTTY) {
-        throw new Error(
-          `No value on stdin. Run 'agentboard secret set ${naam}' in an interactive terminal for a hidden prompt, or pipe: echo <value> | agentboard secret set ${naam}`
-        );
+      let result;
+      if (opts.file) {
+        result = setSecretFromFile(naam, opts.file);
+      } else {
+        const value = process.stdin.isTTY
+          ? await promptHidden(`Value for ${naam.toUpperCase()}: `)
+          : (await readStdin()).trim();
+        if (!value && !process.stdin.isTTY) {
+          throw new Error(
+            `No value on stdin. Run 'agentboard secret set ${naam}' in an interactive terminal for a hidden prompt, pipe the value, or use --file <pad>`
+          );
+        }
+        result = setSecret(naam, value);
       }
-      const result = setSecret(naam, value);
       output(opts, `${result.action === 'add' ? 'Added' : 'Updated'} ${result.name} in secrets.env`, result);
     })
   );
 
 secret
   .command('get <naam>')
-  .description('read a secret by name (case-insensitive) from secrets.env')
+  .description('read a secret; base64-stored values are decoded, --out writes to a file (chmod 600)')
+  .option('--out <pad>', 'write decoded value to this file with chmod 600')
   .option('--json', 'JSON output')
   .action(
     run((opts, naam: string) => {
-      const value = getSecret(naam);
-      output(opts, value, { name: naam.toUpperCase(), value });
+      const { data, encoded } = resolveSecret(naam);
+      const name = naam.toUpperCase();
+      if (opts.out) {
+        fs.writeFileSync(opts.out, data, { mode: 0o600 });
+        fs.chmodSync(opts.out, 0o600);
+        output(opts, `Wrote ${name} to ${opts.out} (chmod 600)`, { name, out: opts.out, encoded });
+        return;
+      }
+      if (opts.json) {
+        output(opts, '', { name, value: data.toString('utf8'), encoded });
+      } else {
+        process.stdout.write(data);
+        if (!data.length || data[data.length - 1] !== 0x0a) process.stdout.write('\n');
+      }
     })
   );
 

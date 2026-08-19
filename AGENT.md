@@ -26,6 +26,10 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 5. Context changes go through an ops card. Write the file, show the user the
    diff, and only ask for approval on what you actually wrote — not on a plan.
 6. Log what you did as events. Comments are for talking to the user.
+7. A ref on a card says *what* (a Trello card, an email, a repo). *How* to
+   reach it runs through the card's context refs: resource file →
+   `connection` file → `secret_ref` → secrets.env. Follow that chain before
+   asking for credentials.
 
 ## Tone
 Write in Dutch. Max 100 words per comment unless more is genuinely needed.

@@ -140,6 +140,23 @@ export function setSecret(name: string, value: string): { name: string; action: 
   return { name: key, action };
 }
 
+// Multiline secrets (SSH keys, certs) get base64-encoded onto one line so
+// secrets.env stays line-based and ~/.agentboard stays one portable package.
+export function setSecretFromFile(name: string, filePath: string): { name: string; action: 'add' | 'update' } {
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    throw new Error(`No such file: ${filePath}`);
+  }
+  return setSecret(name, 'base64:' + fs.readFileSync(filePath).toString('base64'));
+}
+
+export function resolveSecret(name: string): { data: Buffer; encoded: boolean } {
+  const raw = getSecret(name);
+  if (raw.startsWith('base64:')) {
+    return { data: Buffer.from(raw.slice('base64:'.length), 'base64'), encoded: true };
+  }
+  return { data: Buffer.from(raw, 'utf8'), encoded: false };
+}
+
 export function getSecret(name: string): string {
   const file = secretsPath();
   if (!fs.existsSync(file)) {

@@ -43,6 +43,18 @@ agentboard secret get ssh_chris_web03
 
 `secret set` never takes the value as an argument (shell history, process
 list). On a TTY it prompts with echo off; otherwise it reads stdin.
+Multiline secrets (SSH keys): `secret set naam --file <pad>` stores the
+file base64 on one line; `secret get naam --out <pad>` writes it back
+(chmod 600). So `AGENTBOARD_DATA` stays one portable package.
+
+## External refs
+
+A ref on a card says *what* (a Trello card, an email, a repo). *How* to
+reach it runs through the card's `context_refs`: resource file (e.g.
+`happyshopper/trello-board.md`) → `connection` file (e.g.
+`_global/trello.md`) → `secret_ref` → `secrets.env`. New services (Gmail,
+GitHub, ...) become new `kind: connection` files in the same chain — no
+extra structure in `refs` itself.
 
 Every command takes `--json`. Errors go to stderr with exit code 1.
 
