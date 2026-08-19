@@ -37,10 +37,10 @@
 **Interfaces:**
 - Produces: `npm run build` → `dist/`; bin `agentboard` → `dist/cli/index.js`. Deps: better-sqlite3, commander, gray-matter, simple-git; dev: typescript, @types/node, @types/better-sqlite3.
 
-- [ ] Step 1: `npm init`-style package.json — `"type": "module"`, bin `agentboard`, scripts `build: tsc`.
-- [ ] Step 2: tsconfig — NodeNext module/resolution, ES2022 target, strict, outDir dist, rootDir src.
-- [ ] Step 3: `npm install` deps + dev deps. Verify: exit 0, better-sqlite3 native build succeeds.
-- [ ] Step 4: Commit `chore: scaffold node+ts project`.
+- [x] Step 1: `npm init`-style package.json — `"type": "module"`, bin `agentboard`, scripts `build: tsc`.
+- [x] Step 2: tsconfig — NodeNext module/resolution, ES2022 target, strict, outDir dist, rootDir src.
+- [x] Step 3: `npm install` deps + dev deps. Verify: exit 0, better-sqlite3 native build succeeds.
+- [x] Step 4: Commit `chore: scaffold node+ts project`.
 
 ### Task 2: db.ts + `agentboard init`
 
@@ -50,10 +50,10 @@
 **Interfaces:**
 - Produces: `dataDir(): string` (env `AGENTBOARD_DATA` or `~/.agentboard`); `openDb(): Database` (clear error "Not initialized. Run 'agentboard init' first." when board.db missing); `initData(): { dataDir: string; created: string[] }` — creates dir, board.db schema (card/comment/event exactly per spec, comment/event id INTEGER PK AUTOINCREMENT, card id TEXT PK), `secrets.env` mode 0600, `context/` with `git init` via simple-git. Idempotent: skips what exists, reports what it created.
 
-- [ ] Step 1: Implement db.ts with schema SQL verbatim from spec columns; timestamps as ISO-8601 UTC strings.
-- [ ] Step 2: Wire `agentboard init` in CLI with `--json`; global error handler prints `Error: <msg>` to stderr, exit 1 (`{"error": ...}` under --json).
-- [ ] Step 3: Verify with `AGENTBOARD_DATA=<scratch>`: run init twice (second run creates nothing), `ls -la` shows `-rw-------` on secrets.env, `git -C context status` works, sqlite tables exist.
-- [ ] Step 4: Commit `feat: init + db layer`.
+- [x] Step 1: Implement db.ts with schema SQL verbatim from spec columns; timestamps as ISO-8601 UTC strings.
+- [x] Step 2: Wire `agentboard init` in CLI with `--json`; global error handler prints `Error: <msg>` to stderr, exit 1 (`{"error": ...}` under --json).
+- [x] Step 3: Verify with `AGENTBOARD_DATA=<scratch>`: run init twice (second run creates nothing), `ls -la` shows `-rw-------` on secrets.env, `git -C context status` works, sqlite tables exist.
+- [x] Step 4: Commit `feat: init + db layer`.
 
 ### Task 3: cards.ts + card/board commands
 
@@ -73,10 +73,10 @@
   - `addEvent(cardId, kind, actor, payload)` — exported for context.ts (invariant 3).
 - CLI: `board`, `card new --type --title [--body] [--owner]`, `card show <id>`, `card move <id> <status> --reason <r> [--as]`, `card comment <id> <text> [--as]`, `card edit <id> [--title|--body|--labels|--refs|--context-refs]`. All with `--json`.
 
-- [ ] Step 1: Implement cards.ts.
-- [ ] Step 2: Wire CLI subcommands (thin: parse flags → call core → print).
-- [ ] Step 3: Verify against scratch data dir: new → board shows under inbox → move with reason → show lists event with from/to/reason → `--as agent` move to done errors → move to review succeeds → comment + edit reflected → bad status / missing card / missing --reason give clear errors → `--json` emits valid JSON on each.
-- [ ] Step 4: Commit `feat: cards core + card/board commands`.
+- [x] Step 1: Implement cards.ts.
+- [x] Step 2: Wire CLI subcommands (thin: parse flags → call core → print).
+- [x] Step 3: Verify against scratch data dir: new → board shows under inbox → move with reason → show lists event with from/to/reason → `--as agent` move to done errors → move to review succeeds → comment + edit reflected → bad status / missing card / missing --reason give clear errors → `--json` emits valid JSON on each.
+- [x] Step 4: Commit `feat: cards core + card/board commands`.
 
 ### Task 4: context.ts + ctx/secret commands
 
@@ -92,10 +92,10 @@
   - `getSecret(name): string` — parses `secrets.env`, lookup `name.toUpperCase()`, clear errors for missing file/name.
 - CLI: `ctx list [pad]` (indented tree render — presentation only), `ctx show <pad>`, `ctx write <pad> --content <text|-> --card <id> [--message] [--as]` (`-` = stdin), `secret get <naam>`. All with `--json`.
 
-- [ ] Step 1: Implement context.ts.
-- [ ] Step 2: Wire CLI.
-- [ ] Step 3: Verify: write a connection file via stdin against an ops card → git log in context repo shows exactly one commit with card id → card show lists `context_written` event → second write = update commit → missing `kind` / missing `secret_ref` on connection / unknown card / PRIVATE KEY content each refused with clear message and no commit → `ctx list` tree, `ctx show`, `secret get` (hit + miss) work.
-- [ ] Step 4: Commit `feat: context core + ctx/secret commands`.
+- [x] Step 1: Implement context.ts.
+- [x] Step 2: Wire CLI.
+- [x] Step 3: Verify: write a connection file via stdin against an ops card → git log in context repo shows exactly one commit with card id → card show lists `context_written` event → second write = update commit → missing `kind` / missing `secret_ref` on connection / unknown card / PRIVATE KEY content each refused with clear message and no commit → `ctx list` tree, `ctx show`, `secret get` (hit + miss) work.
+- [x] Step 4: Commit `feat: context core + ctx/secret commands`.
 
 ### Task 5: AGENT.md + README
 
@@ -105,15 +105,15 @@
 **Interfaces:**
 - README covers: the three tables, the four invariants, how to run (install, build, init, daily flow, `AGENTBOARD_DATA`), the small CLI additions (`--as`, `--owner`, `--card`) and why.
 
-- [ ] Step 1: Write both files.
-- [ ] Step 2: Cross-check README invariants/tables against code.
-- [ ] Step 3: Commit `docs: AGENT.md + README`.
+- [x] Step 1: Write both files.
+- [x] Step 2: Cross-check README invariants/tables against code.
+- [x] Step 3: Commit `docs: AGENT.md + README`.
 
 ### Task 6: End-to-end pass
 
-- [ ] Step 1: Fresh scratch `AGENTBOARD_DATA`; run the spec's "first session with Chris" flow: init → ops card "Toegang nodig: site X" → comment with details → ctx write `chris/vakantiewoningen-nl.ssh.md` → move to review → move to done as human.
-- [ ] Step 2: Confirm every command supports `--json` and non-zero exit + stderr on errors.
-- [ ] Step 3: Commit any fixes; merge branch to main.
+- [x] Step 1: Fresh scratch `AGENTBOARD_DATA`; run the spec's "first session with Chris" flow: init → ops card "Toegang nodig: site X" → comment with details → ctx write `chris/vakantiewoningen-nl.ssh.md` → move to review → move to done as human.
+- [x] Step 2: Confirm every command supports `--json` and non-zero exit + stderr on errors.
+- [x] Step 3: Commit any fixes; merge branch to main.
 
 ## Self-Review
 
