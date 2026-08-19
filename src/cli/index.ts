@@ -11,6 +11,7 @@ import {
   cardDetail,
   createCard,
   editCard,
+  logEvent,
   moveCard,
 } from '../core/cards.js';
 import {
@@ -83,7 +84,11 @@ function renderTimeline(comments: Comment[], events: BoardEvent[]): string[] {
       const detail =
         e.kind === 'status_changed'
           ? `${e.payload.from} -> ${e.payload.to} (${e.payload.reason})`
-          : JSON.stringify(e.payload);
+          : e.kind === 'context_written'
+            ? `${e.payload.path} (${e.payload.message})`
+            : typeof e.payload.note === 'string'
+              ? e.payload.note
+              : JSON.stringify(e.payload);
       return { at: e.created_at, line: `[event]   ${e.kind} by ${e.actor}: ${detail}` };
     }),
   ];
@@ -188,6 +193,19 @@ card
     run((opts, id: string, text: string) => {
       const comment = addComment(id, text, opts.as);
       output(opts, `Comment added to ${comment.card_id}`, comment);
+    })
+  );
+
+card
+  .command('log <id> <text>')
+  .description('log an event on a card (action_taken or error)')
+  .option('--kind <kind>', 'action_taken | error', 'action_taken')
+  .option('--as <actor>', 'human | agent', 'human')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string, text: string) => {
+      const event = logEvent(id, opts.kind, opts.as, text);
+      output(opts, `Event logged on ${event.card_id} (${event.kind})`, event);
     })
   );
 

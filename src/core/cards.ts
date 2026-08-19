@@ -227,6 +227,25 @@ export function editCard(
   }
 }
 
+// AGENT.md rule 6: the agent logs what it did as events. Only action_taken
+// and error are free-form; status_changed and context_written stay reserved
+// for the invariants in core.
+export function logEvent(id: string, kind: string, actor: string, note: string): BoardEvent {
+  if (kind !== 'action_taken' && kind !== 'error') {
+    throw new Error(`Invalid event kind '${kind}'. Loggable: action_taken, error`);
+  }
+  const a = assertActor(actor);
+  if (!note.trim()) throw new Error('Event note cannot be empty');
+  const db = openDb();
+  try {
+    getCardIn(db, id);
+    addEventIn(db, id, kind, a, { note });
+    return rowToEvent(db.prepare('SELECT * FROM event WHERE card_id = ? ORDER BY id DESC LIMIT 1').get(id));
+  } finally {
+    db.close();
+  }
+}
+
 export function cardDetail(id: string): { card: Card; comments: Comment[]; events: BoardEvent[] } {
   const db = openDb();
   try {

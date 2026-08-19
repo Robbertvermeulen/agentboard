@@ -32,6 +32,7 @@ agentboard card new --type task --title "Fix DNS record" --body "TTL te hoog"
 agentboard card move task_a3f2 ready --reason "Ochtendtriage"
 agentboard card show task_a3f2
 agentboard card comment task_a3f2 "Gedaan, TTL nu 300" --as agent
+agentboard card log task_a3f2 "Config aangepast op server" --as agent
 agentboard card edit task_a3f2 --labels wp,dns --context-refs chris/vakantiewoningen-nl.md
 
 agentboard ctx list [pad]
@@ -92,6 +93,17 @@ everything not client-bound. Free-form, except: `kind` is required, and
 the value lives in `secrets.env` (`ssh_chris_web03` → `SSH_CHRIS_WEB03`).
 A real key in a `.md` is a bug; `ctx write` refuses content containing a
 private key block.
+
+Learned in practice (first week):
+
+- `secret_ref` is a name **or a list of names** — real connections tend to
+  need two (Trello: key + token, SSH: key + passphrase).
+- Secrets are named after what they *are*, not per client
+  (`ssh_macbook16`), so one key can serve multiple connection files.
+- `kind` values seen so far: `client`, `connection`, `board`. Observed, not
+  enforced — only `connection` has rules.
+- Resource files point to their connection via a `connection:` field
+  (see External refs below).
 
 ## CLI flags beyond the bare minimum
 

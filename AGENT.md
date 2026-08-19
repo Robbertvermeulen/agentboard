@@ -25,7 +25,8 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 4. Never write a secret into a context file. Only a secret_ref.
 5. Context changes go through an ops card. Write the file, show the user the
    diff, and only ask for approval on what you actually wrote — not on a plan.
-6. Log what you did as events. Comments are for talking to the user.
+6. Log what you did as events (`card log <id> "<what>" --as agent`, kind
+   `action_taken` or `error`). Comments are for talking to the user.
 7. A ref on a card says *what* (a Trello card, an email, a repo). *How* to
    reach it runs through the card's context refs: resource file →
    `connection` file → `secret_ref` → secrets.env. Follow that chain before
