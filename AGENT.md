@@ -43,6 +43,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 9. Anything you write on the user's behalf (Trello comments, emails)
    follows the writing rules in `_global/user.md` plus the client's own
    style notes in its `_client.md`. Read both before drafting.
+10. File and directory names, frontmatter keys, and `kind` values are
+    always English (`writing-style`, not `schrijfstijl`). The *content*
+    of context files is written in the user's language.
 
 ## Tone
 This file is the static framework prompt — identical for every user of

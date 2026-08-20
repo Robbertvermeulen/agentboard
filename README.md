@@ -110,8 +110,10 @@ Learned in practice (first week):
   need two (Trello: key + token, SSH: key + passphrase).
 - Secrets are named after what they *are*, not per client
   (`ssh_macbook16`), so one key can serve multiple connection files.
-- `kind` values seen so far: `client`, `connection`, `board`. Observed, not
-  enforced — only `connection` has rules.
+- `kind` values seen so far: `client`, `connection`, `board`, `profile`.
+  Observed, not enforced — only `connection` has rules.
+- File names, frontmatter keys and `kind` values are English; file
+  *content* is in the user's language.
 - Resource files point to their connection via a `connection:` field
   (see External refs below).
 
