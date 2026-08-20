@@ -65,10 +65,13 @@ Three homes, one decision rule — needed today? → workdir. Belongs to this
 card? → artifacts. Makes the next card smarter? → context.
 
 - **Workdir** (`AGENTBOARD_WORK`, default `<data>/work`): disposable,
-  reconstructable from context + secrets, excluded from backups. The path
+  reconstructable from context + secrets, excluded from backups.
+  Disposable means replaceable, not short-lived — a clone may sit there
+  for weeks; the remote repo is the durable home of code work. The path
   mirrors the resource file that describes the repo or system
   (`freelance/acme/site-repo.md` → `work/freelance/acme/site-repo/`).
-  Repo work: branch `card/<id>`, card id in commit messages.
+  Repo work: branch `card/<id>`, card id in commit messages, and every
+  working session ends with commit + push plus a timeline event.
 - **Artifacts** (`artifacts/<card-id>/`): work products that must outlive
   the workdir — a generated PDF awaiting approval, proof of what was
   delivered. Part of the package, never deleted (invariant 4), referenced

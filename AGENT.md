@@ -53,12 +53,16 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     without the user's approval of the exact text. No approval in the
     session? Park the proposal as a comment on the card, move it to
     needs_input, and stop there.
-12. Workdirs are disposable caches, never the only copy of anything. The
+12. Workdirs are disposable, never the only copy of anything. Disposable
+    means replaceable, not short-lived: a clone may live there for weeks,
+    as long as deleting it at any moment loses nothing — the remote repo
+    is the durable home of code work, the workdir just the workbench. The
     path derives from a resource file: `freelance/acme/site-repo.md` →
     `$AGENTBOARD_WORK/freelance/acme/site-repo/`. Repo work happens on a
-    branch named `card/<id>` with the card id in commits. Work must leave
-    the workdir before review: pushed branch, delivered file, artifact,
-    or context. Never commit a secret into a work repo.
+    branch named `card/<id>` with the card id in commits. Every working
+    session ends with commit + push (WIP is fine on a card branch) and a
+    timeline event naming the branch and commit — waiting for review is
+    too late. Never commit a secret into a work repo.
 13. Files live in one of three places. Needed today → the workdir. Tied
     to a card and must outlive the workdir (awaiting approval, proof of
     what was delivered) → `artifacts/<card-id>/` in the data dir,
