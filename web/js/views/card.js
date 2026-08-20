@@ -184,8 +184,8 @@ export async function renderCard(root, { boards, cardId }) {
             <div class="composer-actions">
               <button type="button" id="comment-send" class="btn-dark">Comment</button>
               <div class="spacer">
-                ${canArchive ? `<button type="button" class="btn-ghost" data-move="archived">${icons.archive()}Archive</button>` : ''}
                 ${quick.map((q, i) => `<button type="button" class="${q.cls}" data-move="${q.to}" data-q="${i}">${q.icon ?? ''}${esc(q.label)}</button>`).join('')}
+                ${canArchive ? `<button type="button" class="btn-ghost" data-move="archived">${icons.archive()}Archive</button>` : ''}
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@ export async function renderCard(root, { boards, cardId }) {
 
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
-  if (pill) pill.onclick = () => openStatusMenu(card, rerender);
+  if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);
   const mPill = root.querySelector('#m-status-pill');
   if (mPill) mPill.onclick = () => openStatusMenu(card, rerender);
   const mChange = root.querySelector('#m-change-status');

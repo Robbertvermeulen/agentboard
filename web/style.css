@@ -384,6 +384,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 }
 #overlay[hidden] { display: none; }
 #overlay.sheet-mode { align-items: flex-end; padding: 0; }
+#overlay.anchored { background: transparent; }
 .dialog { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-modal); width: 440px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
 .reason-dialog { width: 360px; padding: 14px; }
 .dialog-title { font-size: 14px; font-weight: 600; }

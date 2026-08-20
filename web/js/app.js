@@ -2,6 +2,7 @@
 import { api } from './api.js';
 import { icons } from './icons.js';
 import { esc } from './util.js';
+import { closeOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
 import { renderCard } from './views/card.js';
@@ -73,6 +74,7 @@ function renderError(err) {
 }
 
 async function route() {
+  closeOverlay();
   const r = parseRoute();
   renderTabbar(r);
   try {

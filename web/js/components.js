@@ -88,6 +88,9 @@ export function openOverlay(html, { sheet = false } = {}) {
   el.onclick = (e) => {
     if (e.target === el) closeOverlay();
   };
+  document.onkeydown = (e) => {
+    if (e.key === 'Escape') closeOverlay();
+  };
   return el;
 }
 
@@ -96,6 +99,7 @@ export function closeOverlay() {
   el.hidden = true;
   el.innerHTML = '';
   el.onclick = null;
+  document.onkeydown = null;
 }
 
 /* ---------- reason dialog: every status change asks why ---------- */
@@ -182,7 +186,7 @@ function statusMenuItems(current) {
   }).join('');
 }
 
-export function openStatusMenu(card, onDone) {
+export function openStatusMenu(card, onDone, anchor) {
   const pick = async (status) => {
     closeOverlay();
     if (status === card.status) return;
@@ -203,6 +207,15 @@ export function openStatusMenu(card, onDone) {
       ${statusMenuItems(card.status)}
       <p class="menu-hint">Any status is reachable — the next step asks for a reason.</p>
     </div>`);
+    // Anchored under the status pill, no dim — like the design's open menu.
+    if (anchor) {
+      el.classList.add('anchored');
+      const menu = el.querySelector('.status-menu');
+      const rect = anchor.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 216)}px`;
+      menu.style.top = rect.bottom + 270 < window.innerHeight ? `${rect.bottom + 6}px` : `${Math.max(rect.top - 270, 8)}px`;
+    }
     el.querySelectorAll('.status-item').forEach((b) => (b.onclick = () => pick(b.dataset.status)));
   }
 }
@@ -260,7 +273,10 @@ export function openCreateDialog({ boards, boardId }, onCreated) {
   const titleError = el.querySelector('#nc-title-error');
   const labelEntry = el.querySelector('#nc-label-entry');
 
-  const validate = () => (create.disabled = !title.value.trim() || !board.value);
+  // Board is validated here (the select is ours); the empty-title error
+  // comes from the API so its exact message is what the user sees.
+  const validate = () => (create.disabled = !board.value);
+  validate();
   const renderLabels = () => {
     el.querySelectorAll('.labels-input .label-chip').forEach((n) => n.remove());
     labels.forEach((l, i) => {
