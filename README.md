@@ -131,8 +131,13 @@ Each of these exists because the schema or an invariant needs it:
 ```
 src/core/    all domain logic: cards.ts, context.ts, db.ts
 src/cli/     thin commander layer, zero logic
-AGENT.md     system prompt for the agent working the board
+AGENT.md     static framework prompt for the agent working the board
 ```
+
+`AGENT.md` is the same for every user of agentboard. The dynamic,
+user-specific part of the system prompt lives in the data layer:
+`_global/user.md` (who you are, language, writing rules) and per-client
+`_client.md` files. AGENT.md points there; the user fills it in.
 
 No ORM, no HTTP server, no tests, no auth, no sync, no scheduler, no UI.
 Core is a plain module so an API and UI can land on top later.
