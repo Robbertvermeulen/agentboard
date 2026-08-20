@@ -180,6 +180,17 @@ program
     })
   );
 
+program
+  .command('serve')
+  .description('serve the web UI + API')
+  .option('--port <port>', 'port to listen on', '4666')
+  .action(
+    run(async (opts) => {
+      const { startServer } = await import('../api/server.js');
+      startServer(Number(opts.port));
+    })
+  );
+
 const card = program.command('card').description('manage cards');
 
 card
