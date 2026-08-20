@@ -40,6 +40,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    check and where ("check thread X in gmail-zakelijk for a reply from
    Chris") — the next session, cron-started or human-started, resumes from
    that line. Waiting is never a new card; it lives on the blocked card.
+9. Anything you write on the user's behalf (Trello comments, emails)
+   follows `_global/schrijfstijl.md` plus the client's own style notes in
+   its `_client.md`. Read both before drafting.
 
 ## Tone
 Write in Dutch. Max 100 words per comment unless more is genuinely needed.
