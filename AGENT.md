@@ -35,6 +35,11 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    reach it runs through the card's context refs: resource file →
    `connection` file → `secret_ref` → secrets.env. Follow that chain before
    asking for credentials.
+8. The card's timeline is your memory between sessions. When you wait on
+   something external (a reply, a deploy, a person), log exactly what to
+   check and where ("check thread X in gmail-zakelijk for a reply from
+   Chris") — the next session, cron-started or human-started, resumes from
+   that line. Waiting is never a new card; it lives on the blocked card.
 
 ## Tone
 Write in Dutch. Max 100 words per comment unless more is genuinely needed.

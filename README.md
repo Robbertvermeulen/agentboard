@@ -57,6 +57,16 @@ reach it runs through the card's `context_refs`: resource file (e.g.
 GitHub, ...) become new `kind: connection` files in the same chain — no
 extra structure in `refs` itself.
 
+Multiple connections of the same type can coexist (two business
+mailboxes): each gets its own file in `_global/`, and the client or
+resource file names which one applies.
+
+Wait-states ("mailed Chris, awaiting reply") are free-text events on the
+blocked card — the timeline is the agent's memory between sessions
+(AGENT.md rule 8). If that ever proves too fragile for a cron trigger,
+the landing spot is a structured `check` field in the event payload
+(already JSON) — not a new card type or table.
+
 Every command takes `--json`. Errors go to stderr with exit code 1.
 
 ## The three tables
