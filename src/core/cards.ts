@@ -12,8 +12,15 @@ import {
   openDb,
 } from './db.js';
 
+export interface Board {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Card {
   id: string;
+  board_id: string;
   type: CardType;
   title: string;
   body: string | null;
@@ -89,11 +96,51 @@ export function addEventIn(
   );
 }
 
+export function listBoards(): Board[] {
+  const db = openDb();
+  try {
+    return db.prepare('SELECT * FROM board ORDER BY created_at').all() as Board[];
+  } finally {
+    db.close();
+  }
+}
+
+export function createBoard(id: string, name?: string): Board {
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    throw new Error(`Invalid board id '${id}'. Use a slug: lowercase letters, digits, dashes`);
+  }
+  const db = openDb();
+  try {
+    if (db.prepare('SELECT 1 FROM board WHERE id = ?').get(id)) {
+      throw new Error(`Board '${id}' already exists`);
+    }
+    db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run(id, name ?? id, now());
+    return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
+  } finally {
+    db.close();
+  }
+}
+
+// No board given: unambiguous with one board, an error with more.
+function resolveBoardIn(db: Database.Database, boardId?: string): string {
+  const boards = db.prepare('SELECT id FROM board ORDER BY created_at').all() as { id: string }[];
+  if (boards.length === 0) throw new Error("No boards yet. Run 'agentboard init' first.");
+  if (boardId) {
+    if (!boards.some((b) => b.id === boardId)) {
+      throw new Error(`Unknown board '${boardId}'. Boards: ${boards.map((b) => b.id).join(', ')}`);
+    }
+    return boardId;
+  }
+  if (boards.length === 1) return boards[0].id;
+  throw new Error(`Multiple boards (${boards.map((b) => b.id).join(', ')}). Pass --board`);
+}
+
 export function createCard(input: {
   type: string;
   title: string;
   body?: string;
   owner?: string;
+  board?: string;
 }): Card {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
@@ -101,6 +148,7 @@ export function createCard(input: {
 
   const db = openDb();
   try {
+    const boardId = resolveBoardIn(db, input.board);
     let id: string;
     do {
       id = `${type}_${crypto.randomBytes(2).toString('hex')}`;
@@ -108,9 +156,9 @@ export function createCard(input: {
 
     const ts = now();
     db.prepare(
-      `INSERT INTO card (id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'inbox', ?, '[]', '[]', '[]', ?, ?)`
-    ).run(id, type, input.title, input.body ?? null, owner, ts, ts);
+      `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'inbox', ?, '[]', '[]', '[]', ?, ?)`
+    ).run(id, boardId, type, input.title, input.body ?? null, owner, ts, ts);
     return getCardIn(db, id);
   } finally {
     db.close();
@@ -127,20 +175,28 @@ export function getCard(id: string): Card {
 }
 
 // Board is the working view: every status except archived (invariant 4 keeps
-// archived cards around forever, they would swamp the board).
-export function boardView(): Partial<Record<Status, Card[]>> {
+// archived cards around forever, they would swamp the board). No boardId:
+// all boards, so the morning scan stays one command.
+export function boardView(boardId?: string): { board: Board; columns: Partial<Record<Status, Card[]>> }[] {
   const db = openDb();
   try {
-    const rows = db
-      .prepare("SELECT * FROM card WHERE status != 'archived' ORDER BY updated_at DESC")
-      .all()
-      .map(rowToCard);
-    const grouped: Partial<Record<Status, Card[]>> = {};
-    for (const status of STATUSES) {
-      if (status === 'archived') continue;
-      grouped[status] = rows.filter((c) => c.status === status);
+    let boards = db.prepare('SELECT * FROM board ORDER BY created_at').all() as Board[];
+    if (boardId) {
+      boards = boards.filter((b) => b.id === boardId);
+      if (boards.length === 0) throw new Error(`Unknown board '${boardId}'`);
     }
-    return grouped;
+    return boards.map((board) => {
+      const rows = db
+        .prepare("SELECT * FROM card WHERE board_id = ? AND status != 'archived' ORDER BY updated_at DESC")
+        .all(board.id)
+        .map(rowToCard);
+      const columns: Partial<Record<Status, Card[]>> = {};
+      for (const status of STATUSES) {
+        if (status === 'archived') continue;
+        columns[status] = rows.filter((c) => c.status === status);
+      }
+      return { board, columns };
+    });
   } finally {
     db.close();
   }
@@ -187,7 +243,14 @@ export function addComment(id: string, body: string, author: string): Comment {
 
 export function editCard(
   id: string,
-  fields: { title?: string; body?: string; labels?: string[]; refs?: unknown[]; contextRefs?: string[] }
+  fields: {
+    title?: string;
+    body?: string;
+    labels?: string[];
+    refs?: unknown[];
+    contextRefs?: string[];
+    board?: string;
+  }
 ): Card {
   const sets: string[] = [];
   const values: unknown[] = [];
@@ -213,11 +276,17 @@ export function editCard(
     sets.push('context_refs = ?');
     values.push(JSON.stringify(fields.contextRefs));
   }
-  if (sets.length === 0) throw new Error('Nothing to edit. Pass --title, --body, --labels, --refs or --context-refs');
+  if (sets.length === 0 && fields.board === undefined) {
+    throw new Error('Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs or --board');
+  }
 
   const db = openDb();
   try {
     getCardIn(db, id);
+    if (fields.board !== undefined) {
+      sets.push('board_id = ?');
+      values.push(resolveBoardIn(db, fields.board));
+    }
     sets.push('updated_at = ?');
     values.push(now(), id);
     db.prepare(`UPDATE card SET ${sets.join(', ')} WHERE id = ?`).run(...values);

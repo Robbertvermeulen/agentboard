@@ -7,14 +7,21 @@ lots of status changes, fast to query). Context lives in markdown + git
 
 ```
 ~/.agentboard/
-  board.db              SQLite
+  board.db              SQLite (all boards)
   secrets.env           chmod 600, never in git
   context/              its own git repo
-    _global/
-    chris/
-      _client.md
-      vakantiewoningen-nl.ssh.md
+    _global/            above the boards: user.md (profile), shared connections
+    freelance/          one dir per board
+      _board.md         board profile, overrides _global
+      happyshopper/     one dir per client
+        _client.md      client profile, overrides board and _global
+        akudeco.ssh.md
 ```
+
+One data dir = one package, holding any number of boards (one per
+business). Identity, secrets and context are shared across boards; the
+card streams are separated. The profile chain user → board → client is
+read top-down; the most specific file wins.
 
 ## Run
 
@@ -27,8 +34,10 @@ node dist/cli/index.js init      # or: npm link && agentboard init
 Daily flow:
 
 ```
-agentboard board
-agentboard card new --type task --title "Fix DNS record" --body "TTL te hoog"
+agentboard board                 # all boards; agentboard board <id> for one
+agentboard boards list
+agentboard boards new plugins --name "Pluginbedrijf"
+agentboard card new --type task --title "Fix DNS record" --body "TTL te hoog" --board freelance
 agentboard card move task_a3f2 ready --reason "Ochtendtriage"
 agentboard card show task_a3f2
 agentboard card comment task_a3f2 "Gedaan, TTL nu 300" --as agent
@@ -81,9 +90,12 @@ the landing spot is a structured `check` field in the event payload
 
 Every command takes `--json`. Errors go to stderr with exit code 1.
 
-## The three tables
+## The tables
 
-**card** — `id` (`task_a3f2` / `ops_b71c`), `type` (task|ops), `title`,
+**board** — `id` (slug, e.g. `freelance`), `name`, `created_at`. One row
+per business.
+
+**card** — `id` (`task_a3f2` / `ops_b71c`), `board_id`, `type` (task|ops), `title`,
 `body`, `status` (inbox|ready|doing|needs_input|review|done|archived),
 `owner` (human|agent), `labels` (JSON array), `refs` (JSON array
 `[{label, url?, note?}]`, deliberately unstructured), `context_refs`
@@ -122,8 +134,12 @@ Learned in practice (first week):
   need two (Trello: key + token, SSH: key + passphrase).
 - Secrets are named after what they *are*, not per client
   (`ssh_macbook16`), so one key can serve multiple connection files.
-- `kind` values seen so far: `client`, `connection`, `board`, `profile`.
-  Observed, not enforced — only `connection` has rules.
+- `kind` says how a file is *treated*, not what it happens to be. The
+  vocabulary: `profile` (the user, `_global/user.md`), `board` (a board's
+  `_board.md`), `client` (a client's `_client.md`), `connection` (how to
+  reach something, has `secret_ref`), `resource` (an external thing,
+  points to its connection). Observed, not enforced — only `connection`
+  has rules.
 - File names, frontmatter keys and `kind` values are English; file
   *content* is in the user's language.
 - Resource files point to their connection via a `connection:` field

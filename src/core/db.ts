@@ -15,8 +15,15 @@ export type Actor = (typeof ACTORS)[number];
 export type EventKind = (typeof EVENT_KINDS)[number];
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS board (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS card (
   id            TEXT PRIMARY KEY,
+  board_id      TEXT NOT NULL,
   type          TEXT NOT NULL CHECK (type IN ('task','ops')),
   title         TEXT NOT NULL,
   body          TEXT,
@@ -77,9 +84,17 @@ export function openDb(): Database.Database {
   return db;
 }
 
-export async function initData(): Promise<{ dataDir: string; created: string[] }> {
+export async function initData(opts?: {
+  defaultBoard?: string;
+  defaultBoardName?: string;
+}): Promise<{ dataDir: string; created: string[] }> {
   const dir = dataDir();
   const created: string[] = [];
+
+  const boardId = opts?.defaultBoard ?? 'main';
+  if (!/^[a-z0-9-]+$/.test(boardId)) {
+    throw new Error(`Invalid board id '${boardId}'. Use a slug: lowercase letters, digits, dashes`);
+  }
 
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -92,6 +107,23 @@ export async function initData(): Promise<{ dataDir: string; created: string[] }
   const db = new Database(dbPath());
   db.pragma('journal_mode = WAL');
   db.exec(SCHEMA);
+
+  // Migration: card tables from before multi-board lack board_id. The
+  // column is added without a REFERENCES clause (SQLite cannot add a
+  // NOT NULL FK column to a filled table); core validates board ids.
+  const cardCols = db.prepare('PRAGMA table_info(card)').all() as { name: string }[];
+  if (!cardCols.some((c) => c.name === 'board_id')) {
+    db.exec(`ALTER TABLE card ADD COLUMN board_id TEXT NOT NULL DEFAULT '${boardId}'`);
+    created.push(`card.board_id (existing cards -> board '${boardId}')`);
+  }
+  if (!db.prepare('SELECT 1 FROM board LIMIT 1').get()) {
+    db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run(
+      boardId,
+      opts?.defaultBoardName ?? boardId,
+      now()
+    );
+    created.push(`board '${boardId}'`);
+  }
   db.close();
 
   if (!fs.existsSync(secretsPath())) {

@@ -9,8 +9,10 @@ import {
   addComment,
   boardView,
   cardDetail,
+  createBoard,
   createCard,
   editCard,
+  listBoards,
   logEvent,
   moveCard,
   nextWork,
@@ -103,10 +105,12 @@ program.name('agentboard').description('Agent-driven Kanban board: cards in SQLi
 program
   .command('init')
   .description('create data dir, schema, secrets.env and context git repo')
+  .option('--default-board <id>', 'slug for the first board (default: main)')
+  .option('--default-board-name <name>', 'display name for the first board')
   .option('--json', 'JSON output')
   .action(
     run(async (opts) => {
-      const result = await initData();
+      const result = await initData({ defaultBoard: opts.defaultBoard, defaultBoardName: opts.defaultBoardName });
       const lines =
         result.created.length === 0
           ? [`Already initialized at ${result.dataDir}`]
@@ -116,19 +120,51 @@ program
   );
 
 program
-  .command('board')
-  .description('cards grouped by status')
+  .command('board [id]')
+  .description('cards grouped by status; without id: every board')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id?: string) => {
+      const views = boardView(id);
+      const lines: string[] = [];
+      for (const view of views) {
+        if (views.length > 1) lines.push(`=== ${view.board.name} (${view.board.id}) ===`);
+        let any = false;
+        for (const [status, cards] of Object.entries(view.columns)) {
+          if (!cards.length) continue;
+          any = true;
+          lines.push(`${status.toUpperCase()} (${cards.length})`);
+          lines.push(...cards.map(cardLine));
+        }
+        if (!any) lines.push('(empty)');
+        if (views.length > 1) lines.push('');
+      }
+      output(opts, lines.join('\n').trim() || 'Board is empty', views);
+    })
+  );
+
+const boards = program.command('boards').description('manage boards');
+
+boards
+  .command('list')
+  .description('all boards')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const grouped = boardView();
-      const lines: string[] = [];
-      for (const [status, cards] of Object.entries(grouped)) {
-        if (!cards.length) continue;
-        lines.push(`${status.toUpperCase()} (${cards.length})`);
-        lines.push(...cards.map(cardLine));
-      }
-      output(opts, lines.length ? lines.join('\n') : 'Board is empty', grouped);
+      const all = listBoards();
+      output(opts, all.map((b) => `  ${b.id.padEnd(12)} ${b.name}`).join('\n'), { boards: all });
+    })
+  );
+
+boards
+  .command('new <id>')
+  .description('create a board (id is a slug)')
+  .option('--name <name>', 'display name (default: the id)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string) => {
+      const b = createBoard(id, opts.name);
+      output(opts, `Created board ${b.id} (${b.name})`, b);
     })
   );
 
@@ -139,7 +175,7 @@ program
   .action(
     run((opts) => {
       const cards = nextWork();
-      const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.status.padEnd(12)} ${c.title}`);
+      const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       output(opts, lines.length ? lines.join('\n') : 'Nothing for the agent right now', { cards });
     })
   );
@@ -153,11 +189,18 @@ card
   .requiredOption('--title <title>', 'card title')
   .option('--body <body>', 'card body')
   .option('--owner <owner>', 'human | agent', 'human')
+  .option('--board <id>', 'board (required when more than one board exists)')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const c = createCard({ type: opts.type, title: opts.title, body: opts.body, owner: opts.owner });
-      output(opts, `Created ${c.id}  ${c.title}  (${c.status})`, c);
+      const c = createCard({
+        type: opts.type,
+        title: opts.title,
+        body: opts.body,
+        owner: opts.owner,
+        board: opts.board,
+      });
+      output(opts, `Created ${c.id}  ${c.title}  (${c.board_id}, ${c.status})`, c);
     })
   );
 
@@ -171,7 +214,7 @@ card
       const c = detail.card;
       const lines = [
         `${c.id}  ${c.title}`,
-        `type: ${c.type}  status: ${c.status}  owner: ${c.owner}`,
+        `board: ${c.board_id}  type: ${c.type}  status: ${c.status}  owner: ${c.owner}`,
       ];
       if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
       if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
@@ -230,6 +273,7 @@ card
   .option('--labels <labels>', 'comma-separated, empty string clears')
   .option('--refs <json>', 'JSON array [{label, url?, note?}]')
   .option('--context-refs <paths>', 'comma-separated context paths, empty string clears')
+  .option('--board <id>', 'move card to another board')
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string) => {
@@ -239,6 +283,7 @@ card
         labels: opts.labels !== undefined ? splitList(opts.labels) : undefined,
         refs: opts.refs !== undefined ? parseJsonArray(opts.refs, 'refs') : undefined,
         contextRefs: opts.contextRefs !== undefined ? splitList(opts.contextRefs) : undefined,
+        board: opts.board,
       });
       output(opts, `Updated ${c.id}`, c);
     })

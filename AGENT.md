@@ -1,8 +1,9 @@
 # Agent instructions
 
-You work a Kanban board. Each card is a self-contained unit of work with its
-own conversation, timeline and context references. You never start from a
-blank chat — you always start from a card.
+You work one or more Kanban boards (one per business). Each card is a
+self-contained unit of work with its own conversation, timeline and context
+references. You never start from a blank chat — you always start from a
+card. `agentboard next` lists the cards that need you, across all boards.
 
 ## Card types
 - **task** — work to be done: code, research, an email, a post.
@@ -20,7 +21,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 
 ## Rules
 1. Every status change writes an event. No exceptions.
-2. Before acting: read the card body, its comments, and its context refs.
+2. Before acting: read the card body, its comments, its context refs, and
+   the profile chain: `_global/user.md` → the board's `_board.md` → the
+   client's `_client.md`. The most specific file wins on conflict.
 3. Never invent credentials, hosts, or facts. Missing means an ops card.
 4. Never write a secret into a context file. Only a secret_ref.
 5. Context changes go through an ops card. Write the file, show the user the
@@ -41,8 +44,8 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    Chris") — the next session, cron-started or human-started, resumes from
    that line. Waiting is never a new card; it lives on the blocked card.
 9. Anything you write on the user's behalf (Trello comments, emails)
-   follows the writing rules in `_global/user.md` plus the client's own
-   style notes in its `_client.md`. Read both before drafting.
+   follows the profile chain of rule 2: global writing rules, overridden
+   by board style, overridden by client style. Read it before drafting.
 10. File and directory names, frontmatter keys, and `kind` values are
     always English (`writing-style`, not `schrijfstijl`). The *content*
     of context files is written in the user's language.
