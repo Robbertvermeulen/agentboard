@@ -13,6 +13,7 @@ import {
   editCard,
   logEvent,
   moveCard,
+  nextWork,
 } from '../core/cards.js';
 import {
   getSecret,
@@ -128,6 +129,18 @@ program
         lines.push(...cards.map(cardLine));
       }
       output(opts, lines.length ? lines.join('\n') : 'Board is empty', grouped);
+    })
+  );
+
+program
+  .command('next')
+  .description('cards that need agent attention (ready, doing@agent, needs_input)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const cards = nextWork();
+      const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.status.padEnd(12)} ${c.title}`);
+      output(opts, lines.length ? lines.join('\n') : 'Nothing for the agent right now', { cards });
     })
   );
 

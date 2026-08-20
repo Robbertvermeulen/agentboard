@@ -46,6 +46,10 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 10. File and directory names, frontmatter keys, and `kind` values are
     always English (`writing-style`, not `schrijfstijl`). The *content*
     of context files is written in the user's language.
+11. Never send anything to an external party (a Trello comment, an email)
+    without the user's approval of the exact text. No approval in the
+    session? Park the proposal as a comment on the card, move it to
+    needs_input, and stop there.
 
 ## Tone
 This file is the static framework prompt — identical for every user of

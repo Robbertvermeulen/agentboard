@@ -246,6 +246,26 @@ export function logEvent(id: string, kind: string, actor: string, note: string):
   }
 }
 
+// Worklist for an agent session (and the cheap gate for a cron trigger:
+// empty list = no session). ready = new work, doing@agent = resumable,
+// needs_input = possibly self-unblockable via a wait-check in the timeline.
+export function nextWork(): Card[] {
+  const db = openDb();
+  try {
+    return db
+      .prepare(
+        `SELECT * FROM card
+         WHERE status = 'ready' OR status = 'needs_input'
+            OR (status = 'doing' AND owner = 'agent')
+         ORDER BY updated_at ASC`
+      )
+      .all()
+      .map(rowToCard);
+  } finally {
+    db.close();
+  }
+}
+
 export function cardDetail(id: string): { card: Card; comments: Comment[]; events: BoardEvent[] } {
   const db = openDb();
   try {

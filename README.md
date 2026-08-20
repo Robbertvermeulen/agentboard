@@ -48,6 +48,18 @@ Multiline secrets (SSH keys): `secret set naam --file <pad>` stores the
 file base64 on one line; `secret get naam --out <pad>` writes it back
 (chmod 600). So `AGENTBOARD_DATA` stays one portable package.
 
+## Trigger (design, not built)
+
+Unattended operation is three layers; only the first lives in this tool:
+
+1. `agentboard next` — the worklist query (ready, doing@agent,
+   needs_input). Empty list = no agent session, so a scheduler stays
+   cheap.
+2. A launchd/cron job outside the tool: run `agentboard next --json`;
+   if non-empty, start a headless agent session with AGENT.md.
+3. Session behavior is already covered by AGENT.md rules 2 and 8
+   (timeline as memory) and rule 11 (no external sends without approval).
+
 ## External refs
 
 A ref on a card says *what* (a Trello card, an email, a repo). *How* to
