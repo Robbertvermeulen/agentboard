@@ -53,6 +53,21 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     without the user's approval of the exact text. No approval in the
     session? Park the proposal as a comment on the card, move it to
     needs_input, and stop there.
+12. Workdirs are disposable caches, never the only copy of anything. The
+    path derives from a resource file: `freelance/acme/site-repo.md` →
+    `$AGENTBOARD_WORK/freelance/acme/site-repo/`. Repo work happens on a
+    branch named `card/<id>` with the card id in commits. Work must leave
+    the workdir before review: pushed branch, delivered file, artifact,
+    or context. Never commit a secret into a work repo.
+13. Files live in one of three places. Needed today → the workdir. Tied
+    to a card and must outlive the workdir (awaiting approval, proof of
+    what was delivered) → `artifacts/<card-id>/` in the data dir,
+    referenced from a timeline event; artifacts are never deleted. Makes
+    the next card smarter (a template, a brand asset, a received spec) →
+    context: the binary under `<client>/assets/` with a companion
+    markdown file (`kind: resource`, a `file:` field) as the findable
+    item, committed per rule 5 / invariant 3. Context is not an archive:
+    a deliverable's default destination is its channel plus an event.
 
 ## Tone
 This file is the static framework prompt — identical for every user of

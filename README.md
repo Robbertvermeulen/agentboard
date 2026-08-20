@@ -9,6 +9,8 @@ lots of status changes, fast to query). Context lives in markdown + git
 ~/.agentboard/
   board.db              SQLite (all boards)
   secrets.env           chmod 600, never in git
+  artifacts/<card-id>/  card-bound work products, kept forever
+  work/                 disposable workdirs (AGENTBOARD_WORK overrides)
   context/              its own git repo
     _global/            above the boards: user.md (profile), shared connections
     freelance/          one dir per board
@@ -56,6 +58,25 @@ list). On a TTY it prompts with echo off; otherwise it reads stdin.
 Multiline secrets (SSH keys): `secret set naam --file <pad>` stores the
 file base64 on one line; `secret get naam --out <pad>` writes it back
 (chmod 600). So `AGENTBOARD_DATA` stays one portable package.
+
+## Files: workdir, artifacts, context
+
+Three homes, one decision rule — needed today? → workdir. Belongs to this
+card? → artifacts. Makes the next card smarter? → context.
+
+- **Workdir** (`AGENTBOARD_WORK`, default `<data>/work`): disposable,
+  reconstructable from context + secrets, excluded from backups. The path
+  mirrors the resource file that describes the repo or system
+  (`freelance/acme/site-repo.md` → `work/freelance/acme/site-repo/`).
+  Repo work: branch `card/<id>`, card id in commit messages.
+- **Artifacts** (`artifacts/<card-id>/`): work products that must outlive
+  the workdir — a generated PDF awaiting approval, proof of what was
+  delivered. Part of the package, never deleted (invariant 4), referenced
+  from timeline events.
+- **Context**: knowledge only. Binaries go under `<client>/assets/` with
+  a companion markdown file (`kind: resource`, `file:` field) as the
+  findable, diffable item. Context is not an archive; deliverables ship
+  via their channel (mail, Trello, a repo) and leave an event behind.
 
 ## Trigger (design, not built)
 
