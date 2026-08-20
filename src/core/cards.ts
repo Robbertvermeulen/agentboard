@@ -50,6 +50,13 @@ export interface BoardEvent {
   created_at: string;
 }
 
+// Card plus how-it-got-here: reason and moment of the last status change.
+// No status_changed event yet (card still in inbox) -> created_at, null.
+export interface EnrichedCard extends Card {
+  status_reason: string | null;
+  status_since: string;
+}
+
 function assertOneOf<T extends string>(value: string, allowed: readonly T[], what: string): T {
   if (!allowed.includes(value as T)) {
     throw new Error(`Invalid ${what} '${value}'. Allowed: ${allowed.join(', ')}`);
@@ -72,6 +79,29 @@ function rowToCard(row: any): Card {
 
 function rowToEvent(row: any): BoardEvent {
   return { ...row, payload: JSON.parse(row.payload) };
+}
+
+function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
+  if (cards.length === 0) return [];
+  const placeholders = cards.map(() => '?').join(',');
+  const rows = db
+    .prepare(
+      `SELECT e.card_id, e.payload, e.created_at FROM event e
+       JOIN (SELECT card_id, MAX(id) AS id FROM event WHERE kind = 'status_changed' GROUP BY card_id) last
+         ON e.id = last.id
+       WHERE e.card_id IN (${placeholders})`
+    )
+    .all(cards.map((c) => c.id)) as { card_id: string; payload: string; created_at: string }[];
+  const lastChange = new Map(rows.map((r) => [r.card_id, r]));
+  return cards.map((card) => {
+    const last = lastChange.get(card.id);
+    const reason = last ? JSON.parse(last.payload).reason : null;
+    return {
+      ...card,
+      status_reason: typeof reason === 'string' ? reason : null,
+      status_since: last ? last.created_at : card.created_at,
+    };
+  });
 }
 
 function getCardIn(db: Database.Database, id: string): Card {
@@ -141,6 +171,7 @@ export function createCard(input: {
   body?: string;
   owner?: string;
   board?: string;
+  labels?: string[];
 }): Card {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
@@ -157,8 +188,8 @@ export function createCard(input: {
     const ts = now();
     db.prepare(
       `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'inbox', ?, '[]', '[]', '[]', ?, ?)`
-    ).run(id, boardId, type, input.title, input.body ?? null, owner, ts, ts);
+       VALUES (?, ?, ?, ?, ?, 'inbox', ?, ?, '[]', '[]', ?, ?)`
+    ).run(id, boardId, type, input.title, input.body ?? null, owner, JSON.stringify(input.labels ?? []), ts, ts);
     return getCardIn(db, id);
   } finally {
     db.close();
@@ -177,7 +208,7 @@ export function getCard(id: string): Card {
 // Board is the working view: every status except archived (invariant 4 keeps
 // archived cards around forever, they would swamp the board). No boardId:
 // all boards, so the morning scan stays one command.
-export function boardView(boardId?: string): { board: Board; columns: Partial<Record<Status, Card[]>> }[] {
+export function boardView(boardId?: string): { board: Board; columns: Partial<Record<Status, EnrichedCard[]>> }[] {
   const db = openDb();
   try {
     let boards = db.prepare('SELECT * FROM board ORDER BY created_at').all() as Board[];
@@ -186,17 +217,38 @@ export function boardView(boardId?: string): { board: Board; columns: Partial<Re
       if (boards.length === 0) throw new Error(`Unknown board '${boardId}'`);
     }
     return boards.map((board) => {
-      const rows = db
-        .prepare("SELECT * FROM card WHERE board_id = ? AND status != 'archived' ORDER BY updated_at DESC")
-        .all(board.id)
-        .map(rowToCard);
-      const columns: Partial<Record<Status, Card[]>> = {};
+      const rows = enrichCardsIn(
+        db,
+        db
+          .prepare("SELECT * FROM card WHERE board_id = ? AND status != 'archived' ORDER BY updated_at DESC")
+          .all(board.id)
+          .map(rowToCard)
+      );
+      const columns: Partial<Record<Status, EnrichedCard[]>> = {};
       for (const status of STATUSES) {
         if (status === 'archived') continue;
         columns[status] = rows.filter((c) => c.status === status);
       }
       return { board, columns };
     });
+  } finally {
+    db.close();
+  }
+}
+
+// Archived cards of one board, newest first. Same enrichment as boardView:
+// the archive shows why and when a card was put away (invariant 4 keeps them).
+export function archivedCards(boardId: string): EnrichedCard[] {
+  const db = openDb();
+  try {
+    resolveBoardIn(db, boardId);
+    return enrichCardsIn(
+      db,
+      db
+        .prepare("SELECT * FROM card WHERE board_id = ? AND status = 'archived' ORDER BY updated_at DESC")
+        .all(boardId)
+        .map(rowToCard)
+    );
   } finally {
     db.close();
   }
