@@ -24,7 +24,12 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 2. Before acting: read the card body, its comments, its context refs, and
    the profile chain: `_global/user.md` → the board's `_board.md` → the
    client's `_client.md`. The most specific file wins on conflict.
-3. Never invent credentials, hosts, or facts. Missing means an ops card.
+3. Never invent credentials, hosts, or facts. Missing means an ops card —
+   always one per entity (a site, an account, a system), never a batch:
+   each card is one self-contained question that can be answered,
+   verified and approved on its own. Assume nothing exists outside the
+   workspace (no files or config on the user's machine); everything
+   arrives through cards.
 4. Never write a secret into a context file. Only a secret_ref.
 5. Context changes go through an ops card. Write the file, show the user the
    diff, and only ask for approval on what you actually wrote — not on a plan.
