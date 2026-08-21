@@ -39,6 +39,7 @@ export interface Comment {
   author: Actor;
   body: string;
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface BoardEvent {
@@ -288,6 +289,27 @@ export function addComment(id: string, body: string, author: string): Comment {
       .prepare('INSERT INTO comment (card_id, author, body, created_at) VALUES (?, ?, ?, ?)')
       .run(id, a, body, now());
     return db.prepare('SELECT * FROM comment WHERE id = ?').get(result.lastInsertRowid) as Comment;
+  } finally {
+    db.close();
+  }
+}
+
+// Bare edit, no history: the old text is gone on purpose (accidentally
+// pasted secrets stay recoverable nowhere). The timeline gets an event.
+export function editComment(commentId: number, body: string, actor: string): Comment {
+  const a = assertActor(actor);
+  if (!body.trim()) throw new Error('Comment cannot be empty');
+  const db = openDb();
+  try {
+    const comment = db.prepare('SELECT * FROM comment WHERE id = ?').get(commentId) as Comment | undefined;
+    if (!comment) throw new Error(`Comment not found: ${commentId}`);
+    if (comment.author !== a) throw new Error(`Only the author (${comment.author}) may edit this comment`);
+    const edit = db.transaction(() => {
+      db.prepare('UPDATE comment SET body = ?, updated_at = ? WHERE id = ?').run(body, now(), commentId);
+      addEventIn(db, comment.card_id, 'action_taken', a, { note: `comment ${commentId} edited` });
+    });
+    edit();
+    return db.prepare('SELECT * FROM comment WHERE id = ?').get(commentId) as Comment;
   } finally {
     db.close();
   }

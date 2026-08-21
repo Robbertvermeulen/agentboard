@@ -416,6 +416,16 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .cc-name { font-size: 13px; font-weight: 600; }
 .cc-when { font-size: 12px; color: var(--mut-2); }
 .cc-body { margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); white-space: pre-wrap; }
+.cc-edited { font-size: 11px; color: var(--mut-2); }
+.cc-edit { margin-left: auto; display: inline-flex; padding: 3px; border-radius: 6px; opacity: 0; }
+.comment-card:hover .cc-edit, .cc-edit:focus-visible { opacity: 1; }
+.cc-edit:hover { background: var(--chip-bg); }
+.cc-editor textarea {
+  width: 100%; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  font-size: 14px; line-height: 1.55; resize: vertical; outline: none;
+}
+.cc-editor-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cc-editor-actions .btn-dark, .cc-editor-actions .btn-ghost { height: 26px; padding: 0 10px; border-radius: 7px; font-size: 12px; font-weight: 600; }
 .event-row { display: flex; align-items: flex-start; gap: 10px; padding: 0 4px; }
 .event-row svg { margin-top: 3px; }
 .event-row p { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--mut); overflow-wrap: anywhere; }
