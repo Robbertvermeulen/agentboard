@@ -3,24 +3,24 @@
 import { api } from '../api.js';
 import { icons, STATUS_META, STATUSES } from '../icons.js';
 import { esc } from '../util.js';
-import { cardTile, openCreateDialog, crumb } from '../components.js';
+import { cardTile, statusPill, openCreateDialog, crumb } from '../components.js';
 import { tabs, needYouCount, openCount } from './board.js';
 
 export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// Same column heads and tints as the single-board view (user decision,
+// overrides artboard 1g); the stacked structure and quiet strips stay.
 function miniColumn(status, cards) {
   const meta = STATUS_META[status];
+  const head = `<div class="col-head"><div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div></div>`;
+  if (cards.length === 0) return `<div class="ab-quiet"><span>${esc(status)}</span><span>—</span></div>`;
   if (status === 'done') {
     const recent = cards.filter((c) => Date.now() - new Date(c.updated_at).getTime() < 7 * DAY).length;
-    if (cards.length === 0) return `<div class="ab-quiet"><span>done</span><span>—</span></div>`;
-    return `<div class="ab-col done"><div class="ab-col-head"><span class="nm">done</span><span class="ct">${cards.length}</span></div>
-      <div class="ab-done-note">${recent} in the last 7 days</div></div>`;
+    return `<div class="ab-col done">${head}<div class="ab-done-note">${recent} in the last 7 days</div></div>`;
   }
-  if (cards.length === 0) return `<div class="ab-quiet"><span>${esc(status)}</span><span>—</span></div>`;
-  return `<div class="ab-col ${meta.chip !== 'neutral' ? status : ''}">
-    <div class="ab-col-head"><span class="nm">${esc(status)}</span><span class="ct">${cards.length}</span></div>
+  return `<div class="ab-col ${meta.chip !== 'neutral' ? status : ''}">${head}
     ${cardTile(cards[0], { compact: true })}
     ${cards.length > 1 ? `<div class="ab-more">+${cards.length - 1} more</div>` : ''}
   </div>`;

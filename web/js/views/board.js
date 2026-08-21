@@ -18,7 +18,7 @@ function column(status, cards, { boardId, archivedCount, showAllDone }) {
   const meta = STATUS_META[status];
   const head = `<div class="col-head">
     <div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div>
-    ${status === 'inbox' ? `<button type="button" class="col-plus" data-new>${icons.plus()}</button>` : ''}
+    <button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>
   </div>`;
   if (status !== 'done') {
     return `<div class="column ${meta.chip !== 'neutral' ? status : ''} ${status}">${head}
@@ -88,6 +88,10 @@ export async function renderBoard(root, { boards, boardId }) {
     }
     root.querySelectorAll('[data-new]').forEach((b) => {
       b.onclick = () => openCreateDialog({ boards, boardId }, (card) => (location.hash = `#/card/${card.id}`));
+    });
+    root.querySelectorAll('[data-new-in]').forEach((b) => {
+      b.onclick = () =>
+        openCreateDialog({ boards, boardId, targetStatus: b.dataset.newIn }, (card) => (location.hash = `#/card/${card.id}`));
     });
     const showDone = root.querySelector('[data-show-done]');
     if (showDone)

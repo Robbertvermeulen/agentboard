@@ -92,9 +92,9 @@ export async function renderCard(root, { boards, cardId }) {
   }
 
   const timeline = [
-    ...comments.map((c) => ({ at: c.created_at, html: commentCard(c) })),
-    ...events.map((e) => ({ at: e.created_at, html: eventLine(e) })),
-  ].sort((a, b) => a.at.localeCompare(b.at) );
+    ...comments.map((c) => ({ at: c.created_at, kind: 'comment', html: commentCard(c) })),
+    ...events.map((e) => ({ at: e.created_at, kind: 'event', html: eventLine(e) })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
 
   const quick = [];
   if (card.status === 'inbox') quick.push({ label: 'Ready', cls: 'btn-dark', to: 'ready', icon: icons.arrowRight(14, '#fff') });
@@ -175,8 +175,14 @@ export async function renderCard(root, { boards, cardId }) {
               : ''
           }
           <div class="detail-sep"></div>
-          <div class="tl-head"><span class="t">Timeline</span></div>
-          <div class="timeline">${timeline.map((t) => t.html).join('') || '<p class="mut-sm">Nothing yet.</p>'}</div>
+          <div class="tl-head"><span class="t">Timeline</span>
+            <div class="tl-filters">
+              <button type="button" class="tl-filter active" data-filter="all">All</button>
+              <button type="button" class="tl-filter" data-filter="comment">Comments</button>
+              <button type="button" class="tl-filter" data-filter="event">Events</button>
+            </div>
+          </div>
+          <div class="timeline" id="timeline-list">${timeline.map((t) => t.html).join('') || '<p class="mut-sm">Nothing yet.</p>'}</div>
         </div>
         <div class="composer-wrap">
           <div class="composer">
@@ -231,6 +237,14 @@ export async function renderCard(root, { boards, cardId }) {
     </div>
   `;
 
+  const tlList = root.querySelector('#timeline-list');
+  root.querySelectorAll('.tl-filter').forEach((b) => {
+    b.onclick = () => {
+      root.querySelectorAll('.tl-filter').forEach((x) => x.classList.toggle('active', x === b));
+      const items = b.dataset.filter === 'all' ? timeline : timeline.filter((t) => t.kind === b.dataset.filter);
+      tlList.innerHTML = items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>';
+    };
+  });
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
   if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);

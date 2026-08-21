@@ -222,12 +222,15 @@ export function openStatusMenu(card, onDone, anchor) {
 
 /* ---------- create card dialog ---------- */
 
-export function openCreateDialog({ boards, boardId }, onCreated) {
+export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
   const fromAll = !boardId;
   const single = boards.length === 1;
   const preset = boardId ?? (single ? boards[0].id : '');
+  // Cards always land in inbox (core rule); a non-inbox target column means
+  // the dialog also asks the move reason and the UI moves right after create.
+  const needsReason = targetStatus && targetStatus !== 'inbox';
   const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="New card">
-    <div class="create-head"><span class="create-title">New card</span><span class="mut-sm">lands in inbox</span></div>
+    <div class="create-head"><span class="create-title">New card</span><span class="mut-sm">lands in ${needsReason ? esc(targetStatus) : 'inbox'}</span></div>
     <div class="create-body">
       <div class="field">
         <span class="field-label">Type</span>
@@ -257,10 +260,19 @@ export function openCreateDialog({ boards, boardId }, onCreated) {
         <span class="field-label">Labels <span class="field-hint-inline">· optional</span></span>
         <div class="labels-input" id="nc-labels"><input id="nc-label-entry" type="text" placeholder="add label…" autocomplete="off"></div>
       </div>
+      ${
+        needsReason
+          ? `<div class="field">
+              <span class="field-label">Reason <span class="req-note">· required for the move to ${esc(targetStatus)}</span></span>
+              <input id="nc-reason" type="text" placeholder="Why does it start in ${esc(targetStatus)}?" autocomplete="off">
+              <span id="nc-reason-error" class="field-error" hidden>${icons.alert()}<span></span></span>
+            </div>`
+          : ''
+      }
       <div class="create-actions">
         <button type="button" id="nc-create" class="btn-dark" disabled>Create card</button>
         <button type="button" id="nc-cancel" class="btn-ghost">Cancel</button>
-        <span class="create-note">status: inbox · owner: human</span>
+        <span class="create-note">status: inbox${needsReason ? ` → ${esc(targetStatus)}` : ''} · owner: human</span>
       </div>
     </div>
   </div>`);
@@ -272,11 +284,13 @@ export function openCreateDialog({ boards, boardId }, onCreated) {
   const create = el.querySelector('#nc-create');
   const titleError = el.querySelector('#nc-title-error');
   const labelEntry = el.querySelector('#nc-label-entry');
+  const reasonInput = el.querySelector('#nc-reason');
 
-  // Board is validated here (the select is ours); the empty-title error
-  // comes from the API so its exact message is what the user sees.
-  const validate = () => (create.disabled = !board.value);
+  // Board and move-reason are validated here (both are UI constructs); the
+  // empty-title error comes from the API so its exact message is shown.
+  const validate = () => (create.disabled = !board.value || (needsReason && !reasonInput.value.trim()));
   validate();
+  if (reasonInput) reasonInput.oninput = validate;
   const renderLabels = () => {
     el.querySelectorAll('.labels-input .label-chip').forEach((n) => n.remove());
     labels.forEach((l, i) => {
@@ -316,20 +330,32 @@ export function openCreateDialog({ boards, boardId }, onCreated) {
   };
   el.querySelector('#nc-cancel').onclick = closeOverlay;
   create.onclick = async () => {
+    let card;
     try {
-      const card = await api.createCard(board.value, {
+      card = await api.createCard(board.value, {
         type,
         title: title.value,
         body: el.querySelector('#nc-body').value.trim() || undefined,
         labels: labels.length ? labels : undefined,
       });
-      closeOverlay();
-      onCreated(card);
     } catch (err) {
       title.classList.add('invalid');
       titleError.querySelector('span:last-child').textContent = err.message;
       titleError.hidden = false;
+      return;
     }
+    if (needsReason) {
+      try {
+        card = await api.move(card.id, targetStatus, reasonInput.value.trim());
+      } catch (err) {
+        const reasonError = el.querySelector('#nc-reason-error');
+        reasonError.querySelector('span:last-child').textContent = `Created ${card.id} in inbox, but the move failed: ${err.message}`;
+        reasonError.hidden = false;
+        return;
+      }
+    }
+    closeOverlay();
+    onCreated(card);
   };
   title.focus();
 }
