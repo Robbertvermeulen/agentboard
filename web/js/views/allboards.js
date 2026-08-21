@@ -1,4 +1,5 @@
-// All boards, stacked. Desktop: mini columns, empty ones stay a quiet strip.
+// All boards, stacked. Desktop: mini columns styled exactly like the
+// single-board view, tinted even when empty.
 // Mobile: per board only the cards that need you, the rest counted as quiet.
 import { api } from '../api.js';
 import { icons, STATUS_META, STATUSES } from '../icons.js';
@@ -14,16 +15,19 @@ const DAY = 24 * 60 * 60 * 1000;
 // overrides artboard 1g); the stacked structure and quiet strips stay.
 function miniColumn(status, cards) {
   const meta = STATUS_META[status];
+  const tint = status === 'done' ? 'done' : meta.chip !== 'neutral' ? status : '';
   const head = `<div class="col-head"><div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div></div>`;
-  if (cards.length === 0) return `<div class="ab-quiet"><span>${esc(status)}</span><span>—</span></div>`;
-  if (status === 'done') {
+  let body;
+  if (cards.length === 0) {
+    body = `<div class="ab-empty">—</div>`;
+  } else if (status === 'done') {
     const recent = cards.filter((c) => Date.now() - new Date(c.updated_at).getTime() < 7 * DAY).length;
-    return `<div class="ab-col done">${head}<div class="ab-done-note">${recent} in the last 7 days</div></div>`;
+    body = `<div class="ab-done-note">${recent} in the last 7 days</div>`;
+  } else {
+    body = `${cardTile(cards[0], { compact: true })}
+    ${cards.length > 1 ? `<div class="ab-more">+${cards.length - 1} more</div>` : ''}`;
   }
-  return `<div class="ab-col ${meta.chip !== 'neutral' ? status : ''}">${head}
-    ${cardTile(cards[0], { compact: true })}
-    ${cards.length > 1 ? `<div class="ab-more">+${cards.length - 1} more</div>` : ''}
-  </div>`;
+  return `<div class="ab-col ${tint}">${head}${body}</div>`;
 }
 
 export async function renderAllBoards(root, { boards }) {
