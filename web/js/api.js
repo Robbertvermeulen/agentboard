@@ -25,6 +25,7 @@ export const api = {
   artifacts: (id) => req(`/api/cards/${encodeURIComponent(id)}/artifacts`),
   artifactUrl: (id, name) => `/api/cards/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(name)}`,
   ctxTree: () => req('/api/ctx'),
+  ctxDiff: (sha) => req(`/api/ctx-diff/${encodeURIComponent(sha)}`),
   ctxFile: (path) => req(`/api/ctx/${path.split('/').map(encodeURIComponent).join('/')}`),
   uploads: (id) => req(`/api/cards/${encodeURIComponent(id)}/uploads`),
   uploadUrl: (id, name) => `/api/cards/${encodeURIComponent(id)}/uploads/${encodeURIComponent(name)}`,
