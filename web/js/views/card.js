@@ -35,6 +35,12 @@ function eventLine(e) {
   } else if (e.kind === 'context_written') {
     icon = icons.fileText(14, 'var(--green-icon)');
     text = `<span class="kind">context_written</span> by ${esc(e.actor)}: ${esc(e.payload.path)} ${soft(`(${esc(e.payload.message ?? '')})`)}`;
+  } else if (e.kind === 'upload_added') {
+    icon = icons.uploadArrow(14);
+    text = `<span class="kind">upload_added</span> by ${esc(e.actor)}: ${esc(e.payload.name)} ${soft(`(${fmtBytes(e.payload.bytes ?? 0)})`)}`;
+  } else if (e.kind === 'secret_stored') {
+    icon = icons.lock(14, 'var(--green-icon)');
+    text = `<span class="kind">secret_stored</span> by ${esc(e.actor)}: ${esc(String(e.payload.name ?? '').toLowerCase())} ${soft('— value write-only')}`;
   } else {
     const note = String(e.payload.note ?? JSON.stringify(e.payload));
     const m = note.match(/^(.*?)(WAITING:.*)$/s);
@@ -57,6 +63,16 @@ function commentCard(c) {
   </div>`;
 }
 
+function fileRow(cardId, f, urlFn) {
+  const icon = /\.zip$/i.test(f.name) ? icons.folderDown() : IMAGE_EXT.test(f.name) ? icons.image() : icons.fileText(14);
+  return `<div class="art-row">
+    ${icon}
+    <a href="${urlFn(cardId, f.name)}" target="_blank" rel="noopener">${esc(f.name)}</a>
+    <span class="size">${fmtBytes(f.bytes)}</span>
+    <span class="when" title="${esc(absTime(f.mtime))}">${esc(relTime(f.mtime))}</span>
+  </div>`;
+}
+
 function relStatusNote(card) {
   if (card.status === 'review') return `<p class="rs review">in review — ready for your approval</p>`;
   if (card.status === 'needs_input') return `<p class="rs needs_input">in needs_input — waiting on you</p>`;
@@ -65,7 +81,11 @@ function relStatusNote(card) {
 
 export async function renderCard(root, { boards, cardId }) {
   const rerender = () => renderCard(root, { boards, cardId });
-  const [{ card, comments, events }, { artifacts }] = await Promise.all([api.card(cardId), api.artifacts(cardId)]);
+  const [{ card, comments, events }, { artifacts }, { uploads }] = await Promise.all([
+    api.card(cardId),
+    api.artifacts(cardId),
+    api.uploads(cardId),
+  ]);
   const board = boards.find((b) => b.id === card.board_id);
 
   // Linked cards from refs, grouped by how the label reads.
@@ -98,6 +118,17 @@ export async function renderCard(root, { boards, cardId }) {
       /* file may be gone */
     }
   }
+
+  // Secrets are write-only; the UI only ever knows names, via the events.
+  const storedSecrets = [
+    ...new Set(events.filter((e) => e.kind === 'secret_stored').map((e) => String(e.payload.name ?? '').toLowerCase())),
+  ];
+  const requestedSecrets = (card.body?.match(/^secret_ref:\s*(.+)$/m)?.[1] ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const showSecretIntake = card.type === 'ops' && card.status !== 'done' && card.status !== 'archived';
+  const canUpload = card.status !== 'done' && card.status !== 'archived';
 
   const timeline = [
     ...comments.map((c) => ({ at: c.created_at, kind: 'comment', author: c.author, html: commentCard(c) })),
@@ -173,23 +204,44 @@ export async function renderCard(root, { boards, cardId }) {
                 </div>`
               : ''
           }
-          ${
-            artifacts.length
-              ? `<div class="artifacts">
-                  <div class="art-head">${icons.archive()}<span class="t">Artifacts</span><span class="p">artifacts/${esc(card.id)}/</span><span class="n">${artifacts.length} file${artifacts.length === 1 ? '' : 's'}</span></div>
-                  ${artifacts
-                    .map(
-                      (a) => `<div class="art-row">
-                        ${IMAGE_EXT.test(a.name) ? icons.image() : icons.fileText(14)}
-                        <a href="${api.artifactUrl(card.id, a.name)}" target="_blank" rel="noopener">${esc(a.name)}</a>
-                        <span class="size">${fmtBytes(a.bytes)}</span>
-                        <span class="when" title="${esc(absTime(a.mtime))}">${esc(relTime(a.mtime))}</span>
-                      </div>`
-                    )
-                    .join('')}
-                </div>`
-              : ''
-          }
+          <div class="files-wrap">
+            ${
+              canUpload || uploads.length
+                ? `<div class="artifacts">
+                    <div class="art-headwrap">
+                      <div class="art-head">${icons.uploadArrow()}<span class="t">Uploads</span><span class="p">uploads/${esc(card.id)}/</span><span class="n">${uploads.length} file${uploads.length === 1 ? '' : 's'}</span></div>
+                      <p class="art-cap">what went in — you → agent</p>
+                    </div>
+                    ${
+                      canUpload
+                        ? `<div class="dropzone${card.type === 'ops' ? ' compact' : ''}" id="dropzone">
+                            ${icons.trayUp(card.type === 'ops' ? 18 : 20)}
+                            <div class="dz-text">
+                              <span class="dz-main">Drop files, folders or a .zip${card.type === 'ops' ? '' : ' here'}</span>
+                              <span class="dz-sub">${card.type === 'ops' ? 'never for secrets — use the form below' : 'multiple files and whole folders are kept as one batch'}</span>
+                            </div>
+                            <button type="button" class="dz-browse" id="dz-browse">Browse…</button>
+                            <input type="file" id="dz-input" multiple hidden>
+                          </div>`
+                        : ''
+                    }
+                    <div id="staged-wrap"></div>
+                    ${uploads.map((f) => fileRow(card.id, f, api.uploadUrl)).join('')}
+                  </div>`
+                : ''
+            }
+            ${
+              artifacts.length
+                ? `<div class="artifacts">
+                    <div class="art-headwrap">
+                      <div class="art-head">${icons.archive()}<span class="t">Artifacts</span><span class="p">artifacts/${esc(card.id)}/</span><span class="n">${artifacts.length} file${artifacts.length === 1 ? '' : 's'}</span></div>
+                      <p class="art-cap">what came out — agent → you · read-only</p>
+                    </div>
+                    ${artifacts.map((a) => fileRow(card.id, a, api.artifactUrl)).join('')}
+                  </div>`
+                : ''
+            }
+          </div>
           <div class="detail-sep"></div>
           <div class="tl-head"><span class="t">Timeline</span>
             <div class="tl-filters">
@@ -198,6 +250,48 @@ export async function renderCard(root, { boards, cardId }) {
               <button type="button" class="tl-filter" data-filter="event">Events</button>
             </div>
           </div>
+          ${
+            showSecretIntake
+              ? `<div class="secret-box">
+                  <div class="sb-head">
+                    ${
+                      requestedSecrets.length
+                        ? `<span class="cc-avatar agent">${icons.bot(12)}</span><span class="t">agent asks for ${requestedSecrets.length} secret${requestedSecrets.length === 1 ? '' : 's'}</span>
+                           <span class="sb-req">${icons.clock(11)}action required</span>`
+                        : `${icons.lock(14, 'var(--mut)')}<span class="t">Store a secret</span>`
+                    }
+                  </div>
+                  ${
+                    requestedSecrets.length || storedSecrets.length
+                      ? `<div class="sb-chips">
+                          ${requestedSecrets
+                            .map((n) =>
+                              storedSecrets.includes(n)
+                                ? `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`
+                                : `<button type="button" class="sb-prefill" data-name="${esc(n)}">${esc(n)}</button>`
+                            )
+                            .join('')}
+                          ${storedSecrets
+                            .filter((n) => !requestedSecrets.includes(n))
+                            .map((n) => `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`)
+                            .join('')}
+                        </div>`
+                      : ''
+                  }
+                  <div class="sb-row">
+                    <div class="sb-f"><span>name</span><input id="sec-name" class="mono" autocomplete="off" spellcheck="false" placeholder="e.g. ssh_acme_web"></div>
+                    <div class="sb-f value"><span>value</span><input id="sec-value" type="password" autocomplete="new-password" placeholder="Paste or type the value"></div>
+                    <button type="button" class="sb-keyfile" id="sec-file-btn">${icons.file(12)}<span>or a key file</span></button>
+                    <input type="file" id="sec-file" hidden>
+                  </div>
+                  <div class="sb-actions">
+                    <button type="button" id="sec-store" class="btn-dark">${icons.lock(13, '#fff')}Store secret</button>
+                    <span id="sec-error" class="field-error" hidden>${icons.alert()}<span></span></span>
+                    <span class="sb-note">${icons.lock(11)}write-only · same name overwrites</span>
+                  </div>
+                </div>`
+              : ''
+          }
           <div class="timeline" id="timeline-list">${timeline.map((t) => t.html).join('') || '<p class="mut-sm">Nothing yet.</p>'}</div>
           ${
             queued
@@ -228,6 +322,14 @@ export async function renderCard(root, { boards, cardId }) {
         <div class="prop-row"><span class="k">Board</span><span class="v">${esc(board?.name ?? card.board_id)}</span></div>
         ${card.labels?.length ? `<div class="prop-row top"><span class="k">Labels</span><span class="v">${labelChips(card.labels)}</span></div>` : ''}
         <div class="prop-row"><span class="k">Updated</span><span class="v plain" title="${esc(absTime(card.updated_at))}">${esc(relTime(card.updated_at))}</span></div>
+        ${
+          storedSecrets.length
+            ? `<div class="sep"></div>
+               <span class="rel-heading">SECRETS <span class="secrets-sub">${storedSecrets.length} · local vault</span></span>
+               ${storedSecrets.map((n) => `<span class="secret-name-chip">${icons.lock(11, 'var(--green-icon)')}${esc(n)}</span>`).join('')}
+               <span class="secrets-sub">names only — no view, no copy, no edit</span>`
+            : ''
+        }
         ${['blocked by', 'unblocks', 'linked']
           .filter((k) => groups[k].length)
           .map(
@@ -292,6 +394,133 @@ export async function renderCard(root, { boards, cardId }) {
       input.focus();
     };
 
+  // --- uploads: stage locally, then one batch POST ---
+  const staged = [];
+  const dropzone = root.querySelector('#dropzone');
+  if (dropzone) {
+    const dzInput = root.querySelector('#dz-input');
+    const stagedWrap = root.querySelector('#staged-wrap');
+    const renderStaged = (error) => {
+      if (!staged.length) {
+        stagedWrap.innerHTML = '';
+        return;
+      }
+      const total = staged.reduce((n, f) => n + f.size, 0);
+      stagedWrap.innerHTML = `<div class="staged">
+        <div class="staged-head"><span class="t">${staged.length} file${staged.length === 1 ? '' : 's'} staged</span><span class="sz">${fmtBytes(total)}</span></div>
+        ${staged.map((f) => `<div class="staged-row"><span class="nm">${esc(f.name)}</span><span class="sz">${fmtBytes(f.size)}</span></div>`).join('')}
+        <div class="staged-actions">
+          <button type="button" id="upload-batch" class="btn-dark sm">Upload batch</button>
+          <span class="hint">uploads are permanent — a wrong file is superseded, never deleted</span>
+        </div>
+        ${error ? `<p class="field-error staged-error">${esc(error)}</p>` : ''}
+      </div>`;
+      stagedWrap.querySelector('#upload-batch').onclick = async () => {
+        if (staged.reduce((n, f) => n + f.size, 0) > 50 * 1024 * 1024) {
+          renderStaged('Too large: max 50 MB per upload batch');
+          return;
+        }
+        try {
+          await api.uploadFiles(card.id, staged);
+          staged.length = 0;
+          rerender();
+        } catch (err) {
+          renderStaged(err.message);
+        }
+      };
+    };
+    const stage = (files) => {
+      staged.push(...files);
+      renderStaged();
+    };
+    // Dropped folders become their files, flattened to plain names.
+    const filesFromDrop = async (dt) => {
+      const out = [];
+      const walk = (entry) =>
+        new Promise((resolve) => {
+          if (entry.isFile) entry.file((f) => (out.push(f), resolve()), resolve);
+          else if (entry.isDirectory)
+            entry.createReader().readEntries(async (entries) => {
+              for (const e of entries) await walk(e);
+              resolve();
+            }, resolve);
+          else resolve();
+        });
+      const entries = [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+      if (!entries.length) return [...dt.files];
+      for (const e of entries) await walk(e);
+      return out;
+    };
+    root.querySelector('#dz-browse').onclick = () => dzInput.click();
+    dropzone.onclick = (e) => {
+      if (e.target === dropzone || e.target.closest('.dz-text')) dzInput.click();
+    };
+    dzInput.onchange = () => {
+      stage([...dzInput.files]);
+      dzInput.value = '';
+    };
+    dropzone.ondragover = (e) => {
+      e.preventDefault();
+      dropzone.classList.add('over');
+    };
+    dropzone.ondragleave = () => dropzone.classList.remove('over');
+    dropzone.ondrop = async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('over');
+      stage(await filesFromDrop(e.dataTransfer));
+    };
+  }
+
+  // --- secret intake: write-only, value cleared the moment it is submitted ---
+  const secName = root.querySelector('#sec-name');
+  const secValue = root.querySelector('#sec-value');
+  if (secName) {
+    const secFile = root.querySelector('#sec-file');
+    const secError = root.querySelector('#sec-error');
+    let keyFile = null;
+    root.querySelectorAll('.sb-prefill').forEach((b) => {
+      b.onclick = () => {
+        secName.value = b.dataset.name;
+        (keyFile ? secName : secValue).focus();
+      };
+    });
+    root.querySelector('#sec-file-btn').onclick = () => secFile.click();
+    secFile.onchange = () => {
+      keyFile = secFile.files[0] ?? null;
+      secValue.value = '';
+      secValue.disabled = !!keyFile;
+      secValue.placeholder = keyFile ? `key file: ${keyFile.name}` : 'Paste or type the value';
+      secFile.value = '';
+    };
+    root.querySelector('#sec-store').onclick = async () => {
+      const name = secName.value.trim();
+      let value;
+      let encoding;
+      if (keyFile) {
+        const bytes = new Uint8Array(await keyFile.arrayBuffer());
+        let bin = '';
+        for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+        value = btoa(bin);
+        encoding = 'base64';
+      } else {
+        value = secValue.value;
+      }
+      // The value leaves the fields before the request even settles.
+      secValue.value = '';
+      secValue.disabled = false;
+      secValue.placeholder = 'Paste or type the value';
+      keyFile = null;
+      secError.hidden = true;
+      try {
+        await api.storeSecret(card.id, { name, value, encoding });
+        rerender();
+      } catch (err) {
+        secError.querySelector('span:last-child').textContent = err.message;
+        secError.hidden = false;
+      }
+    };
+  }
+
   // Light liveness: poll the card every 30s, rerender only on a real change
   // (fingerprint), and never while the composer has focus or text — a
   // pending change waits for blur/empty. Composer text survives a rerender.
@@ -301,9 +530,13 @@ export async function renderCard(root, { boards, cardId }) {
     }`;
   const shownFp = fingerprint({ card, comments, events });
   let changePending = false;
+  // Half-typed secrets and staged files block a background rerender too.
+  const dirty = () =>
+    staged.length > 0 ||
+    [input, secName, secValue].some((el) => el && (document.activeElement === el || el.value.trim()));
   const tryRefresh = async () => {
     if (!changePending) return;
-    if (document.activeElement === input || input.value.trim()) return;
+    if (dirty()) return;
     const saved = input.value;
     const scroller = root.querySelector('.detail-scroll');
     const savedScroll = { pane: scroller?.scrollTop ?? 0, win: window.scrollY };
