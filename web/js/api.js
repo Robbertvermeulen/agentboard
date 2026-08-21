@@ -26,4 +26,14 @@ export const api = {
   artifactUrl: (id, name) => `/api/cards/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(name)}`,
   ctxTree: () => req('/api/ctx'),
   ctxFile: (path) => req(`/api/ctx/${path.split('/').map(encodeURIComponent).join('/')}`),
+  uploads: (id) => req(`/api/cards/${encodeURIComponent(id)}/uploads`),
+  uploadUrl: (id, name) => `/api/cards/${encodeURIComponent(id)}/uploads/${encodeURIComponent(name)}`,
+  uploadFiles: (id, files) => {
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f, f.name);
+    return req(`/api/cards/${encodeURIComponent(id)}/uploads`, { method: 'POST', body: fd });
+  },
+  // Write-only by design: there is no call that reads a secret back.
+  storeSecret: (id, { name, value, encoding }) =>
+    req(`/api/cards/${encodeURIComponent(id)}/secrets`, json('POST', { name, value, encoding })),
 };

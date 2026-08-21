@@ -7,12 +7,30 @@ import { simpleGit } from 'simple-git';
 export const STATUSES = ['inbox', 'ready', 'doing', 'needs_input', 'review', 'done', 'archived'] as const;
 export const TYPES = ['task', 'ops'] as const;
 export const ACTORS = ['human', 'agent'] as const;
-export const EVENT_KINDS = ['status_changed', 'action_taken', 'context_written', 'error'] as const;
+export const EVENT_KINDS = [
+  'status_changed',
+  'action_taken',
+  'context_written',
+  'error',
+  'upload_added',
+  'secret_stored',
+] as const;
 
 export type Status = (typeof STATUSES)[number];
 export type CardType = (typeof TYPES)[number];
 export type Actor = (typeof ACTORS)[number];
 export type EventKind = (typeof EVENT_KINDS)[number];
+
+// Shared between SCHEMA and the event-table rebuild in initData: the CHECK
+// must list every event kind, and SQLite cannot alter a CHECK in place.
+const EVENT_TABLE_BODY = `
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id    TEXT NOT NULL REFERENCES card(id),
+  kind       TEXT NOT NULL CHECK (kind IN (${EVENT_KINDS.map((k) => `'${k}'`).join(',')})),
+  actor      TEXT NOT NULL CHECK (actor IN ('human','agent')),
+  payload    TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL
+`;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS board (
@@ -44,14 +62,7 @@ CREATE TABLE IF NOT EXISTS comment (
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS event (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id    TEXT NOT NULL REFERENCES card(id),
-  kind       TEXT NOT NULL CHECK (kind IN ('status_changed','action_taken','context_written','error')),
-  actor      TEXT NOT NULL CHECK (actor IN ('human','agent')),
-  payload    TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL
-);
+CREATE TABLE IF NOT EXISTS event (${EVENT_TABLE_BODY});
 `;
 
 export function dataDir(): string {
@@ -115,6 +126,24 @@ export async function initData(opts?: {
   if (!cardCols.some((c) => c.name === 'board_id')) {
     db.exec(`ALTER TABLE card ADD COLUMN board_id TEXT NOT NULL DEFAULT '${boardId}'`);
     created.push(`card.board_id (existing cards -> board '${boardId}')`);
+  }
+
+  // Migration: event tables from before uploads/secrets have a CHECK that
+  // rejects the new kinds. SQLite cannot alter a CHECK, so rebuild the
+  // table once, in one transaction. Idempotent: rerunning init is a no-op.
+  const eventSql = (db.prepare("SELECT sql FROM sqlite_master WHERE name = 'event'").get() as { sql: string } | undefined)
+    ?.sql;
+  if (eventSql && !eventSql.includes('upload_added')) {
+    db.exec(`
+      BEGIN;
+      CREATE TABLE event_new (${EVENT_TABLE_BODY});
+      INSERT INTO event_new (id, card_id, kind, actor, payload, created_at)
+        SELECT id, card_id, kind, actor, payload, created_at FROM event;
+      DROP TABLE event;
+      ALTER TABLE event_new RENAME TO event;
+      COMMIT;
+    `);
+    created.push('event table rebuilt (new kinds: upload_added, secret_stored)');
   }
   if (!db.prepare('SELECT 1 FROM board LIMIT 1').get()) {
     db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run(
