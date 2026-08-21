@@ -127,7 +127,10 @@ export async function renderCard(root, { boards, cardId }) {
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  const showSecretIntake = card.type === 'ops' && card.status !== 'done' && card.status !== 'archived';
+  // Only when the agent asked (a secret_ref line in the body) — an ops
+  // card without a request gets no intake form.
+  const showSecretIntake =
+    card.type === 'ops' && card.status !== 'done' && card.status !== 'archived' && requestedSecrets.length > 0;
   const canUpload = card.status !== 'done' && card.status !== 'archived';
 
   const timeline = [
@@ -218,7 +221,7 @@ export async function renderCard(root, { boards, cardId }) {
                             ${icons.trayUp(card.type === 'ops' ? 18 : 20)}
                             <div class="dz-text">
                               <span class="dz-main">Drop files, folders or a .zip${card.type === 'ops' ? '' : ' here'}</span>
-                              <span class="dz-sub">${card.type === 'ops' ? 'never for secrets — use the form below' : 'multiple files and whole folders are kept as one batch'}</span>
+                              <span class="dz-sub">${card.type === 'ops' ? `never for secrets${showSecretIntake ? ' — use the form below' : ''}` : 'multiple files and whole folders are kept as one batch'}</span>
                             </div>
                             <button type="button" class="dz-browse" id="dz-browse">Browse…</button>
                             <input type="file" id="dz-input" multiple hidden>
@@ -254,30 +257,22 @@ export async function renderCard(root, { boards, cardId }) {
             showSecretIntake
               ? `<div class="secret-box">
                   <div class="sb-head">
-                    ${
-                      requestedSecrets.length
-                        ? `<span class="cc-avatar agent">${icons.bot(12)}</span><span class="t">agent asks for ${requestedSecrets.length} secret${requestedSecrets.length === 1 ? '' : 's'}</span>
-                           <span class="sb-req">${icons.clock(11)}action required</span>`
-                        : `${icons.lock(14, 'var(--mut)')}<span class="t">Store a secret</span>`
-                    }
+                    <span class="cc-avatar agent">${icons.bot(12)}</span><span class="t">agent asks for ${requestedSecrets.length} secret${requestedSecrets.length === 1 ? '' : 's'}</span>
+                    <span class="sb-req">${icons.clock(11)}action required</span>
                   </div>
-                  ${
-                    requestedSecrets.length || storedSecrets.length
-                      ? `<div class="sb-chips">
-                          ${requestedSecrets
-                            .map((n) =>
-                              storedSecrets.includes(n)
-                                ? `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`
-                                : `<button type="button" class="sb-prefill" data-name="${esc(n)}">${esc(n)}</button>`
-                            )
-                            .join('')}
-                          ${storedSecrets
-                            .filter((n) => !requestedSecrets.includes(n))
-                            .map((n) => `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`)
-                            .join('')}
-                        </div>`
-                      : ''
-                  }
+                  <div class="sb-chips">
+                    ${requestedSecrets
+                      .map((n) =>
+                        storedSecrets.includes(n)
+                          ? `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`
+                          : `<button type="button" class="sb-prefill" data-name="${esc(n)}">${esc(n)}</button>`
+                      )
+                      .join('')}
+                    ${storedSecrets
+                      .filter((n) => !requestedSecrets.includes(n))
+                      .map((n) => `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`)
+                      .join('')}
+                  </div>
                   <div class="sb-row">
                     <div class="sb-f"><span>name</span><input id="sec-name" class="mono" autocomplete="off" spellcheck="false" placeholder="e.g. ssh_acme_web"></div>
                     <div class="sb-f value"><span>value</span><input id="sec-value" type="password" autocomplete="new-password" placeholder="Paste or type the value"></div>
