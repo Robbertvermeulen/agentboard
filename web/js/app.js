@@ -5,7 +5,7 @@ import { esc } from './util.js';
 import { closeOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
-import { renderCard } from './views/card.js';
+import { renderCard, stopCardPolling } from './views/card.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
 
@@ -75,6 +75,7 @@ function renderError(err) {
 
 async function route() {
   closeOverlay();
+  stopCardPolling();
   const r = parseRoute();
   renderTabbar(r);
   try {

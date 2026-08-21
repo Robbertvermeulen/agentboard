@@ -16,6 +16,14 @@ import {
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
 
+// One poll loop at most, only while a card detail is open; the router
+// stops it on every route change.
+let pollTimer = null;
+export function stopCardPolling() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
 function eventLine(e) {
   const soft = (t) => `<span class="soft">${t}</span>`;
   const when = `<span class="soft" title="${esc(absTime(e.created_at))}">· ${esc(relTime(e.created_at))}</span>`;
@@ -92,9 +100,17 @@ export async function renderCard(root, { boards, cardId }) {
   }
 
   const timeline = [
-    ...comments.map((c) => ({ at: c.created_at, kind: 'comment', html: commentCard(c) })),
-    ...events.map((e) => ({ at: e.created_at, kind: 'event', html: eventLine(e) })),
+    ...comments.map((c) => ({ at: c.created_at, kind: 'comment', author: c.author, html: commentCard(c) })),
+    ...events.map((e) => ({ at: e.created_at, kind: 'event', author: e.actor, html: eventLine(e) })),
   ].sort((a, b) => a.at.localeCompare(b.at));
+
+  // Fact, not activity claim: input lies ready for the agent. Derived from
+  // the timeline alone — the human has the last word, or the card is ready.
+  const last = timeline.at(-1);
+  const queued =
+    card.status !== 'done' &&
+    card.status !== 'archived' &&
+    (card.status === 'ready' || (last?.kind === 'comment' && last.author === 'human'));
 
   const quick = [];
   if (card.status === 'inbox') quick.push({ label: 'Ready', cls: 'btn-dark', to: 'ready', icon: icons.arrowRight(14, '#fff') });
@@ -183,6 +199,11 @@ export async function renderCard(root, { boards, cardId }) {
             </div>
           </div>
           <div class="timeline" id="timeline-list">${timeline.map((t) => t.html).join('') || '<p class="mut-sm">Nothing yet.</p>'}</div>
+          ${
+            queued
+              ? `<div class="event-row queued-line">${statusIcon('ready', 14, 'var(--mut-2)')}${icons.bot(14, 'var(--mut-2)')}<p>Queued for the agent — picked up at the next agent session.</p></div>`
+              : ''
+          }
         </div>
         <div class="composer-wrap">
           <div class="composer">
@@ -270,4 +291,32 @@ export async function renderCard(root, { boards, cardId }) {
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       input.focus();
     };
+
+  // Light liveness: poll the card every 30s, rerender only on a real change
+  // (fingerprint), and never while the composer has focus or text — a
+  // pending change waits for blur/empty. Composer text survives a rerender.
+  const fingerprint = (d) =>
+    `${d.card.updated_at}|${d.comments.length}|${d.events.length}|${
+      [...d.comments, ...d.events].map((x) => x.created_at).sort().at(-1) ?? ''
+    }`;
+  const shownFp = fingerprint({ card, comments, events });
+  let changePending = false;
+  const tryRefresh = async () => {
+    if (!changePending) return;
+    if (document.activeElement === input || input.value.trim()) return;
+    const saved = input.value;
+    await rerender();
+    const fresh = root.querySelector('#comment-input');
+    if (fresh && saved) fresh.value = saved;
+  };
+  input.addEventListener('blur', tryRefresh);
+  stopCardPolling();
+  pollTimer = setInterval(async () => {
+    try {
+      if (fingerprint(await api.card(cardId)) !== shownFp) changePending = true;
+    } catch {
+      /* server hiccup — try again next tick */
+    }
+    tryRefresh();
+  }, 30000);
 }
