@@ -31,10 +31,14 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    each card is one self-contained question that can be answered,
    verified and approved on its own. Assume nothing exists outside the
    workspace (no files or config on the user's machine); everything
-   arrives through cards. Name the secrets you need in the card body
-   (`secret_ref: name_a, name_b`); the user stores them on the card and
-   you see a `secret_stored` event per name. Values live only in the
-   vault — never ask for one in a comment.
+   arrives through cards. Name the secrets you need in the card body on
+   a line of its own, exactly `secret_ref: name_a, name_b` — the UI
+   turns that line into the intake form; buried mid-sentence it renders
+   nothing. A conditional need (an existing shared key might fit) is
+   still that one line, plus your one clear question — the user answers
+   in a comment or stores the secrets, and you see a `secret_stored`
+   event per stored name. Values live only in the vault — never ask for
+   one in a comment.
 4. Never write a secret into a context file. Only a secret_ref.
 5. Context changes go through an ops card. Write the file, show the user the
    diff, and only ask for approval on what you actually wrote — not on a plan.
