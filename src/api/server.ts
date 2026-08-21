@@ -16,13 +16,16 @@ import {
   nextWork,
 } from '../core/cards.js';
 import { listArtifacts, artifactPath } from '../core/artifacts.js';
-import { listContextFiles, readContext } from '../core/context.js';
+import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
+import { listContextFiles, readContext, storeSecretForCard } from '../core/context.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
 
-// There is deliberately NO secrets endpoint: secrets.env values never
-// travel through the API, in any form.
+// Secrets are write-only through the API: POST stores a value, nothing can
+// ever read one back. Values never travel to the browser, in any form.
+
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 function errorResponse(c: Context, err: unknown) {
   const message = err instanceof Error ? err.message : String(err);
@@ -154,15 +157,71 @@ export function createApp(): Hono {
     }
   });
 
+  const serveStoredFile = (c: Context, abs: string) => {
+    const ext = path.extname(abs).toLowerCase();
+    const inline = ARTIFACT_INLINE[ext];
+    return c.body(new Uint8Array(fs.readFileSync(abs)), 200, {
+      'Content-Type': inline ?? 'application/octet-stream',
+      'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${path.basename(abs)}"`,
+    });
+  };
+
   app.get('/api/cards/:id/artifacts/:file', (c) => {
     try {
-      const abs = artifactPath(c.req.param('id'), c.req.param('file'));
-      const ext = path.extname(abs).toLowerCase();
-      const inline = ARTIFACT_INLINE[ext];
-      return c.body(new Uint8Array(fs.readFileSync(abs)), 200, {
-        'Content-Type': inline ?? 'application/octet-stream',
-        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${path.basename(abs)}"`,
+      return serveStoredFile(c, artifactPath(c.req.param('id'), c.req.param('file')));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/cards/:id/uploads', (c) => {
+    try {
+      return c.json({ uploads: listUploads(c.req.param('id')) });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.post('/api/cards/:id/uploads', async (c) => {
+    try {
+      if (Number(c.req.header('content-length') ?? 0) > MAX_UPLOAD_BYTES) {
+        return c.json({ error: 'Upload too large (max 50 MB per request)' }, 413);
+      }
+      const body = await c.req.parseBody({ all: true });
+      const files = Object.values(body)
+        .flat()
+        .filter((v): v is File => v instanceof File);
+      if (files.length === 0) return c.json({ error: 'No files in request' }, 400);
+      if (files.reduce((n, f) => n + f.size, 0) > MAX_UPLOAD_BYTES) {
+        return c.json({ error: 'Upload too large (max 50 MB per request)' }, 413);
+      }
+      const id = c.req.param('id');
+      for (const f of files) {
+        addUpload(id, f.name, Buffer.from(await f.arrayBuffer()), ACTOR);
+      }
+      return c.json({ uploads: listUploads(id) }, 201);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/cards/:id/uploads/:file', (c) => {
+    try {
+      return serveStoredFile(c, uploadPath(c.req.param('id'), c.req.param('file')));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // Write-only: the response carries name + action, never the value.
+  app.post('/api/cards/:id/secrets', async (c) => {
+    try {
+      const body = await c.req.json();
+      const result = storeSecretForCard(c.req.param('id'), body.name ?? '', body.value ?? '', {
+        actor: ACTOR,
+        encoded: body.encoding === 'base64',
       });
+      return c.json(result, 201);
     } catch (err) {
       return errorResponse(c, err);
     }

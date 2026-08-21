@@ -105,6 +105,30 @@ export async function writeContext(
   }
 }
 
+// Write-only intake for the UI: the value goes into secrets.env, the card
+// gets a secret_stored event carrying the name only — never the value.
+// `encoded` marks a client-side base64'd key file (same 'base64:' mechanism
+// as setSecretFromFile).
+export function storeSecretForCard(
+  cardId: string,
+  name: string,
+  value: string,
+  opts: { actor: string; encoded?: boolean }
+): { name: string; action: 'add' | 'update' } {
+  const actor = assertActor(opts.actor);
+  const db = openDb();
+  try {
+    if (!db.prepare('SELECT 1 FROM card WHERE id = ?').get(cardId)) {
+      throw new Error(`Card not found: ${cardId}`);
+    }
+    const result = setSecret(name, opts.encoded ? 'base64:' + value : value);
+    addEventIn(db, cardId, 'secret_stored', actor, { name: result.name });
+    return result;
+  } finally {
+    db.close();
+  }
+}
+
 // Value must never travel as a CLI argument; the CLI feeds it in via hidden
 // prompt or stdin. A future UI/API calls this same function.
 export function setSecret(name: string, value: string): { name: string; action: 'add' | 'update' } {
