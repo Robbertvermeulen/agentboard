@@ -347,6 +347,8 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .staged-actions .btn-dark.sm { height: 26px; padding: 0 10px; border-radius: 7px; font-size: 12px; font-weight: 600; }
 .staged-actions .hint { font-size: 11px; color: var(--mut); }
 .staged-error { margin: 0; padding: 0 10px 8px; }
+.staged-row .rm { margin-left: auto; display: inline-flex; padding: 2px; }
+.create-dialog .dropzone, .create-dialog .staged { margin: 0; }
 
 /* secret intake: write-only */
 .secret-box {
