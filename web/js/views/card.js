@@ -305,7 +305,12 @@ export async function renderCard(root, { boards, cardId }) {
     if (!changePending) return;
     if (document.activeElement === input || input.value.trim()) return;
     const saved = input.value;
+    const scroller = root.querySelector('.detail-scroll');
+    const savedScroll = { pane: scroller?.scrollTop ?? 0, win: window.scrollY };
     await rerender();
+    const freshScroller = root.querySelector('.detail-scroll');
+    if (freshScroller) freshScroller.scrollTop = savedScroll.pane;
+    window.scrollTo(0, savedScroll.win);
     const fresh = root.querySelector('#comment-input');
     if (fresh && saved) fresh.value = saved;
   };
