@@ -34,7 +34,8 @@ function eventLine(e) {
     text = `<span class="kind">status_changed</span> by ${esc(e.actor)}: ${esc(e.payload.from)} → ${esc(e.payload.to)} ${soft(`(${esc(e.payload.reason ?? '')})`)}`;
   } else if (e.kind === 'context_written') {
     icon = icons.fileText(14, 'var(--green-icon)');
-    text = `<span class="kind">context_written</span> by ${esc(e.actor)}: ${esc(e.payload.path)} ${soft(`(${esc(e.payload.message ?? '')})`)}`;
+    const diffLink = e.payload.commit ? ` <a href="#" class="diff-toggle" data-commit="${esc(e.payload.commit)}">view diff</a>` : '';
+    text = `<span class="kind">context_written</span> by ${esc(e.actor)}: ${esc(e.payload.path)} ${soft(`(${esc(e.payload.message ?? '')})`)}${diffLink}`;
   } else if (e.kind === 'upload_added') {
     icon = icons.uploadArrow(14);
     text = `<span class="kind">upload_added</span> by ${esc(e.actor)}: ${esc(e.payload.name)} ${soft(`(${fmtBytes(e.payload.bytes ?? 0)})`)}`;
@@ -49,6 +50,17 @@ function eventLine(e) {
     text = `<span class="kind">${esc(e.kind)}</span> by ${esc(e.actor)}: ${body}`;
   }
   return `<div class="event-row">${icon}<p>${text} ${when}</p></div>`;
+}
+
+// Patch text → escaped lines with simple +green/-red colouring.
+function diffHtml(diff) {
+  return diff
+    .split('\n')
+    .map((l) => {
+      const cls = l.startsWith('+') && !l.startsWith('+++') ? 'add' : l.startsWith('-') && !l.startsWith('---') ? 'del' : '';
+      return cls ? `<span class="${cls}">${esc(l)}</span>` : esc(l);
+    })
+    .join('\n');
 }
 
 function commentCard(c) {
@@ -399,6 +411,25 @@ export async function renderCard(root, { boards, cardId }) {
       }
     }
   };
+  // Delegated so the links keep working after a filter re-render.
+  tlList.addEventListener('click', async (ev) => {
+    const link = ev.target.closest('.diff-toggle');
+    if (!link) return;
+    ev.preventDefault();
+    const row = link.closest('.event-row');
+    const open = row.nextElementSibling;
+    if (open?.classList.contains('diff-block')) {
+      open.remove();
+      return;
+    }
+    let body;
+    try {
+      body = diffHtml((await api.ctxDiff(link.dataset.commit)).diff);
+    } catch (err) {
+      body = esc(err.message);
+    }
+    row.insertAdjacentHTML('afterend', `<pre class="diff-block">${body}</pre>`);
+  });
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
   if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);

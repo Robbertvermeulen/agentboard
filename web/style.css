@@ -432,6 +432,9 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .event-row .kind { color: var(--ink-3); }
 .event-row .soft { color: var(--mut-2); }
 .event-row .waiting { color: var(--amber-text-2); font-weight: 500; }
+.diff-block { margin: 4px 0 4px 28px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.6; color: var(--mut); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+.diff-block .add { color: var(--green-text); }
+.diff-block .del { color: var(--red-text); }
 /* fact line, quieter than events; deliberately no animation */
 .queued-line { margin-top: 14px; }
 .queued-line p { color: var(--mut-2); }

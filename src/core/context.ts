@@ -98,10 +98,22 @@ export async function writeContext(
     await git.add(relPath);
     const result = await git.commit(message);
 
-    addEventIn(db, opts.cardId, 'context_written', actor, { path: relPath, message, action });
+    addEventIn(db, opts.cardId, 'context_written', actor, { path: relPath, message, action, commit: result.commit });
     return { path: relPath, action, message, commit: result.commit };
   } finally {
     db.close();
+  }
+}
+
+// Read-only: the patch text of exactly one commit in the context repo.
+export async function contextDiff(sha: string): Promise<string> {
+  if (!/^[0-9a-f]{7,40}$/i.test(sha)) {
+    throw new Error(`Invalid commit sha: ${sha}`);
+  }
+  try {
+    return await simpleGit(contextDir()).show([sha]);
+  } catch {
+    throw new Error(`No such commit in the context repo: ${sha}`);
   }
 }
 

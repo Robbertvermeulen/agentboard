@@ -18,7 +18,7 @@ import {
 } from '../core/cards.js';
 import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
-import { listContextFiles, readContext, storeSecretForCard } from '../core/context.js';
+import { contextDiff, listContextFiles, readContext, storeSecretForCard } from '../core/context.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
@@ -240,6 +240,14 @@ export function createApp(): Hono {
   app.get('/api/next', (c) => {
     try {
       return c.json({ cards: nextWork() });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/ctx-diff/:sha', async (c) => {
+    try {
+      return c.json({ diff: await contextDiff(c.req.param('sha')) });
     } catch (err) {
       return errorResponse(c, err);
     }
