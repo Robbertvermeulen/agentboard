@@ -9,7 +9,8 @@ lots of status changes, fast to query). Context lives in markdown + git
 ~/.agentboard/
   board.db              SQLite (all boards)
   secrets.env           chmod 600, never in git
-  artifacts/<card-id>/  card-bound work products, kept forever
+  artifacts/<card-id>/  card-bound work products (agent → you), kept forever
+  uploads/<card-id>/    card-bound input files (you → agent), kept forever
   work/                 disposable workdirs (AGENTBOARD_WORK overrides)
   context/              its own git repo
     _global/            above the boards: user.md (profile), shared connections
@@ -59,10 +60,21 @@ Multiline secrets (SSH keys): `secret set naam --file <pad>` stores the
 file base64 on one line; `secret get naam --out <pad>` writes it back
 (chmod 600). So `AGENTBOARD_DATA` stays one portable package.
 
-## Files: workdir, artifacts, context
+The web UI has the same rule in write-only form: the secret intake on an
+ops card POSTs a value in, and no endpoint can ever read one back —
+secret values never travel to the browser, in any form. The card only
+shows lock-chips with stored names, fed by `secret_stored` events.
 
-Three homes, one decision rule — needed today? → workdir. Belongs to this
-card? → artifacts. Makes the next card smarter? → context.
+## Files: uploads, workdir, artifacts, context
+
+Four homes, one decision rule — input from you? → uploads. Needed today?
+→ workdir. Output belonging to this card? → artifacts. Makes the next
+card smarter? → context.
+
+- **Uploads** (`uploads/<card-id>/`): what went in, you → agent. Added
+  through the UI (drag-drop, multi-file, zips as-is — the agent unpacks
+  deliberately). Permanent: a name conflict gets a suffix, nothing is
+  ever overwritten or deleted. Each file writes an `upload_added` event.
 
 - **Workdir** (`AGENTBOARD_WORK`, default `<data>/work`): disposable,
   reconstructable from context + secrets, excluded from backups.
@@ -129,8 +141,9 @@ per business.
 Comments are for talking to the user.
 
 **event** — `id`, `card_id`, `kind` (status_changed | action_taken |
-context_written | error), `actor` (human|agent), `payload` (JSON),
-`created_at`. Events are the log of what happened.
+context_written | error | upload_added | secret_stored), `actor`
+(human|agent), `payload` (JSON), `created_at`. Events are the log of
+what happened. `secret_stored` carries the name only, never the value.
 
 ## The four invariants (enforced in core, not in the CLI)
 
@@ -193,5 +206,6 @@ user-specific part of the system prompt lives in the data layer:
 `_global/user.md` (who you are, language, writing rules) and per-client
 `_client.md` files. AGENT.md points there; the user fills it in.
 
-No ORM, no HTTP server, no tests, no auth, no sync, no scheduler, no UI.
-Core is a plain module so an API and UI can land on top later.
+No ORM, no tests, no auth, no sync, no scheduler. Core is a plain
+module; the thin Hono API and the no-build web UI (`agentboard serve`)
+sit on top of it.
