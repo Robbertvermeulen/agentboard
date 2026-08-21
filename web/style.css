@@ -216,13 +216,14 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .ab-head .open { font-size: 12px; color: var(--mut); }
 .ab-head .needyou { font-size: 12px; font-weight: 500; color: var(--amber-text); }
 .ab-cols { display: flex; gap: 8px; overflow-x: auto; align-items: stretch; min-height: 280px; }
-.ab-col { width: 244px; flex: none; border-radius: 12px; background: color-mix(in oklch, var(--chip-bg) 60%, #fff); padding: 8px; }
+.ab-col { width: 244px; flex: none; border-radius: 12px; background: color-mix(in oklch, var(--chip-bg) 60%, #fff); padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.ab-col .col-head { margin-bottom: 0; }
 .ab-col.doing { background: color-mix(in oklch, var(--brand) 4%, #fff); }
 .ab-col.needs_input { background: color-mix(in oklch, var(--amber) 9%, #fff); border: 1px solid color-mix(in oklch, var(--amber) 30%, #fff); }
 .ab-col.review { background: color-mix(in oklch, var(--green) 7%, #fff); border: 1px solid color-mix(in oklch, var(--green) 26%, #fff); }
 .ab-col.needs_input .col-count { color: var(--amber-text); font-weight: 500; }
 .ab-col.review .col-count { color: var(--green-text); font-weight: 500; }
-.ab-more { padding: 8px 4px 0; font-size: 11px; color: var(--mut-2); }
+.ab-more { display: block; padding: 0 4px 2px; font-size: 11px; color: var(--mut-2); }
 .ab-col.needs_input .ab-more { color: var(--amber-text-2); }
 .ab-col.review .ab-more { color: var(--green-text); }
 .ab-empty { padding: 2px 6px 6px; font-size: 12px; color: var(--mut-2); }

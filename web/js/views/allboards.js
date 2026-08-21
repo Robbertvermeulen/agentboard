@@ -11,15 +11,17 @@ export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
 
 // Same column heads and tints as the single-board view (user decision,
 // overrides artboard 1g); the stacked structure and quiet strips stay.
-function miniColumn(status, cards) {
+// Max 3 cards per mini column; the "+N more" link opens the board itself.
+function miniColumn(status, cards, boardId) {
   const meta = STATUS_META[status];
   const tint = status === 'done' ? 'done' : meta.chip !== 'neutral' ? status : '';
   const head = `<div class="col-head"><div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div></div>`;
+  const rest = cards.length - 3;
   const body =
     cards.length === 0
       ? `<div class="ab-empty">—</div>`
-      : `${cardTile(cards[0], { compact: true })}
-    ${cards.length > 1 ? `<div class="ab-more">+${cards.length - 1} more</div>` : ''}`;
+      : `${cards.slice(0, 3).map((c) => cardTile(c, { compact: true })).join('')}
+    ${rest > 0 ? `<a class="ab-more" href="#/board/${esc(boardId)}">+${rest} more</a>` : ''}`;
   return `<div class="ab-col ${tint}">${head}${body}</div>`;
 }
 
@@ -54,7 +56,7 @@ export async function renderAllBoards(root, { boards }) {
               <span class="open">${open} open</span>
               ${need > 0 ? `<span class="needyou">${need} need${need === 1 ? 's' : ''} you</span>` : ''}
             </div>
-            <div class="ab-cols">${STATUSES.map((s) => miniColumn(s, columns[s] ?? [])).join('')}</div>
+            <div class="ab-cols">${STATUSES.map((s) => miniColumn(s, columns[s] ?? [], board.id)).join('')}</div>
             <div class="m-sections">
               ${needCards.map((c) => cardTile(c)).join('')}
               ${open - needCards.length > 0 ? `<div class="m-quiet">${needCards.length ? '' : ''}${open - needCards.length} quiet card${open - needCards.length === 1 ? '' : 's'}</div>` : ''}
