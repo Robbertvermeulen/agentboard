@@ -332,6 +332,9 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .event-row .kind { color: var(--ink-3); }
 .event-row .soft { color: var(--mut-2); }
 .event-row .waiting { color: var(--amber-text-2); font-weight: 500; }
+/* fact line, quieter than events; deliberately no animation */
+.queued-line { margin-top: 14px; }
+.queued-line p { color: var(--mut-2); }
 
 /* comment input + quick actions */
 /* 40px padding each side + 880px content = flush with the timeline column */
