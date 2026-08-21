@@ -1,7 +1,7 @@
 // Shared UI vocabulary: chips, card tiles, status menu, reason + create dialogs.
 import { api } from './api.js';
 import { icons, statusIcon, STATUS_META, ALL_STATUSES } from './icons.js';
-import { esc, absTime, ageShort, CARD_ID_RE, isMobile } from './util.js';
+import { esc, absTime, ageShort, fmtBytes, filesFromDrop, CARD_ID_RE, isMobile } from './util.js';
 
 export function idChip(card, { size = 'md' } = {}) {
   const cls = size === 'sm' ? 'id-chip sm' : 'id-chip';
@@ -257,6 +257,19 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
         <textarea id="nc-body" rows="3" placeholder="Context the agent needs before starting…"></textarea>
       </div>
       <div class="field">
+        <span class="field-label">Uploads <span class="field-hint-inline">· optional, what the agent starts from</span></span>
+        <div class="dropzone compact" id="nc-dropzone">
+          ${icons.trayUp(18)}
+          <div class="dz-text">
+            <span class="dz-main">Drop files, folders or a .zip</span>
+            <span class="dz-sub">uploaded when the card is created</span>
+          </div>
+          <button type="button" class="dz-browse" id="nc-dz-browse">Browse…</button>
+          <input type="file" id="nc-dz-input" multiple hidden>
+        </div>
+        <div id="nc-staged"></div>
+      </div>
+      <div class="field">
         <span class="field-label">Labels <span class="field-hint-inline">· optional</span></span>
         <div class="labels-input" id="nc-labels"><input id="nc-label-entry" type="text" placeholder="add label…" autocomplete="off"></div>
       </div>
@@ -328,8 +341,64 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       renderLabels();
     }
   };
+  // Staged uploads: kept local until the card exists, then one batch POST.
+  // Not uploaded yet, so removing a staged file is allowed here.
+  const staged = [];
+  const dropzone = el.querySelector('#nc-dropzone');
+  const dzInput = el.querySelector('#nc-dz-input');
+  const stagedWrap = el.querySelector('#nc-staged');
+  const renderStaged = (error) => {
+    if (!staged.length) {
+      stagedWrap.innerHTML = '';
+      return;
+    }
+    const total = staged.reduce((n, f) => n + f.size, 0);
+    stagedWrap.innerHTML = `<div class="staged">
+      <div class="staged-head"><span class="t">${staged.length} file${staged.length === 1 ? '' : 's'} staged</span><span class="sz">${fmtBytes(total)}</span></div>
+      ${staged
+        .map(
+          (f, i) =>
+            `<div class="staged-row"><span class="nm">${esc(f.name)}</span><span class="sz">${fmtBytes(f.size)}</span><button type="button" class="rm" data-i="${i}" aria-label="Remove ${esc(f.name)}">${icons.x(11)}</button></div>`
+        )
+        .join('')}
+      ${error ? `<p class="field-error staged-error">${esc(error)}</p>` : ''}
+    </div>`;
+    stagedWrap.querySelectorAll('.rm').forEach((b) => {
+      b.onclick = () => {
+        staged.splice(Number(b.dataset.i), 1);
+        renderStaged();
+      };
+    });
+  };
+  const stage = (files) => {
+    staged.push(...files);
+    renderStaged();
+  };
+  el.querySelector('#nc-dz-browse').onclick = () => dzInput.click();
+  dropzone.onclick = (e) => {
+    if (e.target === dropzone || e.target.closest('.dz-text')) dzInput.click();
+  };
+  dzInput.onchange = () => {
+    stage([...dzInput.files]);
+    dzInput.value = '';
+  };
+  dropzone.ondragover = (e) => {
+    e.preventDefault();
+    dropzone.classList.add('over');
+  };
+  dropzone.ondragleave = () => dropzone.classList.remove('over');
+  dropzone.ondrop = async (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('over');
+    stage(await filesFromDrop(e.dataTransfer));
+  };
+
   el.querySelector('#nc-cancel').onclick = closeOverlay;
   create.onclick = async () => {
+    if (staged.reduce((n, f) => n + f.size, 0) > 50 * 1024 * 1024) {
+      renderStaged('Too large: max 50 MB per upload batch');
+      return;
+    }
     let card;
     try {
       card = await api.createCard(board.value, {
@@ -352,6 +421,15 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
         reasonError.querySelector('span:last-child').textContent = `Created ${card.id} in inbox, but the move failed: ${err.message}`;
         reasonError.hidden = false;
         return;
+      }
+    }
+    if (staged.length) {
+      // Card exists either way — on failure just navigate; the card's own
+      // uploads block shows what did or did not arrive.
+      try {
+        await api.uploadFiles(card.id, staged);
+      } catch (err) {
+        console.error(`Upload after creating ${card.id} failed:`, err);
       }
     }
     closeOverlay();
