@@ -9,24 +9,17 @@ import { tabs, needYouCount, openCount } from './board.js';
 
 export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
 
-const DAY = 24 * 60 * 60 * 1000;
-
 // Same column heads and tints as the single-board view (user decision,
 // overrides artboard 1g); the stacked structure and quiet strips stay.
 function miniColumn(status, cards) {
   const meta = STATUS_META[status];
   const tint = status === 'done' ? 'done' : meta.chip !== 'neutral' ? status : '';
   const head = `<div class="col-head"><div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div></div>`;
-  let body;
-  if (cards.length === 0) {
-    body = `<div class="ab-empty">—</div>`;
-  } else if (status === 'done') {
-    const recent = cards.filter((c) => Date.now() - new Date(c.updated_at).getTime() < 7 * DAY).length;
-    body = `<div class="ab-done-note">${recent} in the last 7 days</div>`;
-  } else {
-    body = `${cardTile(cards[0], { compact: true })}
+  const body =
+    cards.length === 0
+      ? `<div class="ab-empty">—</div>`
+      : `${cardTile(cards[0], { compact: true })}
     ${cards.length > 1 ? `<div class="ab-more">+${cards.length - 1} more</div>` : ''}`;
-  }
   return `<div class="ab-col ${tint}">${head}${body}</div>`;
 }
 

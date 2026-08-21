@@ -226,7 +226,6 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .ab-col.needs_input .ab-more { color: var(--amber-text-2); }
 .ab-col.review .ab-more { color: var(--green-text); }
 .ab-empty { padding: 2px 6px 6px; font-size: 12px; color: var(--mut-2); }
-.ab-done-note { padding: 0 4px; font-size: 11px; color: var(--mut-2); }
 .comment-card.flash { animation: comment-flash 1.8s ease-out; }
 @keyframes comment-flash {
   0%, 35% { background: color-mix(in oklch, var(--brand) 9%, #fff); border-color: color-mix(in oklch, var(--brand) 35%, #fff); }
