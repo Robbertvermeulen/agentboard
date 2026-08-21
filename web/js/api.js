@@ -21,6 +21,7 @@ export const api = {
   card: (id) => req(`/api/cards/${encodeURIComponent(id)}`),
   move: (id, status, reason) => req(`/api/cards/${encodeURIComponent(id)}/move`, json('POST', { status, reason })),
   comment: (id, text) => req(`/api/cards/${encodeURIComponent(id)}/comments`, json('POST', { text })),
+  editComment: (id, body) => req(`/api/comments/${encodeURIComponent(id)}`, json('POST', { body })),
   edit: (id, fields) => req(`/api/cards/${encodeURIComponent(id)}`, json('PATCH', fields)),
   artifacts: (id) => req(`/api/cards/${encodeURIComponent(id)}/artifacts`),
   artifactUrl: (id, name) => `/api/cards/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(name)}`,

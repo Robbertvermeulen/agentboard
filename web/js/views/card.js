@@ -53,11 +53,14 @@ function eventLine(e) {
 
 function commentCard(c) {
   const agent = c.author === 'agent';
-  return `<div class="comment-card${agent ? ' agent' : ''}">
+  // Only the author edits; the UI user is the human, so agent comments get no pencil.
+  return `<div class="comment-card${agent ? ' agent' : ''}" data-cid="${c.id}">
     <div class="cc-head">
       <span class="cc-avatar${agent ? ' agent' : ''}">${agent ? icons.bot(12) : icons.user(12)}</span>
       <span class="cc-name">${agent ? 'agent' : 'you'}</span>
       <span class="cc-when" title="${esc(absTime(c.created_at))}">${esc(relTime(c.created_at))}</span>
+      ${c.updated_at ? `<span class="cc-edited" title="${esc(absTime(c.updated_at))}">(edited)</span>` : ''}
+      ${agent ? '' : `<button type="button" class="cc-edit" title="Edit comment">${icons.pencil(12)}</button>`}
     </div>
     <p class="cc-body">${esc(c.body)}</p>
   </div>`;
@@ -363,6 +366,39 @@ export async function renderCard(root, { boards, cardId }) {
       tlList.innerHTML = items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>';
     };
   });
+  // --- comment editing: bare edit, no history — the old text is gone ---
+  // Delegated on the list, so the handlers survive the filter re-renders.
+  tlList.onclick = async (e) => {
+    const cardEl = e.target.closest('.comment-card');
+    if (!cardEl) return;
+    if (e.target.closest('.cc-edit') && !cardEl.querySelector('.cc-editor')) {
+      const comment = comments.find((x) => x.id === Number(cardEl.dataset.cid));
+      cardEl.querySelector('.cc-body').hidden = true;
+      const editor = document.createElement('div');
+      editor.className = 'cc-editor';
+      editor.innerHTML = `<textarea rows="3"></textarea>
+        <div class="cc-editor-actions">
+          <button type="button" class="btn-dark cc-save">Save</button>
+          <button type="button" class="btn-ghost cc-cancel">Cancel</button>
+          <span class="field-error" hidden>${icons.alert()}<span></span></span>
+        </div>`;
+      editor.querySelector('textarea').value = comment.body;
+      cardEl.append(editor);
+      editor.querySelector('textarea').focus();
+    } else if (e.target.closest('.cc-cancel')) {
+      cardEl.querySelector('.cc-editor').remove();
+      cardEl.querySelector('.cc-body').hidden = false;
+    } else if (e.target.closest('.cc-save')) {
+      try {
+        await api.editComment(cardEl.dataset.cid, cardEl.querySelector('.cc-editor textarea').value);
+        rerender();
+      } catch (err) {
+        const error = cardEl.querySelector('.field-error');
+        error.querySelector('span:last-child').textContent = err.message;
+        error.hidden = false;
+      }
+    }
+  };
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
   if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);
@@ -525,9 +561,11 @@ export async function renderCard(root, { boards, cardId }) {
     }`;
   const shownFp = fingerprint({ card, comments, events });
   let changePending = false;
-  // Half-typed secrets and staged files block a background rerender too.
+  // Half-typed secrets, staged files and an open comment editor block a
+  // background rerender too.
   const dirty = () =>
     staged.length > 0 ||
+    !!root.querySelector('.cc-editor') ||
     [input, secName, secValue].some((el) => el && (document.activeElement === el || el.value.trim()));
   const tryRefresh = async () => {
     if (!changePending) return;
