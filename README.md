@@ -44,6 +44,7 @@ agentboard card new --type task --title "Fix DNS record" --body "TTL te hoog" --
 agentboard card move task_a3f2 ready --reason "Ochtendtriage"
 agentboard card show task_a3f2
 agentboard card comment task_a3f2 "Gedaan, TTL nu 300" --as agent
+git diff | agentboard card comment task_a3f2 - --as agent   # '-' reads stdin
 agentboard card log task_a3f2 "Config aangepast op server" --as agent
 agentboard card edit task_a3f2 --labels wp,dns --context-refs chris/vakantiewoningen-nl.md
 

@@ -253,12 +253,13 @@ card
 
 card
   .command('comment <id> <text>')
-  .description('add a comment')
+  .description("add a comment ('-' reads stdin, e.g. to pipe a diff)")
   .option('--as <author>', 'human | agent', 'human')
   .option('--json', 'JSON output')
   .action(
-    run((opts, id: string, text: string) => {
-      const comment = addComment(id, text, opts.as);
+    run(async (opts, id: string, text: string) => {
+      const body = text === '-' ? await readStdin() : text;
+      const comment = addComment(id, body, opts.as);
       output(opts, `Comment added to ${comment.card_id}`, comment);
     })
   );
