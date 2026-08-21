@@ -52,6 +52,25 @@ export function fmtBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Dropped folders become their files, flattened to plain names.
+export async function filesFromDrop(dt) {
+  const out = [];
+  const walk = (entry) =>
+    new Promise((resolve) => {
+      if (entry.isFile) entry.file((f) => (out.push(f), resolve()), resolve);
+      else if (entry.isDirectory)
+        entry.createReader().readEntries(async (entries) => {
+          for (const e of entries) await walk(e);
+          resolve();
+        }, resolve);
+      else resolve();
+    });
+  const entries = [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+  if (!entries.length) return [...dt.files];
+  for (const e of entries) await walk(e);
+  return out;
+}
+
 function inline(md) {
   return esc(md)
     .replace(/`([^`]+)`/g, '<code>$1</code>')

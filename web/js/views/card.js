@@ -1,7 +1,7 @@
 // Card detail: body, chips, artifacts, timeline, composer, properties panel.
 import { api } from '../api.js';
 import { icons, statusIcon } from '../icons.js';
-import { esc, relTime, absTime, fmtBytes, renderMarkdown, CARD_ID_RE } from '../util.js';
+import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, CARD_ID_RE } from '../util.js';
 import {
   idChip,
   statusPill,
@@ -427,24 +427,6 @@ export async function renderCard(root, { boards, cardId }) {
     const stage = (files) => {
       staged.push(...files);
       renderStaged();
-    };
-    // Dropped folders become their files, flattened to plain names.
-    const filesFromDrop = async (dt) => {
-      const out = [];
-      const walk = (entry) =>
-        new Promise((resolve) => {
-          if (entry.isFile) entry.file((f) => (out.push(f), resolve()), resolve);
-          else if (entry.isDirectory)
-            entry.createReader().readEntries(async (entries) => {
-              for (const e of entries) await walk(e);
-              resolve();
-            }, resolve);
-          else resolve();
-        });
-      const entries = [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
-      if (!entries.length) return [...dt.files];
-      for (const e of entries) await walk(e);
-      return out;
     };
     root.querySelector('#dz-browse').onclick = () => dzInput.click();
     dropzone.onclick = (e) => {
