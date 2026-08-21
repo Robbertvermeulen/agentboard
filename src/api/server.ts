@@ -11,6 +11,7 @@ import {
   cardDetail,
   createCard,
   editCard,
+  editComment,
   listBoards,
   moveCard,
   nextWork,
@@ -126,6 +127,15 @@ export function createApp(): Hono {
     try {
       const body = await c.req.json();
       return c.json(addComment(c.req.param('id'), body.text ?? '', ACTOR), 201);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.post('/api/comments/:id', async (c) => {
+    try {
+      const body = await c.req.json();
+      return c.json(editComment(Number(c.req.param('id')), body.body ?? '', ACTOR));
     } catch (err) {
       return errorResponse(c, err);
     }
