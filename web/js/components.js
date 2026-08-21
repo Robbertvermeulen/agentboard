@@ -360,6 +360,71 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
   title.focus();
 }
 
+/* ---------- create board dialog ---------- */
+
+// Live slug suggestion from the name: lowercase, spaces → dashes, invalid
+// chars dropped. Typing in the slug field stops the auto-suggest.
+const slugify = (name) =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+
+export function openBoardDialog(onCreated) {
+  const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="New board">
+    <div class="create-head"><span class="create-title">New board</span></div>
+    <div class="create-body">
+      <div class="field">
+        <span class="field-label">Name</span>
+        <input id="nb-name" type="text" placeholder="Client or project name" autocomplete="off">
+      </div>
+      <div class="field">
+        <span class="field-label">Slug <span class="field-hint-inline">· lowercase letters, digits, dashes</span></span>
+        <input id="nb-slug" type="text" class="mono" autocomplete="off" spellcheck="false">
+        <span id="nb-error" class="field-error" hidden>${icons.alert()}<span></span></span>
+      </div>
+      <div class="create-actions">
+        <button type="button" id="nb-create" class="btn-dark" disabled>Create board</button>
+        <button type="button" id="nb-cancel" class="btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>`);
+
+  const name = el.querySelector('#nb-name');
+  const slug = el.querySelector('#nb-slug');
+  const create = el.querySelector('#nb-create');
+  const error = el.querySelector('#nb-error');
+
+  let slugTouched = false;
+  const clearError = () => {
+    error.hidden = true;
+    slug.classList.remove('invalid');
+    create.disabled = !slug.value.trim();
+  };
+  name.oninput = () => {
+    if (!slugTouched) slug.value = slugify(name.value);
+    clearError();
+  };
+  slug.oninput = () => {
+    slugTouched = true;
+    clearError();
+  };
+  el.querySelector('#nb-cancel').onclick = closeOverlay;
+  create.onclick = async () => {
+    try {
+      const board = await api.createBoard(slug.value.trim(), name.value.trim() || undefined);
+      closeOverlay();
+      onCreated(board);
+    } catch (err) {
+      slug.classList.add('invalid');
+      error.querySelector('span:last-child').textContent = err.message;
+      error.hidden = false;
+    }
+  };
+  name.focus();
+}
+
 /* ---------- shared breadcrumb ---------- */
 
 export function crumb(parts) {
