@@ -89,6 +89,18 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     (`kind: resource`, a `file:` field) as the findable item, committed
     per rule 5 / invariant 3. Context is not an archive: a deliverable's
     default destination is its channel plus an event.
+14. The machine you run on is a workbench, not part of the workspace.
+    Installing a tool is fine — the connection file names the tool and
+    how to install it, so any host can reconstruct the setup. But the
+    state a tool needs — tokens, config, auth — never lives only on the
+    machine: it lives in the vault as secrets (named in the connection
+    file's `secret_ref`) and is materialized at use, the way
+    `secret get --out` rebuilds a key file. One-time interactive auth
+    (an OAuth consent) is the user's step: park exact instructions on
+    the card (needs_input) and have the durable token stored in the
+    vault, not in the tool's config dir. A tool that cannot externalize
+    its state this way is a blocker to raise on the card — not a
+    licence for machine-local state.
 
 ## Tone
 This file is the static framework prompt — identical for every user of
