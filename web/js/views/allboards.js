@@ -4,7 +4,7 @@
 import { api } from '../api.js';
 import { icons, STATUS_META, STATUSES } from '../icons.js';
 import { esc } from '../util.js';
-import { cardTile, statusPill, openCreateDialog, crumb } from '../components.js';
+import { cardTile, statusPill, openCreateDialog, openBoardDialog, crumb } from '../components.js';
 import { tabs, needYouCount, openCount } from './board.js';
 
 export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
@@ -37,6 +37,7 @@ export async function renderAllBoards(root, { boards }) {
       ${tabs(boards, null)}
       ${totalNeed > 0 ? `<span class="needsme-chip"><span class="dot"></span>${totalNeed} need you across ${boardsWithNeed} board${boardsWithNeed === 1 ? '' : 's'}</span>` : `<span class="allclear-chip">${icons.allClear(16)}Nothing waiting on you</span>`}
       <button type="button" class="btn-new" data-new>${icons.plus(14, '#fff')}New card</button>
+      <button type="button" class="btn-ghost" data-new-board>${icons.plus(14, 'currentColor')}New board</button>
     </div>
     <div class="m-head">
       <div class="row"><span class="title">All boards</span><button type="button" class="m-new" data-new>${icons.plus(13, '#fff')}New</button></div>
@@ -69,4 +70,5 @@ export async function renderAllBoards(root, { boards }) {
   root.querySelectorAll('[data-new]').forEach((b) => {
     b.onclick = () => openCreateDialog({ boards, boardId: null }, (card) => (location.hash = `#/card/${card.id}`));
   });
+  root.querySelector('[data-new-board]').onclick = () => openBoardDialog((board) => (location.hash = `#/board/${board.id}`));
 }

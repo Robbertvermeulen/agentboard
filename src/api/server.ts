@@ -9,6 +9,7 @@ import {
   archivedCards,
   boardView,
   cardDetail,
+  createBoard,
   createCard,
   editCard,
   editComment,
@@ -69,6 +70,16 @@ export function createApp(): Hono {
   app.get('/api/boards', (c) => {
     try {
       return c.json({ boards: listBoards() });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // No event: boards have no timeline. Slug/duplicate checks live in createBoard.
+  app.post('/api/boards', async (c) => {
+    try {
+      const body = await c.req.json();
+      return c.json(createBoard(body.id ?? '', body.name || undefined), 201);
     } catch (err) {
       return errorResponse(c, err);
     }

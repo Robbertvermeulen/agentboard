@@ -15,6 +15,7 @@ const json = (method, body) => ({
 
 export const api = {
   boards: () => req('/api/boards'),
+  createBoard: (id, name) => req('/api/boards', json('POST', { id, name })),
   board: (id) => req(`/api/boards/${encodeURIComponent(id)}`),
   archived: (id) => req(`/api/boards/${encodeURIComponent(id)}/archived`),
   createCard: (board, data) => req(`/api/boards/${encodeURIComponent(board)}/cards`, json('POST', data)),
