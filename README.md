@@ -147,7 +147,9 @@ per business.
 `body`, `status` (inbox|ready|doing|needs_input|review|done|archived),
 `owner` (human|agent), `labels` (JSON array), `refs` (JSON array
 `[{label, url?, note?}]`, deliberately unstructured), `context_refs`
-(JSON array of context paths), `blocked_by` (JSON array of card ids; a card with an open blocker is skipped by `next`), `created_at`, `updated_at`.
+(JSON array of context paths), `blocked_by` (JSON array of card ids;
+a card with an open blocker is skipped by `next`), `created_at`,
+`updated_at`.
 
 **comment** — `id`, `card_id`, `author` (human|agent), `body`, `created_at`.
 Comments are for talking to the user.
