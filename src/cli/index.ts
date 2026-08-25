@@ -304,6 +304,7 @@ card
   .option('--labels <labels>', 'comma-separated, empty string clears')
   .option('--refs <json>', 'JSON array [{label, url?, note?}]')
   .option('--context-refs <paths>', 'comma-separated context paths, empty string clears')
+  .option('--blocked-by <ids>', 'comma-separated card ids that block this card, empty string clears')
   .option('--board <id>', 'move card to another board')
   .option('--json', 'JSON output')
   .action(
@@ -314,6 +315,7 @@ card
         labels: opts.labels !== undefined ? splitList(opts.labels) : undefined,
         refs: opts.refs !== undefined ? parseJsonArray(opts.refs, 'refs') : undefined,
         contextRefs: opts.contextRefs !== undefined ? splitList(opts.contextRefs) : undefined,
+        blockedBy: opts.blockedBy !== undefined ? splitList(opts.blockedBy) : undefined,
         board: opts.board,
       });
       output(opts, `Updated ${c.id}`, c);

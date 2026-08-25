@@ -113,6 +113,25 @@ function getCardIn(db: Database.Database, id: string): Card {
   return rowToCard(row);
 }
 
+// A cycle in blocked_by would silently keep both cards out of next forever
+// (open-ness is derived, nothing errors). Refuse it at write time.
+function assertNoBlockerCycle(db: Database.Database, cardId: string, blockedBy: string[]): void {
+  const seen = new Set<string>();
+  const stack = [...blockedBy];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    if (cur === cardId) {
+      throw new Error(`Blocker cycle: ${cardId} would (transitively) block itself`);
+    }
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    const row = db.prepare('SELECT blocked_by FROM card WHERE id = ?').get(cur) as
+      | { blocked_by: string }
+      | undefined;
+    if (row) stack.push(...(JSON.parse(row.blocked_by) as string[]));
+  }
+}
+
 export function addEventIn(
   db: Database.Database,
   cardId: string,
@@ -341,6 +360,7 @@ export function editCard(
     labels?: string[];
     refs?: unknown[];
     contextRefs?: string[];
+    blockedBy?: string[];
     board?: string;
   }
 ): Card {
@@ -368,13 +388,24 @@ export function editCard(
     sets.push('context_refs = ?');
     values.push(JSON.stringify(fields.contextRefs));
   }
+  if (fields.blockedBy !== undefined) {
+    sets.push('blocked_by = ?');
+    values.push(JSON.stringify(fields.blockedBy));
+  }
   if (sets.length === 0 && fields.board === undefined) {
-    throw new Error('Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs or --board');
+    throw new Error('Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs, --blocked-by or --board');
   }
 
   const db = openDb();
   try {
     getCardIn(db, id);
+    if (fields.blockedBy !== undefined) {
+      for (const bid of fields.blockedBy) {
+        if (bid === id) throw new Error(`Card ${id} cannot block itself`);
+        getCardIn(db, bid); // throws Card not found for dangling ids
+      }
+      assertNoBlockerCycle(db, id, fields.blockedBy);
+    }
     if (fields.board !== undefined) {
       sets.push('board_id = ?');
       values.push(resolveBoardIn(db, fields.board));
