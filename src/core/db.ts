@@ -146,12 +146,14 @@ export async function initData(opts?: {
     created.push('comment.updated_at');
   }
 
-  // Migration: event tables from before uploads/secrets have a CHECK that
-  // rejects the new kinds. SQLite cannot alter a CHECK, so rebuild the
-  // table once, in one transaction. Idempotent: rerunning init is a no-op.
+  // Migration: event tables with outdated kind checks. SQLite cannot alter a
+  // CHECK constraint, so rebuild the table once in one transaction if any kind
+  // is missing. Table rewrite per SQLite's schema-change pattern; FK-disabled
+  // to allow tampered/orphaned rows without crashing init. Idempotent.
   const eventSql = (db.prepare("SELECT sql FROM sqlite_master WHERE name = 'event'").get() as { sql: string } | undefined)
     ?.sql;
   if (eventSql && EVENT_KINDS.some((k) => !eventSql.includes(`'${k}'`))) {
+    db.pragma('foreign_keys = OFF');
     db.exec(`
       BEGIN;
       CREATE TABLE event_new (${EVENT_TABLE_BODY});
@@ -161,6 +163,7 @@ export async function initData(opts?: {
       ALTER TABLE event_new RENAME TO event;
       COMMIT;
     `);
+    db.pragma('foreign_keys = ON');
     created.push('event table rebuilt (event kinds brought up to date)');
   }
   if (!db.prepare('SELECT 1 FROM board LIMIT 1').get()) {
