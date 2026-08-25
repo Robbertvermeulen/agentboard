@@ -14,6 +14,7 @@ export const EVENT_KINDS = [
   'error',
   'upload_added',
   'secret_stored',
+  'blocker_added',
 ] as const;
 
 export type Status = (typeof STATUSES)[number];
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS card (
   labels        TEXT NOT NULL DEFAULT '[]',
   refs          TEXT NOT NULL DEFAULT '[]',
   context_refs  TEXT NOT NULL DEFAULT '[]',
+  blocked_by    TEXT NOT NULL DEFAULT '[]',
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -93,6 +95,7 @@ export function openDb(): Database.Database {
   const db = new Database(dbPath());
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  db.pragma('busy_timeout = 5000');
   return db;
 }
 
@@ -118,6 +121,7 @@ export async function initData(opts?: {
   }
   const db = new Database(dbPath());
   db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
   db.exec(SCHEMA);
 
   // Migration: card tables from before multi-board lack board_id. The
@@ -127,6 +131,12 @@ export async function initData(opts?: {
   if (!cardCols.some((c) => c.name === 'board_id')) {
     db.exec(`ALTER TABLE card ADD COLUMN board_id TEXT NOT NULL DEFAULT '${boardId}'`);
     created.push(`card.board_id (existing cards -> board '${boardId}')`);
+  }
+
+  // Migration: card tables from before blockers lack blocked_by.
+  if (!cardCols.some((c) => c.name === 'blocked_by')) {
+    db.exec("ALTER TABLE card ADD COLUMN blocked_by TEXT NOT NULL DEFAULT '[]'");
+    created.push('card.blocked_by');
   }
 
   // Migration: comment tables from before comment editing lack updated_at.
@@ -141,7 +151,7 @@ export async function initData(opts?: {
   // table once, in one transaction. Idempotent: rerunning init is a no-op.
   const eventSql = (db.prepare("SELECT sql FROM sqlite_master WHERE name = 'event'").get() as { sql: string } | undefined)
     ?.sql;
-  if (eventSql && !eventSql.includes('upload_added')) {
+  if (eventSql && EVENT_KINDS.some((k) => !eventSql.includes(`'${k}'`))) {
     db.exec(`
       BEGIN;
       CREATE TABLE event_new (${EVENT_TABLE_BODY});
@@ -151,7 +161,7 @@ export async function initData(opts?: {
       ALTER TABLE event_new RENAME TO event;
       COMMIT;
     `);
-    created.push('event table rebuilt (new kinds: upload_added, secret_stored)');
+    created.push('event table rebuilt (event kinds brought up to date)');
   }
   if (!db.prepare('SELECT 1 FROM board LIMIT 1').get()) {
     db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run(
