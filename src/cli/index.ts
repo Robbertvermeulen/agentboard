@@ -215,6 +215,8 @@ card
   .option('--body <body>', 'card body')
   .option('--owner <owner>', 'human | agent', 'human')
   .option('--board <id>', 'board (required when more than one board exists)')
+  .option('--blocks <id>', 'link this new card as a blocker of <id> (writes blocker_added on that card)')
+  .option('--as <actor>', 'human | agent — actor of the blocker_added event', 'human')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
@@ -224,8 +226,11 @@ card
         body: opts.body,
         owner: opts.owner,
         board: opts.board,
+        blocks: opts.blocks,
+        actor: opts.as,
       });
-      output(opts, `Created ${c.id}  ${c.title}  (${c.board_id}, ${c.status})`, c);
+      const suffix = opts.blocks ? `  blocks ${opts.blocks}` : '';
+      output(opts, `Created ${c.id}  ${c.title}  (${c.board_id}, ${c.status})${suffix}`, c);
     })
   );
 

@@ -29,6 +29,7 @@ export interface Card {
   labels: string[];
   refs: unknown[];
   context_refs: string[];
+  blocked_by: string[];
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +76,7 @@ function rowToCard(row: any): Card {
     labels: JSON.parse(row.labels),
     refs: JSON.parse(row.refs),
     context_refs: JSON.parse(row.context_refs),
+    blocked_by: JSON.parse(row.blocked_by ?? '[]'),
   };
 }
 
@@ -173,9 +175,12 @@ export function createCard(input: {
   owner?: string;
   board?: string;
   labels?: string[];
+  blocks?: string;
+  actor?: string;
 }): Card {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
+  const actor = assertActor(input.actor ?? 'human');
   if (!input.title.trim()) throw new Error('Title cannot be empty');
 
   const db = openDb();
@@ -187,10 +192,23 @@ export function createCard(input: {
     } while (db.prepare('SELECT 1 FROM card WHERE id = ?').get(id));
 
     const ts = now();
-    db.prepare(
-      `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'inbox', ?, ?, '[]', '[]', ?, ?)`
-    ).run(id, boardId, type, input.title, input.body ?? null, owner, JSON.stringify(input.labels ?? []), ts, ts);
+    // --blocks is one transaction: card + blocked_by append + event, or nothing.
+    const create = db.transaction(() => {
+      db.prepare(
+        `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'inbox', ?, ?, '[]', '[]', ?, ?)`
+      ).run(id, boardId, type, input.title, input.body ?? null, owner, JSON.stringify(input.labels ?? []), ts, ts);
+      if (input.blocks) {
+        const target = getCardIn(db, input.blocks);
+        db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(
+          JSON.stringify([...target.blocked_by, id]),
+          ts,
+          target.id
+        );
+        addEventIn(db, target.id, 'blocker_added', actor, { blocker: id });
+      }
+    });
+    create();
     return getCardIn(db, id);
   } finally {
     db.close();
