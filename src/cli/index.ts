@@ -262,10 +262,11 @@ card
   .description('change status (writes an event)')
   .requiredOption('--reason <reason>', 'why this status change')
   .option('--as <actor>', 'human | agent', 'human')
+  .option('--from <status>', 'only move when the card is still in this status (the claim)')
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string, status: string) => {
-      const c = moveCard(id, status, { actor: opts.as, reason: opts.reason });
+      const c = moveCard(id, status, { actor: opts.as, reason: opts.reason, from: opts.from });
       output(opts, `${c.id} -> ${c.status}`, c);
     })
   );

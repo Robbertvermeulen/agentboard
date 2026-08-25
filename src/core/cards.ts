@@ -292,9 +292,10 @@ export function archivedCards(boardId: string): EnrichedCard[] {
   }
 }
 
-export function moveCard(id: string, to: string, opts: { actor: string; reason: string }): Card {
+export function moveCard(id: string, to: string, opts: { actor: string; reason: string; from?: string }): Card {
   const status = assertStatus(to);
   const actor = assertActor(opts.actor);
+  const expectedFrom = opts.from !== undefined ? assertStatus(opts.from) : undefined;
   if (!opts.reason?.trim()) throw new Error('A reason is required for every status change');
   // Invariant 2: an agent never moves a card to done, only to review.
   if (actor === 'agent' && status === 'done') {
@@ -303,9 +304,20 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
 
   const db = openDb();
   try {
-    const card = getCardIn(db, id);
+    // Read + conditional UPDATE inside one transaction: the claim. The event's
+    // `from` comes from this read, so it can never describe a move that did
+    // not happen.
     const move = db.transaction(() => {
-      db.prepare('UPDATE card SET status = ?, updated_at = ? WHERE id = ?').run(status, now(), id);
+      const card = getCardIn(db, id);
+      if (expectedFrom && card.status !== expectedFrom) {
+        throw new Error(`Card ${id} is not in '${expectedFrom}' (now '${card.status}' — already claimed?)`);
+      }
+      const result = db
+        .prepare('UPDATE card SET status = ?, updated_at = ? WHERE id = ? AND status = ?')
+        .run(status, now(), id, card.status);
+      if (result.changes === 0) {
+        throw new Error(`Card ${id} changed status concurrently — read it again and retry`);
+      }
       // Invariant 1: every status change writes an event with from, to, reason.
       addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason });
     });
