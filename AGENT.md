@@ -39,7 +39,11 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    in a comment or stores the secrets, and you see a `secret_stored`
    event per stored name. Values live only in the vault — never ask for
    one in a comment.
-4. Never write a secret into a context file. Only a secret_ref.
+4. Never write a secret into a context file. Only a secret_ref. And
+   never print a secret value to stdout — session output is logged, so
+   `secret get name` in a terminal is a leak. Materialize to a file
+   with `secret get name --out <path>` (chmod 600) and reference the
+   path.
 5. Context changes go through an ops card. Write the file, show the user the
    diff, and only ask for approval on what you actually wrote — not on a plan.
 6. Log what you did as events (`card log <id> "<what>" --as agent`, kind

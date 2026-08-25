@@ -1,6 +1,8 @@
 # Agentboard — visiedocument
 
-Datum: 2026-08-24. Status: ter review.
+Datum: 2026-08-24, bijgewerkt 2026-08-25 na onafhankelijke UX- en
+senior-dev-review (zie `2026-08-25-review-ux.md` en
+`2026-08-25-review-dev.md`). Status: vastgesteld.
 
 Dit document is het toetsingskader voor agentboard: de journeys zoals ze
 horen te werken, de vastgelegde ontwerpbesluiten, en de bouwvolgorde.
@@ -38,11 +40,21 @@ dit document bij te stellen.
   profielketen (user → board → client).
 - Heeft de agent iets van de user nodig → comment met één duidelijke
   vraag, status `needs_input`.
-- User antwoordt in een comment (of levert een upload/secret) en zet de
-  kaart terug op `ready`.
+- Wacht de agent op iets externs (een reply, een deploy) → óók
+  `needs_input`, maar met een wait-check: een gestructureerd event met
+  wat te checken en vanaf wanneer. De UI toont dan een klokje in
+  plaats van de kaart mee te tellen in "Needs me" — de teller telt
+  alleen kaarten waar de user écht iets kan doen.
+- User antwoordt met één handeling: **"Reply & hand back"** — comment
+  plaatsen én de kaart terug naar `ready` in één knop (reden:
+  "answered in comment"). Los commenten of los verplaatsen blijft
+  mogelijk; de beurtwissel zelf is nooit meer dan één handeling.
 - Dit herhaalt tot de agent het werk af acht: comment met resultaat,
   status `review`.
-- User keurt goed (`done`) of stuurt terug met een comment (`ready`).
+- User keurt goed (`done`) of stuurt terug met een comment (`ready`,
+  nooit `doing`). **De mens zet nooit een kaart op `doing`** — alles
+  wat de user teruggeeft gaat naar `ready`; `doing` is exclusief de
+  claim van de agent, anders liegt het board tot de volgende sessie.
 - Elke statuswissel schrijft een event; milestones logt de agent als
   `action_taken`/`error` events.
 
@@ -61,7 +73,9 @@ dit document bij te stellen.
   lock-chips per opgeslagen naam (`secret_stored` events).
 - Agent test de verbinding. Faalt één secret → gerichte her-aanvraag:
   comment die benoemt wélke, nieuwe intake voor alleen die secret,
-  `needs_input`.
+  `needs_input`. De her-aanvraag is een gestructureerd signaal dat de
+  eerdere lock-chip omzet naar "opnieuw nodig" — een chip mag nooit
+  "stored" blijven zeggen over een afgekeurde waarde.
 - Werkt de verbinding → agent slaat context op (connection-file met
   `secret_ref`, resource-files) en zet de kaart op `review`.
 - User keurt goed. De connectie is vanaf nu herbruikbaar fundament.
@@ -146,10 +160,22 @@ dit document bij te stellen.
 
 - Elke agentsessie wordt volledig vastgelegd: elk bericht, elke tool
   call, reasoning — en krijgt een sessienummer.
-- De UI heeft een agent-logs-tab: sessies chronologisch, live mee te
-  lezen terwijl de agent werkt.
+- Transcripten worden vóór opslag/weergave geredigeerd tegen de vault:
+  een secret-waarde kan nooit in de logs verschijnen.
+- De UI heeft een agent-logs-tab, samenvatting eerst: de sessielijst
+  toont nummer, trigger (cron/status-change/routine), duur, geraakte
+  kaarten en uitkomst in één regel; het detail toont stappen als
+  één-regel-items met reasoning ingeklapt, live te volgen. Vanaf een
+  kaart spring je naar de sessie-fragmenten die die kaart raakten —
+  "wat heeft hij hier gedaan?" is de echte vraag.
 - Het board is realtime: statuswissels en nieuwe comments verschijnen
   zonder verversen.
+- Eerlijkheid boven activiteitsclaims: `doing` met een levende sessie
+  (heartbeat) ziet er anders uit dan `doing` zonder ("wordt hervat bij
+  de volgende sessie"). Een crash mag nooit als "kapot" aanvoelen.
+- Notificaties: één kanaal dat alleen beurtwissels naar de mens meldt
+  (kaart naar `needs_input` of `review`) — niet per event, maar per
+  "de bal ligt bij jou".
 - De sessielogs zijn de basis voor de observer-loop: een aparte
   "observer"-sessie leest een sessie na en toetst het verloop aan dit
   visiedocument. Bevindingen worden feedback (uitwerking volgt in de
@@ -165,10 +191,16 @@ dit document bij te stellen.
   `ready`; `next` filtert kaarten met open blockers eruit. Laatste
   blocker `done` → kaart is vanzelf weer oppakbaar. `needs_input`
   blijft gereserveerd voor "user is aan zet op déze kaart".
-- **C. Triggers zijn event-driven, cron is het vangnet.** Een
-  user-actie (status → `ready`, comment op `needs_input`) triggert een
-  sessie; die draait gewoon `next`. Daarnaast een minuut-cron voor
-  routines en als vangnet.
+- **C. Triggers zijn event-driven, cron is het vangnet — met één
+  runner en een smalle gate.** Er is één idempotent
+  "maybe-start-session"-script; de minuut-cron en de serve-laag (na
+  een human move/comment) roepen allebei datzelfde script aan, de
+  single-flight-lock arbitreert. De gate voor de scheduler is
+  **smaller dan `next`**: `ready` zonder open blockers + `doing` van
+  de agent + routines-due + `needs_input` met een verlópen wait-check.
+  Kale `needs_input` telt nooit mee — anders start één onbeantwoorde
+  vraag elke minuut een zinloze sessie; die kaarten komen alleen terug
+  via een human-actie.
 - **D. Routines leven in context, run-state in SQLite.**
   - Definitie: markdown-file, `kind: routine` + machinaal parseerbare
     `schedule:` in de frontmatter, body = vrije instructie. Plaatsing
@@ -182,12 +214,20 @@ dit document bij te stellen.
   - UI: routines links in het menu; all-boards toont alle routines
     gegroepeerd per board, board-view alleen die van dat board;
     lijstweergave in een modal, read-only — beheer gaat via ops cards.
-    Definitief ontwerp via een Claude Design-ronde.
-- **E. Auto-ready via de routine, anti-duplicaat via AGENT.md.**
-  Goedkeuring verschuift van per-kaart naar per-routine; de agent kan
-  nog steeds nooit naar `done`. Nooit stapels identieke kaarten: één
-  levende kaart per sleutel (routine of externe ref), anders een
-  comment.
+    Eén uitzondering: **pauzeren is een handrem** en krijgt een
+    directe toggle die als `human` een `enabled: false`-commit
+    schrijft via het bestaande context-kanaal (invariant 3 blijft
+    intact; de agent blijft van dit pad af). Definitief ontwerp via
+    een Claude Design-ronde.
+- **E. Auto-ready via de routine, anti-duplicaat via AGENT.md — maar
+  uitvoerbaar gemaakt.** Goedkeuring verschuift van per-kaart naar
+  per-routine; de agent kan nog steeds nooit naar `done`. Nooit
+  stapels identieke kaarten: één levende kaart per sleutel (routine
+  of externe ref), anders een comment. Een gedragsregel werkt alleen
+  als de check goedkoop is, dus de agent krijgt gereedschap: een
+  nullable `routine`-kolom op card (het routinepad — voedt ook de
+  ↻-chip en "loopt er nog een kaart van deze routine") en
+  `card list --ref <url>` om op externe refs te zoeken.
 - **F. Workdir-approval zit één niveau hoger.** De ops card die de
   repo/resource vastlegt is de goedkeuring; clonen en werken in de
   workdir is daarna gewone uitvoering met een event, geen ritueel per
@@ -195,10 +235,40 @@ dit document bij te stellen.
 - **G. Polling is een watcher-routine.** Geen apart mechanisme;
   alleen een andere instructietekst.
 - **Concurrency.** Single-flight: één agentsessie tegelijk per
-  data-dir (lock met PID + staleness-check). Kaart-claim = de
-  conditionele statusmove `ready → doing` (slaagt alleen als de kaart
-  nog `ready` is). Vandaag een vangnet, morgen het fundament voor
-  parallelle sessies.
+  data-dir (lock-file in de data-dir met PID + hostname + started_at;
+  staleness via proces-check plus een max-leeftijd-vangnet).
+  Kaart-claim = de conditionele statusmove `ready → doing` (slaagt
+  alleen als de kaart nog `ready` is). Vandaag een vangnet, morgen het
+  fundament voor parallelle sessies. Expliciete aanname: **één
+  machine** — een gesyncte SQLite + PID-locks over machines heen is
+  stille corruptie.
+- **H. Twee soorten wachten, één status.** `needs_input` kent twee
+  smaken, onderscheiden door een wait-check-markering (gestructureerd
+  event met wat te checken en vanaf wanneer): zonder markering = "user
+  is aan zet" (telt in "Needs me", komt terug via een human-actie);
+  mét markering = "wacht op extern" (klokje in de UI, telt níet in
+  "Needs me", komt terug via de scheduler zodra de check-tijd
+  verstreken is). Geen zevende status.
+- **I. De beurtwissel is één handeling.** "Reply & hand back" op
+  needs_input- en review-kaarten: comment + move naar `ready` in één
+  knop; de comment ís de reden. Quick actions sturen nooit naar
+  `doing` — de mens geeft altijd terug aan `ready`.
+- **J. Sessielogging (bouwblok 4) — de aanpak.** Headless sessies
+  draaien met streamende JSON-output; het transcript gaat als JSONL
+  naar `<data>/sessions/<n>.jsonl` (niet in SQLite). SQLite houdt
+  alleen de index: sessienummer, start/eind, trigger, exit — plus een
+  koppeltabel sessie ↔ kaart, afgeleid uit de agentboard-aanroepen in
+  het transcript. Vóór opslag/weergave draait een redactiepas tegen
+  de waarden in secrets.env. De observer-v1 is een los
+  `agentboard observe <sessie>`-commando (handmatig of cron):
+  transcript + visiedocument + AGENT.md beoordelen, rapport als
+  artifact, eventueel een ops card bij een regelschending.
+- **K. Realtime (bouwblok 5) — de aanpak.** Eén cursor-endpoint
+  (`GET /api/events?after=<id>`) met 2–3s-polling in de UI als eerste
+  stap; SSE is een latere optimalisatie op hetzelfde endpoint, geen
+  ander ontwerp. Let op: comments zijn geen events — de blok-5-spec
+  beslist tussen een `comment_added`-event of een cursor over beide
+  tabellen.
 
 ## Bouwvolgorde
 
@@ -215,3 +285,15 @@ dit document bij te stellen.
 
 Elk bouwblok krijgt zijn eigen spec → plan → implementatie-cyclus, met
 dit document als kader.
+
+Los van de bouwblokken, direct geregeld (dev-review): een
+`agentboard backup`-commando (`VACUUM INTO`-snapshot van de db + tar
+van secrets/artifacts/uploads/context naar een tweede locatie, werkdir
+uitgezonderd) en de AGENT.md-regel dat een secret-waarde nooit naar
+stdout gaat (altijd `secret get --out`) — sessies worden straks
+gelogd. De user regelt zelf een remote voor de context-repo en een
+dagelijkse aanroep van het backup-commando.
+
+Geparkeerd (bewust niet nu): zoeken/labelfilters, per-board-prioriteit
+in `next`, bulk-archiveren, onboarding-seed-kaart bij een nieuw board,
+`session_id` op events voor parallelle agents.

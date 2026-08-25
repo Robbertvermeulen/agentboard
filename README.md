@@ -94,6 +94,17 @@ card smarter? → context.
   findable, diffable item. Context is not an archive; deliverables ship
   via their channel (mail, Trello, a repo) and leave an event behind.
 
+## Backup
+
+Everything except `work/` is irreplaceable. `agentboard backup` writes
+one `tar.gz` (chmod 600 — it contains secrets.env) to
+`~/.agentboard-backups` or `--out <dir>`: a `VACUUM INTO` snapshot of
+the db (a live WAL db cannot be cp'd safely) plus secrets.env,
+artifacts/, uploads/ and the context repo with its git history.
+Schedule it daily (cron/launchd) with `--out` on a second disk or
+synced folder, and give the context repo a git remote — the tool does
+neither for you.
+
 ## Trigger (design, not built)
 
 Unattended operation is three layers; only the first lives in this tool:

@@ -181,6 +181,20 @@ program
   );
 
 program
+  .command('backup')
+  .description('write a tar.gz snapshot of the package (db via VACUUM INTO + secrets, artifacts, uploads, context; work/ excluded)')
+  .option('--out <dir>', 'backup directory (default: ~/.agentboard-backups)')
+  .option('--json', 'JSON output')
+  .action(
+    run(async (opts) => {
+      const { createBackup } = await import('../core/backup.js');
+      const result = createBackup(opts.out);
+      const mb = (result.bytes / (1024 * 1024)).toFixed(1);
+      output(opts, `Backup written to ${result.archive} (${mb} MB)`, result);
+    })
+  );
+
+program
   .command('serve')
   .description('serve the web UI + API')
   .option('--port <port>', 'port to listen on', '4666')
