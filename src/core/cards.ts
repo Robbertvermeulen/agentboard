@@ -250,7 +250,7 @@ export function createCard(input: {
         addEventIn(db, target.id, 'blocker_added', actor, { blocker: id });
       }
     });
-    create();
+    create.immediate();
     return getCardIn(db, id);
   } finally {
     db.close();
@@ -344,7 +344,7 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
       // Invariant 1: every status change writes an event with from, to, reason.
       addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason });
     });
-    move();
+    move.immediate();
     return getCardIn(db, id);
   } finally {
     db.close();
@@ -433,21 +433,26 @@ export function editCard(
 
   const db = openDb();
   try {
-    getCardIn(db, id);
-    if (fields.blockedBy !== undefined) {
-      for (const bid of fields.blockedBy) {
-        if (bid === id) throw new Error(`Card ${id} cannot block itself`);
-        getCardIn(db, bid); // throws Card not found for dangling ids
+    // Validation + UPDATE in one transaction: concurrent edits cannot each
+    // pass the cycle check against a stale blocked_by and jointly commit one.
+    const edit = db.transaction(() => {
+      getCardIn(db, id);
+      if (fields.blockedBy !== undefined) {
+        for (const bid of fields.blockedBy) {
+          if (bid === id) throw new Error(`Card ${id} cannot block itself`);
+          getCardIn(db, bid); // throws Card not found for dangling ids
+        }
+        assertNoBlockerCycle(db, id, fields.blockedBy);
       }
-      assertNoBlockerCycle(db, id, fields.blockedBy);
-    }
-    if (fields.board !== undefined) {
-      sets.push('board_id = ?');
-      values.push(resolveBoardIn(db, fields.board));
-    }
-    sets.push('updated_at = ?');
-    values.push(now(), id);
-    db.prepare(`UPDATE card SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+      if (fields.board !== undefined) {
+        sets.push('board_id = ?');
+        values.push(resolveBoardIn(db, fields.board));
+      }
+      sets.push('updated_at = ?');
+      values.push(now(), id);
+      db.prepare(`UPDATE card SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+    });
+    edit.immediate();
     return getCardIn(db, id);
   } finally {
     db.close();

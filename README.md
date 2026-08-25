@@ -206,6 +206,13 @@ Each of these exists because the schema or an invariant needs it:
 - `ctx write --card <id>` — invariant 3 needs a card for the commit message
   and the `context_written` event. `--message` overrides the default commit
   message.
+- `card new --blocks <id>` — links the new card as blocker in one
+  transaction with the `blocker_added` event; `--as` sets that event's
+  actor.
+- `card move --from <status>` — the race-free claim: moves the card only
+  if it is still in that status.
+- `card edit --blocked-by <ids>` — full-list replace, validated for
+  existence, self-blocking and cycles.
 
 ## Structure
 
