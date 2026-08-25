@@ -105,6 +105,15 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     vault, not in the tool's config dir. A tool that cannot externalize
     its state this way is a blocker to raise on the card — not a
     licence for machine-local state.
+15. Blocked on missing foundation? One ops card per missing entity, the
+    moment you discover it: `card new --type ops --blocks <task-id>
+    --as agent ...` — this links it as a blocker on the task. Then move
+    the task back to ready: `next` skips cards with open blockers, and
+    the task resurfaces by itself when the last blocker is done. When
+    you pick it up again, verify the blockers are really gone. Claim
+    every card with `card move <id> doing --from ready --as agent
+    --reason "Claiming"`; if that fails, another session got there first
+    — take the next card.
 
 ## Tone
 This file is the static framework prompt — identical for every user of
