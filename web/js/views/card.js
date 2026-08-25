@@ -42,6 +42,10 @@ function eventLine(e) {
   } else if (e.kind === 'secret_stored') {
     icon = icons.lock(14, 'var(--green-icon)');
     text = `<span class="kind">secret_stored</span> by ${esc(e.actor)}: ${esc(String(e.payload.name ?? '').toLowerCase())} ${soft('— value write-only')}`;
+  } else if (e.kind === 'blocker_added') {
+    icon = icons.block(14);
+    const b = String(e.payload.blocker ?? '');
+    text = `<span class="kind">blocker_added</span> by ${esc(e.actor)}: blocked by <a href="#/card/${esc(b)}">${esc(b)}</a>`;
   } else {
     const note = String(e.payload.note ?? JSON.stringify(e.payload));
     const m = note.match(/^(.*?)(WAITING:.*)$/s);
@@ -96,19 +100,23 @@ function relStatusNote(card) {
 
 export async function renderCard(root, { boards, cardId }) {
   const rerender = () => renderCard(root, { boards, cardId });
-  const [{ card, comments, events }, { artifacts }, { uploads }] = await Promise.all([
+  const [{ card, comments, events, blockers = [], blocks = [] }, { artifacts }, { uploads }] = await Promise.all([
     api.card(cardId),
     api.artifacts(cardId),
     api.uploads(cardId),
   ]);
+  card.blockers = blockers;
   const board = boards.find((b) => b.id === card.board_id);
 
-  // Linked cards from refs, grouped by how the label reads.
-  const groups = { 'blocked by': [], unblocks: [], linked: [] };
+  // Linked cards: structural blocked_by/blocks first, ref-labeled cards as
+  // the manual fallback (deduped) — the query is the source of truth.
+  const groups = { 'blocked by': [...blockers], unblocks: [...blocks], linked: [] };
   const linked = cardRefs(card);
+  const seen = new Set([...blockers, ...blocks].map((t) => t.id));
   await Promise.all(
     linked.map(async (ref) => {
       const target = ref.label.match(CARD_ID_RE)[0];
+      if (seen.has(target)) return;
       try {
         const { card: t } = await api.card(target);
         const key = /^blocked/i.test(ref.label) ? 'blocked by' : /^unblocks/i.test(ref.label) ? 'unblocks' : 'linked';
@@ -192,8 +200,16 @@ export async function renderCard(root, { boards, cardId }) {
           <h1>${esc(card.title)}</h1>
           ${card.body ? `<div class="detail-body">${renderMarkdown(card.body)}</div>` : ''}
           ${
-            card.context_refs?.length || linked.length
+            card.context_refs?.length || linked.length || blockers.length
               ? `<div class="chip-row">
+                  ${blockers
+                    .map((b) => {
+                      const open = b.status !== 'done' && b.status !== 'archived';
+                      return `<a class="blocker-chip${open ? '' : ' resolved'}" href="#/card/${esc(b.id)}">${
+                        open ? icons.block(11) : icons.check(11, 'var(--green-icon)')
+                      }${esc(b.id)}</a>`;
+                    })
+                    .join('')}
                   ${(card.context_refs ?? []).map((p) => `<a class="ctx-chip" href="#/ctx/${esc(p)}">${icons.file()}${esc(p)}</a>`).join('')}
                   ${linked.map((r) => cardRefChip(r)).join('')}
                 </div>`

@@ -36,6 +36,8 @@ export const icons = {
   arrowRight: (size = 14, color = 'var(--amber-icon)') => stroke(size, color, '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'),
   alert: (size = 12, color = 'var(--red-text)') =>
     stroke(size, color, '<circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/>'),
+  block: (size = 12, color = 'currentColor') =>
+    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m6.3 6.3 11.4 11.4"/></svg>`,
   allClear: (size = 34, color = 'var(--mut-2)') =>
     `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-4.8"/></svg>`,
   user: (size = 12, color = '#fff') =>

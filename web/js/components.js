@@ -60,9 +60,12 @@ export function cardTile(card, { compact = false } = {}) {
     .filter(Boolean)
     .join(' ');
   const linked = cardRefs(card)[0];
+  const openBlockers = (card.blockers ?? []).filter((b) => b.status !== 'done' && b.status !== 'archived').length;
   return `<a class="${cls}" href="#/card/${esc(card.id)}" data-id="${esc(card.id)}">
     <div class="tile-top">
-      <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}</span>
+      <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}${
+        openBlockers ? `<span class="blocked-chip" title="${openBlockers} open blocker${openBlockers === 1 ? '' : 's'}">${icons.block(10)}${openBlockers}</span>` : ''
+      }</span>
       ${card.owner === 'agent' && !compact ? agentChip() : ''}
       ${card.owner === 'agent' && compact ? '<span class="agent-mini">@agent</span>' : ''}
     </div>
@@ -104,12 +107,13 @@ export function closeOverlay() {
 
 /* ---------- reason dialog: every status change asks why ---------- */
 
-export function askReason({ title, toStatus }) {
+export function askReason({ title, toStatus, warning }) {
   return new Promise((resolve) => {
     const approve = toStatus === 'done';
     const el = openOverlay(`<div class="dialog reason-dialog" role="dialog" aria-label="${esc(title)}">
       <span class="dialog-title">${esc(title)}</span>
       <p class="dialog-sub">A short reason, written to the timeline as an event.</p>
+      ${warning ? `<p class="dialog-warning">${icons.block(12)}${esc(warning)}</p>` : ''}
       <input id="reason-input" type="text" autocomplete="off" placeholder="Why?">
       <div class="reason-suggest">
         <button type="button" data-fill="Looks right">Looks right</button>
@@ -118,7 +122,7 @@ export function askReason({ title, toStatus }) {
       <p id="reason-error" class="field-error" hidden></p>
       <div class="dialog-actions">
         <button type="button" id="reason-cancel" class="btn-ghost">Cancel</button>
-        <button type="button" id="reason-ok" class="${approve ? 'btn-green' : 'btn-dark'}" disabled>${approve ? 'Approve' : 'Move'}</button>
+        <button type="button" id="reason-ok" class="${approve ? 'btn-green' : 'btn-dark'}" disabled>${approve ? (warning ? 'Approve anyway' : 'Approve') : 'Move'}</button>
       </div>
     </div>`);
     const input = el.querySelector('#reason-input');
@@ -155,8 +159,17 @@ export function showReasonError(message) {
 
 // Ask for a reason, move the card, rerender. Errors show inline in the dialog.
 export async function moveWithReason(card, toStatus, onDone) {
-  const title = toStatus === 'done' && card.status === 'review' ? 'Approve → Done' : `Move to ${toStatus}`;
-  const reason = await askReason({ title, toStatus });
+  const openBlockers = (card.blockers ?? []).filter((b) => b.status !== 'done' && b.status !== 'archived');
+  const warning =
+    toStatus === 'done' && openBlockers.length
+      ? `Still open: ${openBlockers.map((b) => b.id).join(', ')}`
+      : '';
+  const title = warning
+    ? `Approve with ${openBlockers.length} open blocker${openBlockers.length === 1 ? '' : 's'}?`
+    : toStatus === 'done' && card.status === 'review'
+      ? 'Approve → Done'
+      : `Move to ${toStatus}`;
+  const reason = await askReason({ title, toStatus, warning });
   if (reason == null) return;
   try {
     await api.move(card.id, toStatus, reason);
