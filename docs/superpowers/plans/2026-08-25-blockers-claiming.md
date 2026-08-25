@@ -129,6 +129,7 @@ CREATE TABLE card (id TEXT PRIMARY KEY, board_id TEXT NOT NULL, type TEXT NOT NU
 CREATE TABLE comment (id INTEGER PRIMARY KEY AUTOINCREMENT, card_id TEXT NOT NULL, author TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT);
 CREATE TABLE event (id INTEGER PRIMARY KEY AUTOINCREMENT, card_id TEXT NOT NULL REFERENCES card(id), kind TEXT NOT NULL CHECK (kind IN ('status_changed','action_taken','context_written','error','upload_added','secret_stored')), actor TEXT NOT NULL CHECK (actor IN ('human','agent')), payload TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL);
 INSERT INTO board VALUES ('main','main','2026-01-01T00:00:00.000Z');
+INSERT INTO card VALUES ('task_0000','main','task','Old card',NULL,'inbox','human','[]','[]','[]','2026-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z');
 INSERT INTO event (card_id, kind, actor, payload, created_at) VALUES ('task_0000','action_taken','human','{}','2026-01-01T00:00:00.000Z');
 "
 node dist/cli/index.js init
@@ -649,9 +650,11 @@ git commit -m "feat: next skips cards with open blockers; blockers/unblocks enri
 In `web/js/icons.js`, add to the `icons` object, following the style of the existing entries (size/color params, stroke-based):
 
 ```js
-  block: (s = 12, c = 'var(--amber-icon, #b45309)') =>
+  block: (s = 12, c = 'currentColor') =>
     `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m6.3 6.3 11.4 11.4"/></svg>`,
 ```
+
+(`currentColor` so the icon inherits each chip's color — the design uses the same glyph on blue chips and on the amber warning.)
 
 (If the file's entries take different parameter names, match them; keep the no-entry glyph.)
 
@@ -681,16 +684,20 @@ In `web/js/components.js`:
       ${warning ? `<p class="dialog-warning">${icons.block(12)}${esc(warning)}</p>` : ''}
 ```
 
-`moveWithReason` computes it (signal, never block — the human stays in charge):
+`moveWithReason` computes it (signal, never block — the human stays in charge). Copy follows design v4 artboard 2c: title "Approve with N open blocker(s)?", green button "Approve anyway" (no danger styling):
 
 ```js
 export async function moveWithReason(card, toStatus, onDone) {
   const openBlockers = (card.blockers ?? []).filter((b) => b.status !== 'done' && b.status !== 'archived');
   const warning =
     toStatus === 'done' && openBlockers.length
-      ? `Still ${openBlockers.length} open blocker${openBlockers.length === 1 ? '' : 's'}: ${openBlockers.map((b) => b.id).join(', ')}`
+      ? `Still open: ${openBlockers.map((b) => b.id).join(', ')}`
       : '';
-  const title = toStatus === 'done' && card.status === 'review' ? 'Approve → Done' : `Move to ${toStatus}`;
+  const title = warning
+    ? `Approve with ${openBlockers.length} open blocker${openBlockers.length === 1 ? '' : 's'}?`
+    : toStatus === 'done' && card.status === 'review'
+      ? 'Approve → Done'
+      : `Move to ${toStatus}`;
   const reason = await askReason({ title, toStatus, warning });
   if (reason == null) return;
   try {
@@ -701,6 +708,8 @@ export async function moveWithReason(card, toStatus, onDone) {
   }
 }
 ```
+
+In `askReason`, when `warning` is set, also change the confirm button label from `Approve` to `Approve anyway` (it already renders green via `btn-green` for toStatus done — keep that, no danger styling).
 
 - [ ] **Step 4: Card detail — structural groups + chips**
 
@@ -777,48 +786,51 @@ In `eventLine` in `web/js/views/card.js`, add before the final `else`:
 
 - [ ] **Step 6: Styles**
 
-In `web/style.css`, next to the existing chip styles (search for `.label-chip`), add — match the exact font-size/radius/padding idiom used by the neighbouring chips in this file:
+In `web/style.css`, next to the existing chip styles (search for `.label-chip`), add. The colors come from design v4 (artboards 2a/2b/2d): blocker chips are **blue pills with monospace ids**, not amber; the warning is amber/red. Reuse the file's existing font-stack variables/mono class conventions where present:
 
 ```css
 .blocked-chip {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 6px;
+  padding: 1px 7px;
   border-radius: 999px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px;
-  font-weight: 600;
-  color: #b45309;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  color: oklch(0.42 0.14 255);
+  background: color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff);
+  border: 1px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff);
 }
 .blocker-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 12px;
   text-decoration: none;
-  color: #b45309;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  color: oklch(0.42 0.14 255);
+  background: color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff);
+  border: 1px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff);
 }
 .blocker-chip.resolved {
   color: var(--mut, #6b7280);
   background: transparent;
   border-color: var(--line, #e5e7eb);
-  opacity: 0.75;
+  text-decoration: line-through;
 }
 .dialog-warning {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12.5px;
-  color: #b45309;
+  color: oklch(0.44 0.13 45);
   margin: 2px 0 0;
 }
 ```
+
+(The resolved chip keeps its green check icon and strikes through the id, per design. If `web/style.css` does not already load JetBrains Mono, fall back to the mono stack it does use — do not add a font import for this.)
 
 - [ ] **Step 7: Verify in the browser + screenshots**
 
