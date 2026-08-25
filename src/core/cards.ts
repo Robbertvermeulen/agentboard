@@ -52,11 +52,19 @@ export interface BoardEvent {
   created_at: string;
 }
 
+export interface BlockerInfo {
+  id: string;
+  type: CardType;
+  title: string;
+  status: Status;
+}
+
 // Card plus how-it-got-here: reason and moment of the last status change.
 // No status_changed event yet (card still in inbox) -> created_at, null.
 export interface EnrichedCard extends Card {
   status_reason: string | null;
   status_since: string;
+  blockers: BlockerInfo[];
 }
 
 function assertOneOf<T extends string>(value: string, allowed: readonly T[], what: string): T {
@@ -69,6 +77,18 @@ function assertOneOf<T extends string>(value: string, allowed: readonly T[], wha
 export const assertStatus = (v: string) => assertOneOf(v, STATUSES, 'status');
 export const assertActor = (v: string) => assertOneOf(v, ACTORS, 'actor');
 export const assertType = (v: string) => assertOneOf(v, TYPES, 'type');
+
+function blockerInfoIn(db: Database.Database, ids: string[]): BlockerInfo[] {
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT id, type, title, status FROM card WHERE id IN (${placeholders})`)
+    .all(ids) as BlockerInfo[];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.map((id) => byId.get(id)).filter((r): r is BlockerInfo => r !== undefined);
+}
+
+const isOpenStatus = (s: Status) => s !== 'done' && s !== 'archived';
 
 function rowToCard(row: any): Card {
   return {
@@ -96,6 +116,8 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
     )
     .all(cards.map((c) => c.id)) as { card_id: string; payload: string; created_at: string }[];
   const lastChange = new Map(rows.map((r) => [r.card_id, r]));
+  const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
+  const blockerById = new Map(blockerInfoIn(db, blockerIds).map((b) => [b.id, b]));
   return cards.map((card) => {
     const last = lastChange.get(card.id);
     const reason = last ? JSON.parse(last.payload).reason : null;
@@ -103,6 +125,7 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
       ...card,
       status_reason: typeof reason === 'string' ? reason : null,
       status_since: last ? last.created_at : card.created_at,
+      blockers: card.blocked_by.map((id) => blockerById.get(id)).filter((b): b is BlockerInfo => b !== undefined),
     };
   });
 }
@@ -456,7 +479,7 @@ export function logEvent(id: string, kind: string, actor: string, note: string):
 export function nextWork(): Card[] {
   const db = openDb();
   try {
-    return db
+    const cards = db
       .prepare(
         `SELECT * FROM card
          WHERE status = 'ready' OR status = 'needs_input'
@@ -465,12 +488,28 @@ export function nextWork(): Card[] {
       )
       .all()
       .map(rowToCard);
+    // A card with an open blocker is not workable: it resurfaces by itself
+    // when the last blocker goes done/archived (open-ness is derived).
+    const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
+    if (blockerIds.length === 0) return cards;
+    const open = new Set(
+      blockerInfoIn(db, blockerIds)
+        .filter((b) => isOpenStatus(b.status))
+        .map((b) => b.id)
+    );
+    return cards.filter((c) => !c.blocked_by.some((b) => open.has(b)));
   } finally {
     db.close();
   }
 }
 
-export function cardDetail(id: string): { card: Card; comments: Comment[]; events: BoardEvent[] } {
+export function cardDetail(id: string): {
+  card: Card;
+  comments: Comment[];
+  events: BoardEvent[];
+  blockers: BlockerInfo[];
+  blocks: BlockerInfo[];
+} {
   const db = openDb();
   try {
     const card = getCardIn(db, id);
@@ -481,7 +520,15 @@ export function cardDetail(id: string): { card: Card; comments: Comment[]; event
       .prepare('SELECT * FROM event WHERE card_id = ? ORDER BY created_at, id')
       .all(id)
       .map(rowToEvent);
-    return { card, comments, events };
+    // Reverse direction from the same source of truth (no double bookkeeping):
+    // which cards have me in their blocked_by. JS scan — data stays small.
+    const rows = db
+      .prepare("SELECT id, type, title, status, blocked_by FROM card WHERE blocked_by != '[]'")
+      .all() as (BlockerInfo & { blocked_by: string })[];
+    const blocks = rows
+      .filter((r) => (JSON.parse(r.blocked_by) as string[]).includes(id))
+      .map(({ id, type, title, status }) => ({ id, type, title, status }));
+    return { card, comments, events, blockers: blockerInfoIn(db, card.blocked_by), blocks };
   } finally {
     db.close();
   }

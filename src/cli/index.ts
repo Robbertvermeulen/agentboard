@@ -249,6 +249,10 @@ card
       if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
       if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
       if (c.context_refs.length) lines.push(`context: ${c.context_refs.join(', ')}`);
+      if (detail.blockers.length)
+        lines.push(`blocked by: ${detail.blockers.map((b) => `${b.id} (${b.status})`).join(', ')}`);
+      if (detail.blocks.length)
+        lines.push(`unblocks: ${detail.blocks.map((b) => `${b.id} (${b.status})`).join(', ')}`);
       lines.push(`created: ${c.created_at}  updated: ${c.updated_at}`);
       if (c.body) lines.push('', c.body);
       const timeline = renderTimeline(detail.comments, detail.events);
