@@ -12,6 +12,7 @@ import {
   createBoard,
   createCard,
   editCard,
+  gateWork,
   listBoards,
   listCards,
   logEvent,
@@ -73,6 +74,20 @@ function parseJsonArray(value: string, what: string): unknown[] {
   }
   if (!Array.isArray(parsed)) throw new Error(`${what} must be a JSON array`);
   return parsed;
+}
+
+// 30m/6h/2d shorthand or an ISO timestamp; stored as ISO in the event payload.
+function parseCheckAfter(value: string): string {
+  const m = value.match(/^(\d+)([mhd])$/);
+  if (m) {
+    const unit = { m: 60_000, h: 3_600_000, d: 86_400_000 }[m[2] as 'm' | 'h' | 'd'];
+    return new Date(Date.now() + Number(m[1]) * unit).toISOString();
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error(`Invalid --check-after '${value}'. Use 30m, 6h, 2d or an ISO timestamp`);
+  }
+  return d.toISOString();
 }
 
 function cardLine(card: Card): string {
@@ -228,6 +243,25 @@ program
   );
 
 program
+  .command('gate')
+  .description('scheduler gate: ready w/o open blockers, doing@agent, needs_input with expired wait-check, due routines')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const cards = gateWork();
+      const due = dueRoutines();
+      const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
+      lines.push(...due.routines.map((r) => `  routine    ${r.board.padEnd(12)} due          ${r.path}`));
+      lines.push(...due.errors.map((e) => `  ! ${e.path}: ${e.error}`));
+      output(opts, lines.length ? lines.join('\n') : 'Nothing to start a session for', {
+        cards,
+        routines: due.routines,
+        errors: due.errors,
+      });
+    })
+  );
+
+program
   .command('backup')
   .description('write a tar.gz snapshot of the package (db via VACUUM INTO + secrets, artifacts, uploads, context; work/ excluded)')
   .option('--out <dir>', 'backup directory (default: ~/.agentboard-backups)')
@@ -357,10 +391,11 @@ card
   .description('log an event on a card (action_taken or error)')
   .option('--kind <kind>', 'action_taken | error', 'action_taken')
   .option('--as <actor>', 'human | agent', 'human')
+  .option('--check-after <when>', 'wait-state: when the scheduler should bring this card back (30m/6h/2d or ISO)')
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string, text: string) => {
-      const event = logEvent(id, opts.kind, opts.as, text);
+      const event = logEvent(id, opts.kind, opts.as, text, opts.checkAfter ? parseCheckAfter(opts.checkAfter) : undefined);
       output(opts, `Event logged on ${event.card_id} (${event.kind})`, event);
     })
   );

@@ -66,6 +66,7 @@ export interface EnrichedCard extends Card {
   status_reason: string | null;
   status_since: string;
   blockers: BlockerInfo[];
+  wait_check: string | null;
 }
 
 function assertOneOf<T extends string>(value: string, allowed: readonly T[], what: string): T {
@@ -79,7 +80,7 @@ export const assertStatus = (v: string) => assertOneOf(v, STATUSES, 'status');
 export const assertActor = (v: string) => assertOneOf(v, ACTORS, 'actor');
 export const assertType = (v: string) => assertOneOf(v, TYPES, 'type');
 
-function blockerInfoIn(db: Database.Database, ids: string[]): BlockerInfo[] {
+export function blockerInfoIn(db: Database.Database, ids: string[]): BlockerInfo[] {
   if (ids.length === 0) return [];
   const placeholders = ids.map(() => '?').join(',');
   const rows = db
@@ -89,7 +90,24 @@ function blockerInfoIn(db: Database.Database, ids: string[]): BlockerInfo[] {
   return ids.map((id) => byId.get(id)).filter((r): r is BlockerInfo => r !== undefined);
 }
 
-const isOpenStatus = (s: Status) => s !== 'done' && s !== 'archived';
+export const isOpenStatus = (s: Status) => s !== 'done' && s !== 'archived';
+
+// Latest check_after per card (vision besluit H): a needs_input card with a
+// live wait-check is "waiting on external" — not the user's turn, and only
+// the scheduler brings it back once the check time passes.
+function waitCheckIn(db: Database.Database, ids: string[]): Map<string, string> {
+  if (ids.length === 0) return new Map();
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT card_id, payload FROM event WHERE card_id IN (${placeholders}) AND kind = 'action_taken' ORDER BY id`)
+    .all(ids) as { card_id: string; payload: string }[];
+  const latest = new Map<string, string>();
+  for (const r of rows) {
+    const p = JSON.parse(r.payload) as Record<string, unknown>;
+    if (typeof p.check_after === 'string') latest.set(r.card_id, p.check_after);
+  }
+  return latest;
+}
 
 function rowToCard(row: any): Card {
   return {
@@ -119,6 +137,7 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
   const lastChange = new Map(rows.map((r) => [r.card_id, r]));
   const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
   const blockerById = new Map(blockerInfoIn(db, blockerIds).map((b) => [b.id, b]));
+  const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
   return cards.map((card) => {
     const last = lastChange.get(card.id);
     const reason = last ? JSON.parse(last.payload).reason : null;
@@ -127,6 +146,7 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
       status_reason: typeof reason === 'string' ? reason : null,
       status_since: last ? last.created_at : card.created_at,
       blockers: card.blocked_by.map((id) => blockerById.get(id)).filter((b): b is BlockerInfo => b !== undefined),
+      wait_check: waits.get(card.id) ?? null,
     };
   });
 }
@@ -503,7 +523,7 @@ export function editCard(
 // AGENT.md rule 6: the agent logs what it did as events. Only action_taken
 // and error are free-form; status_changed and context_written stay reserved
 // for the invariants in core.
-export function logEvent(id: string, kind: string, actor: string, note: string): BoardEvent {
+export function logEvent(id: string, kind: string, actor: string, note: string, checkAfter?: string): BoardEvent {
   if (kind !== 'action_taken' && kind !== 'error') {
     throw new Error(`Invalid event kind '${kind}'. Loggable: action_taken, error`);
   }
@@ -512,7 +532,7 @@ export function logEvent(id: string, kind: string, actor: string, note: string):
   const db = openDb();
   try {
     getCardIn(db, id);
-    addEventIn(db, id, kind, a, { note });
+    addEventIn(db, id, kind, a, checkAfter ? { note, check_after: checkAfter } : { note });
     return rowToEvent(db.prepare('SELECT * FROM event WHERE card_id = ? ORDER BY id DESC LIMIT 1').get(id));
   } finally {
     db.close();
@@ -544,6 +564,41 @@ export function nextWork(): Card[] {
         .map((b) => b.id)
     );
     return cards.filter((c) => !c.blocked_by.some((b) => open.has(b)));
+  } finally {
+    db.close();
+  }
+}
+
+// The scheduler's question (vision besluit C) — deliberately narrower than
+// next: bare needs_input never counts (one unanswered question must not
+// start a session every minute), and blocked ready cards wait for their
+// blockers. doing@agent counting is the implicit crash recovery.
+export function gateWork(): Card[] {
+  const db = openDb();
+  try {
+    const cards = db
+      .prepare(
+        `SELECT * FROM card
+         WHERE status = 'ready' OR status = 'needs_input'
+            OR (status = 'doing' AND owner = 'agent')
+         ORDER BY updated_at ASC`
+      )
+      .all()
+      .map(rowToCard);
+    const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
+    const open = new Set(
+      blockerInfoIn(db, blockerIds)
+        .filter((b) => isOpenStatus(b.status))
+        .map((b) => b.id)
+    );
+    const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
+    const cutoff = now();
+    return cards.filter((c) => {
+      if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
+      if (c.status === 'doing') return true;
+      const check = waits.get(c.id);
+      return check !== undefined && check <= cutoff;
+    });
   } finally {
     db.close();
   }
