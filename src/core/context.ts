@@ -81,6 +81,12 @@ export async function writeContext(
   opts: { cardId: string; actor: string; message?: string }
 ): Promise<{ path: string; action: 'add' | 'update'; message: string; commit: string }> {
   const actor = assertActor(opts.actor);
+  // Normalize once so kind-placement rules (and event payloads) can't be
+  // sidestepped with './' or 'board/../_global/' spellings.
+  relPath = path.posix.normalize(relPath);
+  if (relPath.startsWith('..') || path.posix.isAbsolute(relPath)) {
+    throw new Error(`Invalid context path: ${relPath}`);
+  }
   validateContent(relPath, content);
   const abs = resolveContextPath(relPath);
 

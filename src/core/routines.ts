@@ -31,6 +31,9 @@ export function assertRoutineFrontmatter(relPath: string, data: Record<string, u
   if (typeof data.schedule !== 'string' || !data.schedule.trim()) {
     throw new Error(`kind: routine requires 'schedule' — a 5-field cron expression (${relPath})`);
   }
+  if (data.schedule.trim().split(/\s+/).length !== 5) {
+    throw new Error(`kind: routine requires a 5-field cron expression, got '${data.schedule}' (${relPath})`);
+  }
   try {
     new Cron(data.schedule); // parse-only: no callback, nothing is scheduled
   } catch (err) {
