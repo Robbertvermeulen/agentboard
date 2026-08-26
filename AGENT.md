@@ -60,7 +60,11 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    something external (a reply, a deploy, a person), log exactly what to
    check and where ("check thread X in gmail-zakelijk for a reply from
    Chris") — the next session, cron-started or human-started, resumes from
-   that line. Waiting is never a new card; it lives on the blocked card.
+   that line. Always log a wait-state with a check time: `card log <id>
+   "check thread X in gmail-zakelijk" --as agent --check-after 2d` — the
+   scheduler brings the card back into the gate once the check time passes;
+   without --check-after the card only returns when the user acts. Waiting
+   is never a new card; it lives on the blocked card.
 9. Anything you write on the user's behalf (Trello comments, emails)
    follows the profile chain of rule 2: global writing rules, overridden
    by board style, overridden by client style. Read it before drafting.

@@ -123,17 +123,70 @@ path for the dedup check (`card list --routine/--ref`). The UI lists
 routines read-only; pausing is the only direct action and commits
 `enabled: false` through the normal context channel.
 
-## Trigger (design, not built)
+## Trigger
 
-Unattended operation is three layers; only the first lives in this tool:
+Unattended operation is three layers: the gate, the runner, and your clock:
 
-1. `agentboard next` — the worklist query (ready, doing@agent,
-   needs_input). Empty list = no agent session, so a scheduler stays
-   cheap.
-2. A launchd/cron job outside the tool: run `agentboard next --json`;
-   if non-empty, start a headless agent session with AGENT.md.
-3. Session behavior is already covered by AGENT.md rules 2 and 8
-   (timeline as memory) and rule 11 (no external sends without approval).
+1. **Gate** — `agentboard gate --json` is the scheduler's question: ready
+   cards without open blockers, cards in doing@agent, and cards with
+   expired wait-checks. Bare needs_input cards never count. The gate is
+   narrower than `next`: it omits inbox and blocks on open blockers.
+2. **Runner** — `agentboard runner` is a single-flight lock protecting
+   the gate + session. Lock lives in `session.lock` (stale if a dead
+   process owns it or if `AGENTBOARD_LOCK_MAX_AGE` minutes have passed,
+   default 120). The runner marks due routines, spawns a headless agent
+   session via `AGENTBOARD_SESSION_CMD` (default `claude -p`), passes
+   `AGENTBOARD_AGENT_MD` (path to this file) and the due routine paths
+   to the prompt, logs raw output to `sessions/<timestamp>.log`, and
+   sends a one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional
+   — e.g. a Slack webhook). Dry-run: `agentboard runner --dry-run`.
+3. **Clock** — install the scheduler via cron or launchd (macOS). Cron:
+
+   ```
+   * * * * * cd ~ && agentboard runner
+   ```
+
+   Or launchd plist (save as `~/Library/LaunchAgents/agentboard.plist`,
+   then `launchctl load` it):
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+     <key>Label</key>
+     <string>uk.agentboard</string>
+     <key>ProgramArguments</key>
+     <array>
+       <string>/usr/local/bin/agentboard</string>
+       <string>runner</string>
+     </array>
+     <key>EnvironmentVariables</key>
+     <dict>
+       <key>AGENTBOARD_DATA</key>
+       <string>/Users/your-user/.agentboard</string>
+       <key>AGENTBOARD_LOCK_MAX_AGE</key>
+       <string>120</string>
+     </dict>
+     <key>StartInterval</key>
+     <integer>60</integer>
+   </dict>
+   </plist>
+   ```
+
+**One machine per data dir.** Synced SQLite + PID locks across
+machines creates silent corruption; the lock refuses foreign
+hostnames. Install agentboard on each machine separately.
+
+**Serve-hook** — when `AGENTBOARD_AUTORUN=1`, a human move or
+comment via the UI pokes the runner (to surface an urgent card
+immediately, rather than wait for the cron tick).
+
+**Wait-states** — log a wait with `card log <id> "check thread X
+in gmail-zakelijk" --as agent --check-after 2d`. The card leaves
+"Needs me" and the gate brings it back when the check time expires,
+allowing the next session to pick up where you left off.
 
 ## External refs
 
@@ -148,11 +201,11 @@ Multiple connections of the same type can coexist (two business
 mailboxes): each gets its own file in `_global/`, and the client or
 resource file names which one applies.
 
-Wait-states ("mailed Chris, awaiting reply") are free-text events on the
-blocked card — the timeline is the agent's memory between sessions
-(AGENT.md rule 8). If that ever proves too fragile for a cron trigger,
-the landing spot is a structured `check` field in the event payload
-(already JSON) — not a new card type or table.
+Wait-states ("mailed Chris, awaiting reply") are logged with
+`check_after`, a structured timestamp on the event payload. The gate
+brings the card back when the check time expires, allowing the next
+session (cron or manual) to pick it up — see rule 8 and the Trigger
+section for details.
 
 Every command takes `--json`. Errors go to stderr with exit code 1.
 
@@ -241,6 +294,10 @@ Each of these exists because the schema or an invariant needs it:
 - `card list --routine <path>` — find cards spawned by a routine.
 - `card list --ref <key>` — find cards tagged with a given ref key
   (rule-16 dedup check for watchers).
+- `card log --check-after <when>` — log a wait-state: the scheduler
+  brings the card back when the check time expires (30m/6h/2d or ISO
+  format). Mandatory for wait states; without it the card only returns
+  when the user acts.
 
 ## Structure
 
