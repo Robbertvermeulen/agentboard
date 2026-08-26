@@ -140,8 +140,9 @@ export function createApp(): Hono {
   app.post('/api/cards/:id/move', async (c) => {
     try {
       const body = await c.req.json();
+      const result = moveCard(c.req.param('id'), body.status, { actor: ACTOR, reason: body.reason });
       maybeAutorun();
-      return c.json(moveCard(c.req.param('id'), body.status, { actor: ACTOR, reason: body.reason }));
+      return c.json(result);
     } catch (err) {
       return errorResponse(c, err);
     }
@@ -150,8 +151,9 @@ export function createApp(): Hono {
   app.post('/api/cards/:id/comments', async (c) => {
     try {
       const body = await c.req.json();
+      const result = addComment(c.req.param('id'), body.text ?? '', ACTOR);
       maybeAutorun();
-      return c.json(addComment(c.req.param('id'), body.text ?? '', ACTOR), 201);
+      return c.json(result, 201);
     } catch (err) {
       return errorResponse(c, err);
     }
