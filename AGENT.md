@@ -126,7 +126,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     comment there instead of duplicating. Cards you create for a
     routine: `card new --routine <path> --as agent ...` — they start in
     ready (the approval lives in the routine); the review gate is
-    unchanged: you still never move a card to done.
+    unchanged: you still never move a card to done. Sessions may be
+    started by a scheduler; when they are, the start prompt lists the
+    due routine paths for that run.
 
 ## Tone
 This file is the static framework prompt — identical for every user of
