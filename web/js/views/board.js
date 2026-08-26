@@ -2,14 +2,15 @@
 import { api } from '../api.js';
 import { icons, statusIcon, STATUS_META, STATUSES } from '../icons.js';
 import { esc, relTime } from '../util.js';
-import { cardTile, statusPill, openCreateDialog, crumb } from '../components.js';
+import { cardTile, statusPill, openCreateDialog, crumb, isWaitingExternal } from '../components.js';
 
 export const tabs = (boards, activeId) => `<div class="tabs">
   <a href="#/" class="${activeId == null ? 'active' : ''}">All boards</a>
   ${boards.map((b) => `<a href="#/board/${esc(b.id)}" class="${b.id === activeId ? 'active' : ''}">${esc(b.name)}</a>`).join('')}
 </div>`;
 
-export const needYouCount = (columns) => (columns.needs_input?.length ?? 0) + (columns.review?.length ?? 0);
+export const needYouCount = (columns) =>
+  (columns.needs_input?.filter((c) => !isWaitingExternal(c)).length ?? 0) + (columns.review?.length ?? 0);
 export const openCount = (columns) => STATUSES.filter((s) => s !== 'done').reduce((n, s) => n + (columns[s]?.length ?? 0), 0);
 
 const DAY = 24 * 60 * 60 * 1000;

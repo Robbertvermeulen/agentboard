@@ -21,6 +21,11 @@ export function ageChip(card) {
 
 export const labelChips = (labels) => (labels ?? []).map((l) => `<span class="label-chip">${esc(l)}</span>`).join('');
 
+// Vision besluit H: a needs_input card with a live wait-check is waiting on
+// something external — not the user's turn.
+export const isWaitingExternal = (card) =>
+  card.status === 'needs_input' && !!card.wait_check && card.wait_check > new Date().toISOString();
+
 // Status pill: filled for the active states, quiet for inbox/ready/done.
 export function statusPill(status, { chevron = false, id = '' } = {}) {
   const meta = STATUS_META[status];
@@ -65,7 +70,9 @@ export function cardTile(card, { compact = false } = {}) {
     <div class="tile-top">
       <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}${
         openBlockers ? `<span class="blocked-chip" title="${openBlockers} open blocker${openBlockers === 1 ? '' : 's'}">${icons.block(10)}${openBlockers}</span>` : ''
-      }${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}</span>
+      }${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}${
+        isWaitingExternal(card) ? `<span class="wait-chip" title="waiting on external — not in 'needs me'${card.wait_check ? ` · check ${esc(card.wait_check)}` : ''}">${icons.clock(10, 'var(--mut)')}waiting</span>` : ''
+      }</span>
       ${card.owner === 'agent' && !compact ? agentChip() : ''}
       ${card.owner === 'agent' && compact ? '<span class="agent-mini">@agent</span>' : ''}
     </div>
