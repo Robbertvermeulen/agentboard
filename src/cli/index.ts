@@ -29,6 +29,7 @@ import {
   writeContext,
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
+import { runSession } from '../core/runner.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -258,6 +259,21 @@ program
         routines: due.routines,
         errors: due.errors,
       });
+    })
+  );
+
+program
+  .command('runner')
+  .description('single-flight scheduler step: lock, gate, mark due routines, start a headless agent session')
+  .option('--dry-run', 'print lock status, gate counts and the prompt without starting anything')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const result = runSession(opts.dryRun === true);
+      const text = result.started
+        ? `Session done (${result.reason}), log: ${result.log}${result.notified?.length ? `, handed back: ${result.notified.map((n) => n.id).join(', ')}` : ''}`
+        : `No session: ${result.reason}${result.gate ? ` (gate: ${result.gate.cards} cards, ${result.gate.routines} routines)` : ''}`;
+      output(opts, text, result);
     })
   );
 
