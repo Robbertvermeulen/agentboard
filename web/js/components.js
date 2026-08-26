@@ -65,7 +65,7 @@ export function cardTile(card, { compact = false } = {}) {
     <div class="tile-top">
       <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}${
         openBlockers ? `<span class="blocked-chip" title="${openBlockers} open blocker${openBlockers === 1 ? '' : 's'}">${icons.block(10)}${openBlockers}</span>` : ''
-      }</span>
+      }${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}</span>
       ${card.owner === 'agent' && !compact ? agentChip() : ''}
       ${card.owner === 'agent' && compact ? '<span class="agent-mini">@agent</span>' : ''}
     </div>

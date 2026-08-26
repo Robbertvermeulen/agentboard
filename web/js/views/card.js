@@ -200,8 +200,9 @@ export async function renderCard(root, { boards, cardId }) {
           <h1>${esc(card.title)}</h1>
           ${card.body ? `<div class="detail-body">${renderMarkdown(card.body)}</div>` : ''}
           ${
-            card.context_refs?.length || linked.length || blockers.length
+            card.context_refs?.length || linked.length || blockers.length || card.routine
               ? `<div class="chip-row">
+                  ${card.routine ? `<span class="routine-chip lg" title="${esc(card.routine)}">${icons.history(11)}routine</span>` : ''}
                   ${blockers
                     .map((b) => {
                       const open = b.status !== 'done' && b.status !== 'archived';

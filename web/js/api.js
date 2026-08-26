@@ -39,4 +39,6 @@ export const api = {
   // Write-only by design: there is no call that reads a secret back.
   storeSecret: (id, { name, value, encoding }) =>
     req(`/api/cards/${encodeURIComponent(id)}/secrets`, json('POST', { name, value, encoding })),
+  routines: (board) => req(`/api/routines${board ? `?board=${encodeURIComponent(board)}` : ''}`),
+  toggleRoutine: (path, enabled) => req('/api/routines/toggle', json('POST', { path, enabled })),
 };

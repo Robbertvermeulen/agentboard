@@ -8,6 +8,7 @@ import { renderBoard, needYouCount, openCount } from './views/board.js';
 import { renderCard, stopCardPolling } from './views/card.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
+import { openRoutinesModal } from './views/routines.js';
 
 const view = document.getElementById('view');
 const sidebar = document.getElementById('sidebar');
@@ -39,6 +40,9 @@ function renderSidebar(route, views) {
     <a class="side-item ${route.name === 'ctx' ? 'active' : ''}" href="#/ctx">
       ${icons.fileText(16, 'var(--mut)')}<span>Context</span>
     </a>
+    <button type="button" class="side-item" id="side-routines">
+      ${icons.history(16, 'var(--mut)')}<span>Routines</span>
+    </button>
     <a class="side-item ${route.name === 'archive' ? 'active' : ''}" href="#/board/${esc(route.boardId ?? boards[0]?.id ?? '')}/archived">
       ${icons.archive(16, 'var(--mut)')}<span>Archive</span>
     </a>
@@ -54,6 +58,8 @@ function renderSidebar(route, views) {
       )
       .join('')}
   `;
+  const rt = sidebar.querySelector('#side-routines');
+  if (rt) rt.onclick = () => openRoutinesModal({ boards, boardId: route.boardId ?? null });
 }
 
 function renderTabbar(route) {
