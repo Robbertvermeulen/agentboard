@@ -256,7 +256,7 @@ const card = program.command('card').description('manage cards');
 
 card
   .command('new')
-  .description('create a card (status: inbox)')
+  .description('create a card (status: inbox; ready with --routine)')
   .requiredOption('--type <type>', 'task | ops')
   .requiredOption('--title <title>', 'card title')
   .option('--body <body>', 'card body')
