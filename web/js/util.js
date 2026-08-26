@@ -24,9 +24,20 @@ export function shortDate(iso) {
   return SHORT_DATE_FMT.format(new Date(iso));
 }
 
-// "just now", "12 min ago", "3h ago", "2d ago", then a date.
+// "just now", "12 min ago", "3h ago", "2d ago", then a date. A future iso
+// (e.g. a routine's next run) mirrors the same units as "in 5m"/"in 3h"/"in 4d".
 export function relTime(iso) {
   const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 0) {
+    const min = Math.floor(-ms / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return `in ${min}m`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `in ${h}h`;
+    const d = Math.floor(h / 24);
+    if (d < 14) return `in ${d}d`;
+    return shortDate(iso);
+  }
   const min = Math.floor(ms / 60000);
   if (min < 1) return 'just now';
   if (min < 60) return `${min} min ago`;
