@@ -213,7 +213,11 @@ EOF
 chmod +x "$SCRATCH/hand3.sh"
 : > "$SCRATCH/err.log"
 AGENTBOARD_SESSION_CMD="$SCRATCH/hand3.sh" $CLI runner >/dev/null 2>"$SCRATCH/err.log"
-[ ! -s "$SCRATCH/err.log" ] || fail "notify produced stderr output with no AGENTBOARD_NOTIFY_CMD set"
+# The runner always logs its own step lines to stderr (spec §3); only the
+# notify-specific output must stay silent with no AGENTBOARD_NOTIFY_CMD set.
+if grep -qi "notify" "$SCRATCH/err.log"; then
+  fail "notify produced stderr output with no AGENTBOARD_NOTIFY_CMD set"
+fi
 
 # ============================================================================
 # Leg 7: serve-hook -- AUTORUN=1 + comment spawns the runner (fake evidence);
