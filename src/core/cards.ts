@@ -30,6 +30,7 @@ export interface Card {
   refs: unknown[];
   context_refs: string[];
   blocked_by: string[];
+  routine: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -219,6 +220,7 @@ export function createCard(input: {
   labels?: string[];
   blocks?: string;
   actor?: string;
+  routine?: string;
 }): Card {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
@@ -237,9 +239,23 @@ export function createCard(input: {
     // --blocks is one transaction: card + blocked_by append + event, or nothing.
     const create = db.transaction(() => {
       db.prepare(
-        `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'inbox', ?, ?, '[]', '[]', ?, ?)`
-      ).run(id, boardId, type, input.title, input.body ?? null, owner, JSON.stringify(input.labels ?? []), ts, ts);
+        `INSERT INTO card (id, board_id, type, title, body, status, owner, labels, refs, context_refs, routine, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?, ?)`
+      ).run(
+        id,
+        boardId,
+        type,
+        input.title,
+        input.body ?? null,
+        // Routine cards start in ready: the approval happened on the routine
+        // itself, and this keeps "only the user moves inbox -> ready" intact.
+        input.routine ? 'ready' : 'inbox',
+        owner,
+        JSON.stringify(input.labels ?? []),
+        input.routine ?? null,
+        ts,
+        ts
+      );
       if (input.blocks) {
         const target = getCardIn(db, input.blocks);
         db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(
@@ -292,6 +308,31 @@ export function boardView(boardId?: string): { board: Board; columns: Partial<Re
       }
       return { board, columns };
     });
+  } finally {
+    db.close();
+  }
+}
+
+// Dedup tooling (vision besluit E): the anti-duplicate rule only works if
+// the check is cheap. --ref is the watcher key, --routine the job key.
+export function listCards(filter: { ref?: string; routine?: string; board?: string }): Card[] {
+  if (!filter.ref && !filter.routine) {
+    throw new Error('Pass --ref <text> and/or --routine <path>');
+  }
+  const db = openDb();
+  try {
+    if (filter.board) resolveBoardIn(db, filter.board);
+    const rows = (
+      filter.board
+        ? db.prepare('SELECT * FROM card WHERE board_id = ? ORDER BY updated_at DESC').all(filter.board)
+        : db.prepare('SELECT * FROM card ORDER BY updated_at DESC').all()
+    ).map(rowToCard);
+    const ref = filter.ref?.toLowerCase();
+    return rows.filter(
+      (c) =>
+        (!ref || JSON.stringify(c.refs).toLowerCase().includes(ref)) &&
+        (!filter.routine || c.routine === filter.routine)
+    );
   } finally {
     db.close();
   }

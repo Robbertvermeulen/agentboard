@@ -13,6 +13,7 @@ import {
   createCard,
   editCard,
   listBoards,
+  listCards,
   logEvent,
   moveCard,
   nextWork,
@@ -262,6 +263,7 @@ card
   .option('--owner <owner>', 'human | agent', 'human')
   .option('--board <id>', 'board (required when more than one board exists)')
   .option('--blocks <id>', 'link this new card as a blocker of <id> (writes blocker_added on that card)')
+  .option('--routine <pad>', 'routine that spawned this card; the card starts in ready')
   .option('--as <actor>', 'human | agent — actor of the blocker_added event', 'human')
   .option('--json', 'JSON output')
   .action(
@@ -274,6 +276,7 @@ card
         board: opts.board,
         blocks: opts.blocks,
         actor: opts.as,
+        routine: opts.routine,
       });
       const suffix = opts.blocks ? `  blocks ${opts.blocks}` : '';
       output(opts, `Created ${c.id}  ${c.title}  (${c.board_id}, ${c.status})${suffix}`, c);
@@ -304,6 +307,21 @@ card
       const timeline = renderTimeline(detail.comments, detail.events);
       if (timeline.length) lines.push('', ...timeline);
       output(opts, lines.join('\n'), detail);
+    })
+  );
+
+card
+  .command('list')
+  .description('find cards by external ref or routine (the dedup check from AGENT.md rule 16)')
+  .option('--ref <tekst>', 'case-insensitive substring over the refs JSON')
+  .option('--routine <pad>', 'exact routine path match')
+  .option('--board <id>', 'only this board')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const cards = listCards({ ref: opts.ref, routine: opts.routine, board: opts.board });
+      const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
+      output(opts, lines.length ? lines.join('\n') : 'No matching cards', { cards });
     })
   );
 
