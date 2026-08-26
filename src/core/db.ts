@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS card (
   refs          TEXT NOT NULL DEFAULT '[]',
   context_refs  TEXT NOT NULL DEFAULT '[]',
   blocked_by    TEXT NOT NULL DEFAULT '[]',
+  routine       TEXT,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -66,6 +67,11 @@ CREATE TABLE IF NOT EXISTS comment (
 );
 
 CREATE TABLE IF NOT EXISTS event (${EVENT_TABLE_BODY});
+
+CREATE TABLE IF NOT EXISTS routine_run (
+  path        TEXT PRIMARY KEY,
+  last_run_at TEXT NOT NULL
+);
 `;
 
 export function dataDir(): string {
@@ -137,6 +143,12 @@ export async function initData(opts?: {
   if (!cardCols.some((c) => c.name === 'blocked_by')) {
     db.exec("ALTER TABLE card ADD COLUMN blocked_by TEXT NOT NULL DEFAULT '[]'");
     created.push('card.blocked_by');
+  }
+
+  // Migration: card tables from before routines lack the routine column.
+  if (!cardCols.some((c) => c.name === 'routine')) {
+    db.exec('ALTER TABLE card ADD COLUMN routine TEXT');
+    created.push('card.routine');
   }
 
   // Migration: comment tables from before comment editing lack updated_at.
