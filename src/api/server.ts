@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { serve } from '@hono/node-server';
@@ -63,6 +64,16 @@ const ARTIFACT_INLINE: Record<string, string> = {
 
 function webDir(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web');
+}
+
+// v1.5 of vision besluit C: a human action pokes the same runner the cron
+// uses; the single-flight lock arbitrates. Opt-in via AGENTBOARD_AUTORUN=1
+// so dev servers and UI tests never start real sessions by accident.
+function maybeAutorun(): void {
+  if (process.env.AGENTBOARD_AUTORUN !== '1') return;
+  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
+  const child = spawn(process.execPath, [cli, 'runner'], { detached: true, stdio: 'ignore' });
+  child.unref();
 }
 
 export function createApp(): Hono {
@@ -129,6 +140,7 @@ export function createApp(): Hono {
   app.post('/api/cards/:id/move', async (c) => {
     try {
       const body = await c.req.json();
+      maybeAutorun();
       return c.json(moveCard(c.req.param('id'), body.status, { actor: ACTOR, reason: body.reason }));
     } catch (err) {
       return errorResponse(c, err);
@@ -138,6 +150,7 @@ export function createApp(): Hono {
   app.post('/api/cards/:id/comments', async (c) => {
     try {
       const body = await c.req.json();
+      maybeAutorun();
       return c.json(addComment(c.req.param('id'), body.text ?? '', ACTOR), 201);
     } catch (err) {
       return errorResponse(c, err);
