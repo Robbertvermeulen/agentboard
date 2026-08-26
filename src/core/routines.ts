@@ -151,3 +151,35 @@ export function markRoutineRun(relPath: string): { path: string; last_run_at: st
     db.close();
   }
 }
+
+// The pause toggle rewrites exactly one frontmatter line; the rest of the
+// file stays byte-identical. The routine's own ops card anchors the commit
+// and the context_written event (invariant 3) — no card, no toggle.
+export function toggleRoutineContent(
+  relPath: string,
+  enabled: boolean
+): { content: string; card: string; name: string } {
+  const abs = resolveInContext(relPath);
+  if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
+    throw new Error(`No such context file: ${relPath}`);
+  }
+  const raw = fs.readFileSync(abs, 'utf8');
+  const data = matter(raw).data as Record<string, unknown>;
+  if (data.kind !== 'routine') throw new Error(`Not a routine: ${relPath}`);
+  const card = typeof data.card === 'string' && data.card.trim() ? data.card : '';
+  if (!card) {
+    throw new Error(`Routine ${relPath} has no 'card' in its frontmatter — cannot anchor the toggle commit`);
+  }
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) throw new Error(`No frontmatter block in ${relPath}`);
+  const header = m[1];
+  const line = `enabled: ${enabled}`;
+  const newHeader = /^enabled\s*:/m.test(header)
+    ? header.replace(/^enabled\s*:.*$/m, line)
+    : header.replace(/^(kind\s*:.*)$/m, `$1\n${line}`);
+  // Splice by position of the header text itself — safe for \n and \r\n.
+  const start = raw.indexOf(header);
+  const content = raw.slice(0, start) + newHeader + raw.slice(start + header.length);
+  const name = typeof data.name === 'string' && data.name.trim() ? data.name : path.basename(relPath, '.md');
+  return { content, card, name };
+}

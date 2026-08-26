@@ -19,7 +19,8 @@ import {
 } from '../core/cards.js';
 import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
-import { contextDiff, listContextFiles, readContext, storeSecretForCard } from '../core/context.js';
+import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
+import { listRoutines, toggleRoutineContent } from '../core/routines.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
@@ -251,6 +252,32 @@ export function createApp(): Hono {
   app.get('/api/next', (c) => {
     try {
       return c.json({ cards: nextWork() });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/routines', (c) => {
+    try {
+      return c.json(listRoutines(c.req.query('board') || undefined));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // The only routine write path in the UI: pausing/resuming. Runs through
+  // writeContext so invariant 3 holds (commit + event on the routine's card).
+  app.post('/api/routines/toggle', async (c) => {
+    try {
+      const body = await c.req.json();
+      const enabled = body.enabled === true;
+      const { content, card, name } = toggleRoutineContent(String(body.path ?? ''), enabled);
+      const result = await writeContext(String(body.path), content, {
+        cardId: card,
+        actor: ACTOR,
+        message: `ctx: ${enabled ? 'resume' : 'pause'} routine ${name} (${card})`,
+      });
+      return c.json(result);
     } catch (err) {
       return errorResponse(c, err);
     }
