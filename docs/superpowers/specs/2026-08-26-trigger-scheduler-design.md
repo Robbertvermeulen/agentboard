@@ -39,10 +39,11 @@ payload. `<waarde>` is een ISO-timestamp óf een duur-shorthand
 (`30m`, `6h`, `2d`), door de CLI omgerekend naar ISO.
 
 Gate-regel: per needs_input-kaart geldt het **jongste** event met een
-`check_after`. Verstreken (≤ nu) → de kaart telt mee in de gate. Geen
-enkel check_after-event → de kaart komt alleen terug via een
-human-actie. AGENT.md-regel 8 wordt aangescherpt: een wait-state logt
-altijd mét `--check-after`.
+`check_after` van ná de laatste statuswissel — een oude wait-check uit
+een eerdere needs_input-episode telt niet. Verstreken (≤ nu) → de kaart
+telt mee in de gate. Geen enkel check_after-event → de kaart komt
+alleen terug via een human-actie. AGENT.md-regel 8 wordt aangescherpt:
+een wait-state logt altijd mét `--check-after`.
 
 ## 3. De runner: `agentboard runner`
 

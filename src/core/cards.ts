@@ -94,15 +94,30 @@ export const isOpenStatus = (s: Status) => s !== 'done' && s !== 'archived';
 
 // Latest check_after per card (vision besluit H): a needs_input card with a
 // live wait-check is "waiting on external" — not the user's turn, and only
-// the scheduler brings it back once the check time passes.
+// the scheduler brings it back once the check time passes. Scoped to events
+// after the card's latest status_changed: a stale check_after left over
+// from an earlier needs_input episode must not govern the card again.
 function waitCheckIn(db: Database.Database, ids: string[]): Map<string, string> {
   if (ids.length === 0) return new Map();
   const placeholders = ids.map(() => '?').join(',');
+  const since = new Map(
+    (
+      db
+        .prepare(
+          `SELECT card_id, MAX(id) AS id FROM event WHERE card_id IN (${placeholders}) AND kind = 'status_changed' GROUP BY card_id`
+        )
+        .all(ids) as { card_id: string; id: number }[]
+    ).map((r) => [r.card_id, r.id])
+  );
   const rows = db
-    .prepare(`SELECT card_id, payload FROM event WHERE card_id IN (${placeholders}) AND kind = 'action_taken' ORDER BY id`)
-    .all(ids) as { card_id: string; payload: string }[];
+    .prepare(
+      `SELECT id, card_id, payload FROM event WHERE card_id IN (${placeholders}) AND kind = 'action_taken' ORDER BY id`
+    )
+    .all(ids) as { id: number; card_id: string; payload: string }[];
   const latest = new Map<string, string>();
   for (const r of rows) {
+    const cutoff = since.get(r.card_id);
+    if (cutoff !== undefined && r.id <= cutoff) continue; // from a previous needs_input episode
     const p = JSON.parse(r.payload) as Record<string, unknown>;
     if (typeof p.check_after === 'string') latest.set(r.card_id, p.check_after);
   }
