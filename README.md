@@ -137,10 +137,11 @@ Unattended operation is three layers: the gate, the runner, and your clock:
    process owns it or if `AGENTBOARD_LOCK_MAX_AGE` minutes have passed,
    default 120). The runner marks due routines, spawns a headless agent
    session via `AGENTBOARD_SESSION_CMD` (default `claude -p`), passes
-   `AGENTBOARD_AGENT_MD` (path to this file) and the due routine paths
+   `AGENTBOARD_AGENT_MD` (path to AGENT.md) and the due routine paths
    to the prompt, logs raw output to `sessions/<timestamp>.log`, and
    sends a one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional
-   — e.g. a Slack webhook). Dry-run: `agentboard runner --dry-run`.
+   — e.g. a script that posts to a webhook). Dry-run:
+   `agentboard runner --dry-run`.
 3. **Clock** — install the scheduler via cron or launchd (macOS). Cron:
 
    ```
