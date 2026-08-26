@@ -114,6 +114,15 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     every card with `card move <id> doing --from ready --as agent
     --reason "Claiming"`; if that fails, another session got there first
     — take the next card.
+16. Routine runs: read the routine file (`ctx show <path>`) and decide —
+    a new card, a comment on an existing card, or nothing (a silent run
+    is fine). Never create a card for something that already has a
+    living card: check `card list --routine <path>` for the routine's
+    own cards and `card list --ref <key>` for watcher items first, and
+    comment there instead of duplicating. Cards you create for a
+    routine: `card new --routine <path> --as agent ...` — they start in
+    ready (the approval lives in the routine); the review gate is
+    unchanged: you still never move a card to done.
 
 ## Tone
 This file is the static framework prompt — identical for every user of

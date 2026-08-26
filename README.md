@@ -105,6 +105,24 @@ Schedule it daily (cron/launchd) with `--out` on a second disk or
 synced folder, and give the context repo a git remote — the tool does
 neither for you.
 
+## Routines
+
+Recurring work is a context file (`kind: routine`) under a board dir:
+a 5-field cron `schedule:` (local machine time — "mon 09:00" does not
+shift with DST), the ops `card:` it was approved on, an optional
+`name:` and `enabled:`, and a free-text body: the instruction for the
+agent. Job or watcher is phrasing, not mechanism.
+
+Run-state lives in SQLite (`routine_run`), not in git. A routine is
+seeded at first sight (not due right after approval); `agentboard
+routines due --json` is the scheduler's question, `routines mark
+<path>` stamps a run at session start, `routines list` shows
+everything. Cards spawned by a routine (`card new --routine <path>`)
+start in ready — the approval happened on the routine — and carry the
+path for the dedup check (`card list --routine/--ref`). The UI lists
+routines read-only; pausing is the only direct action and commits
+`enabled: false` through the normal context channel.
+
 ## Trigger (design, not built)
 
 Unattended operation is three layers; only the first lives in this tool:
@@ -148,7 +166,8 @@ per business.
 `owner` (human|agent), `labels` (JSON array), `refs` (JSON array
 `[{label, url?, note?}]`, deliberately unstructured), `context_refs`
 (JSON array of context paths), `blocked_by` (JSON array of card ids;
-a card with an open blocker is skipped by `next`), `created_at`,
+a card with an open blocker is skipped by `next`), `routine` (nullable
+routine path; spawned cards start in ready), `created_at`,
 `updated_at`.
 
 **comment** — `id`, `card_id`, `author` (human|agent), `body`, `created_at`.
@@ -158,6 +177,9 @@ Comments are for talking to the user.
 context_written | error | upload_added | secret_stored | blocker_added), `actor`
 (human|agent), `payload` (JSON), `created_at`. Events are the log of
 what happened. `secret_stored` carries the name only, never the value.
+
+**routine_run** — `path`, `last_run_at`. One row per routine, stamped at
+session start.
 
 ## The four invariants (enforced in core, not in the CLI)
 
@@ -213,6 +235,12 @@ Each of these exists because the schema or an invariant needs it:
   if it is still in that status.
 - `card edit --blocked-by <ids>` — full-list replace, validated for
   existence, self-blocking and cycles.
+- `card new --routine <path>` — spawns a card from a routine file; the
+  card starts in ready (the routine holds the approval), and records the
+  routine path for the rule-16 dedup check.
+- `card list --routine <path>` — find cards spawned by a routine.
+- `card list --ref <key>` — find cards tagged with a given ref key
+  (rule-16 dedup check for watchers).
 
 ## Structure
 
