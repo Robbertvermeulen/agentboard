@@ -113,7 +113,15 @@ function notify(handbacks: { id: string; to: string }[]): void {
     .join(', ')}`;
   const parts = cmd.split(/\s+/);
   try {
-    spawnSync(parts[0], [...parts.slice(1), summary], { stdio: 'ignore', timeout: 30_000 });
+    const result = spawnSync(parts[0], [...parts.slice(1), summary], { stdio: 'ignore', timeout: 30_000 });
+    // spawnSync does not throw for the common failures (missing binary, non-zero
+    // exit) — it reports them on the result instead, so they must be checked
+    // explicitly or a failing notify silently vanishes.
+    if (result.error) {
+      console.error(`notify failed: ${result.error.message}`);
+    } else if (result.status !== null && result.status !== 0) {
+      console.error(`notify exited ${result.status}`);
+    }
   } catch (err) {
     console.error(`notify failed: ${err instanceof Error ? err.message : err}`);
   }
