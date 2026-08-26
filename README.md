@@ -129,8 +129,9 @@ Unattended operation is three layers: the gate, the runner, and your clock:
 
 1. **Gate** — `agentboard gate --json` is the scheduler's question: ready
    cards without open blockers, cards in doing@agent, and cards with
-   expired wait-checks. Bare needs_input cards never count. The gate is
-   narrower than `next`: it omits inbox and blocks on open blockers.
+   expired wait-checks. Bare needs_input never counts — one unanswered
+   question must not start a session every minute. Only an expired
+   wait-check brings a needs_input card back to the gate.
 2. **Runner** — `agentboard runner` is a single-flight lock protecting
    the gate + session. Lock lives in `session.lock` (stale if a dead
    process owns it or if `AGENTBOARD_LOCK_MAX_AGE` minutes have passed,
