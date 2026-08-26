@@ -174,9 +174,10 @@ export function toggleRoutineContent(
   if (!m) throw new Error(`No frontmatter block in ${relPath}`);
   const header = m[1];
   const line = `enabled: ${enabled}`;
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
   const newHeader = /^enabled\s*:/m.test(header)
     ? header.replace(/^enabled\s*:.*$/m, line)
-    : header.replace(/^(kind\s*:.*)$/m, `$1\n${line}`);
+    : header.replace(/^(kind\s*:[^\r\n]*)/m, `$1${eol}${line}`);
   // Splice by position of the header text itself — safe for \n and \r\n.
   const start = raw.indexOf(header);
   const content = raw.slice(0, start) + newHeader + raw.slice(start + header.length);
