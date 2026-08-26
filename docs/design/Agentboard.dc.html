@@ -19,10 +19,1018 @@
   a:hover { color:oklch(0.48 0.16 255); text-decoration:underline; }
   svg { display:block; }
   ::selection { background:color-mix(in oklch, oklch(0.55 0.16 255) 22%, transparent); }
+  @keyframes ab-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.35; transform:scale(0.7); } }
+  @keyframes ab-ring { 0% { box-shadow:0 0 0 0 color-mix(in oklch, oklch(0.55 0.16 255) 35%, transparent); } 70% { box-shadow:0 0 0 7px color-mix(in oklch, oklch(0.55 0.16 255) 0%, transparent); } 100% { box-shadow:0 0 0 0 color-mix(in oklch, oklch(0.55 0.16 255) 0%, transparent); } }
+  @keyframes ab-slidein { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
 </style>
 </helmet>
 
-<section style="display:flex; flex-direction:column; gap:40px; padding:48px 48px 120px;">
+<section style="display:flex; flex-direction:column; gap:40px; padding:48px 48px 40px;">
+
+  <div style="display:flex; align-items:baseline; gap:12px;">
+    <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Agentboard</span>
+    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">turn 2 · beurtwissel, twee soorten wachten, blockers, routines, agent-logs, realtime, secrets-intake</span>
+  </div>
+
+  <!-- ═══════════════ 2a — BOARD: waiting kinds, aging, blockers, routines, live vs dormant ═══════════════ -->
+  <div id="2a" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2a</span>
+      <span style="font-size:13px; font-weight:500;">Board — twee soorten wachten, veroudering, blocker-chips, ↻ routine, levende vs. stille sessie</span>
+    </div>
+
+    <div style="width:1740px; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+
+      <div style="flex:none; display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+        <div style="display:flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid color-mix(in oklch, oklch(0.75 0.16 85) 45%, #fff); border-radius:10px; background:color-mix(in oklch, oklch(0.75 0.16 85) 12%, #fff); font-size:13px; font-weight:500;">
+          <span style="width:6px; height:6px; border-radius:999px; background:oklch(0.75 0.16 85);"></span>
+          <span>Needs me · 2</span>
+        </div>
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">3 cards in needs_input — one is waiting on something external, so it is not counted</span>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; background:#fff; font-size:13px; font-weight:500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+          <span>Routines · 4</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; padding:16px; align-items:flex-start;">
+
+        <!-- ready -->
+        <div style="width:280px; flex:none; display:flex; flex-direction:column; border-radius:14px; background:color-mix(in oklch, oklch(0.967 0.001 286.375) 60%, #fff); padding:8px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:0 6px; margin-bottom:8px; height:24px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:2px 8px;">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5"/></svg>
+              ready
+            </span>
+            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">2</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- card from a routine, with blockers -->
+            <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.03);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_4d02</span>
+                <span title="created by routine: Monday client sweep" style="display:inline-flex; align-items:center; gap:3px; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 6px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+                  routine
+                </span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 8%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+                  @agent
+                </span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:500; line-height:1.35; text-wrap:pretty;">Sitemap for the acme.com relaunch</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">seo</span>
+                <span title="2 open blockers" style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  2 blockers
+                </span>
+              </div>
+            </div>
+            <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_c410</span>
+              <p style="margin:4px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Reply to Chris about the hosting invoice</p>
+              <p style="margin:5px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.4;">handed back by you · 4 min ago</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- doing: live vs dormant -->
+        <div style="width:280px; flex:none; display:flex; flex-direction:column; border-radius:14px; background:color-mix(in oklch, oklch(0.55 0.16 255) 4%, #fff); padding:8px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:0 6px; margin-bottom:8px; height:24px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 255); border-radius:999px; padding:3px 9px;">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 0,1 7,10.5 Z" fill="#fff"/></svg>
+              doing
+            </span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2</span>
+            <span style="margin-left:auto; font-size:11px; color:oklch(0.505 0.016 285.938);">agent only</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- live session -->
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 30%, #fff); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04); animation:ab-ring 2.4s ease-out infinite;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_1b8e</span>
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:2px 7px;">
+                  <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+                  live · session #482
+                </span>
+              </div>
+              <p style="margin:4px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Rewrite the pricing page copy</p>
+              <p style="margin:4px 0 0; font-size:12px; color:oklch(0.42 0.14 255); line-height:1.4;">heartbeat 2s ago · drafting section 2 of 4</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">content</span>
+                <span style="margin-left:auto; font-size:11px; color:oklch(0.606 0.016 285.938);">just moved here</span>
+              </div>
+            </div>
+            <!-- dormant: no live session, never "broken" -->
+            <div style="background:#fff; border:1px dashed color-mix(in oklch, oklch(0.55 0.16 255) 26%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 10px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_2fd7</span>
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  no live session
+                </span>
+              </div>
+              <p style="margin:4px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Import last year's invoices</p>
+              <p style="margin:4px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.4;">Session #480 ended mid-task — picks up again at the next session (cron 14:00).</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">admin</span>
+                <a href="#2f" style="margin-left:auto; font-size:11px;">last session →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- needs_input: your turn vs external wait vs aging -->
+        <div style="width:280px; flex:none; display:flex; flex-direction:column; border-radius:14px; background:color-mix(in oklch, oklch(0.75 0.16 85) 9%, #fff); border:1px solid color-mix(in oklch, oklch(0.75 0.16 85) 30%, #fff); padding:8px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:0 6px; margin-bottom:8px; height:24px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+              needs_input
+            </span>
+            <span style="font-size:12px; font-weight:500; color:oklch(0.40 0.09 62);">3</span>
+            <span style="margin-left:auto; font-size:11px; color:oklch(0.40 0.09 62);">2 for you</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- your turn -->
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+                <span title="in needs_input since 23 Aug 2026 · 09:12 CEST" style="font-size:11px; font-weight:500; color:oklch(0.44 0.11 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 16%, #fff); border-radius:999px; padding:1px 6px;">2d</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:1px 7px;">your turn</span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:500; line-height:1.35; text-wrap:pretty;">Cookie consent banner missing on client site</p>
+              <p style="margin:5px 0 0; display:flex; align-items:flex-start; gap:5px; font-size:12px; color:oklch(0.40 0.09 62); line-height:1.4;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round" style="margin-top:2px; flex:none;"><path d="M12 17h.01"/><path d="M9.1 9a3 3 0 1 1 4.4 3c-.9.6-1.5 1.2-1.5 2.2"/><circle cx="12" cy="12" r="9"/></svg>waiting on you: restore the plugin, or ask the client first?</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">privacy</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  1 blocker
+                </span>
+              </div>
+            </div>
+
+            <!-- external wait: clock, quieter, not counted -->
+            <div style="background:color-mix(in oklch, oklch(0.967 0.001 286.375) 55%, #fff); border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 10px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.606 0.016 285.938);">task_77b0</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.505 0.016 285.938); background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  waiting on external
+                </span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:500; line-height:1.35; color:oklch(0.35 0.01 285.9);">DNS cutover for shop.acme.com</p>
+              <p style="margin:5px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.4;">waiting on: registrar confirmation mail — checked every session, last check 20 min ago</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.606 0.016 285.938); background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:1px 8px;">dns</span>
+                <span style="margin-left:auto; font-size:11px; color:oklch(0.606 0.016 285.938);">not in “needs me”</span>
+              </div>
+            </div>
+
+            <!-- aging: heavier -->
+            <div style="background:#fff; border:1.5px solid color-mix(in oklch, oklch(0.66 0.16 62) 55%, #fff); border-radius:10px; padding:12px 10px; box-shadow:0 2px 8px color-mix(in oklch, oklch(0.66 0.16 62) 18%, transparent), 0 1px 2px rgb(15 23 42 / 0.05);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_0ac9</span>
+                <span title="in needs_input since 13 Aug 2026 · 11:02 CEST" style="font-size:11px; font-weight:700; color:#fff; background:oklch(0.60 0.17 45); border-radius:999px; padding:1px 7px;">12d</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:1px 7px;">your turn</span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:600; line-height:1.35; text-wrap:pretty;">Which brand font do we license for the deck?</p>
+              <p style="margin:5px 0 0; font-size:12px; font-weight:500; color:oklch(0.44 0.13 45); line-height:1.4;">has been sitting here for 12 days — 3 cards are blocked behind it</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">brand</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.44 0.13 45); background:color-mix(in oklch, oklch(0.60 0.17 45) 12%, #fff); border-radius:999px; padding:1px 7px;">blocks 3 · 12d</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- review -->
+        <div style="width:280px; flex:none; display:flex; flex-direction:column; border-radius:14px; background:color-mix(in oklch, oklch(0.55 0.16 145) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 145) 26%, #fff); padding:8px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:0 6px; margin-bottom:8px; height:24px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:3px 9px;">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="#fff"/></svg>
+              review
+            </span>
+            <span style="font-size:12px; font-weight:500; color:oklch(0.40 0.10 145);">1</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 145) 26%, #fff); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_88a3</span>
+                <span title="created by routine: monthly analytics check" style="display:inline-flex; align-items:center; gap:3px; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 6px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+                  routine
+                </span>
+                <span title="in review since 23 Aug 2026 · 11:20 CEST" style="margin-left:auto; font-size:11px; font-weight:500; color:oklch(0.40 0.10 145); background:color-mix(in oklch, oklch(0.55 0.16 145) 12%, #fff); border-radius:999px; padding:1px 6px;">2d</span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Google Analytics 4 migration</p>
+              <p style="margin:5px 0 0; font-size:12px; color:oklch(0.40 0.10 145); line-height:1.4;">waiting on you: approve the result</p>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 8px;">analytics</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  1 blocker
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- legend -->
+        <div style="width:300px; flex:none; display:flex; flex-direction:column; gap:10px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:14px;">
+          <span style="font-size:13px; font-weight:600;">What the chips mean</span>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:1px 7px;">your turn</span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">you can act right now — counts in “needs me”.</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.505 0.016 285.938); background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:1px 7px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              external
+            </span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">the agent set a wait-check (mail, deploy, reply). Nothing for you to do — never counted.</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; font-size:11px; font-weight:700; color:#fff; background:oklch(0.60 0.17 45); border-radius:999px; padding:1px 7px;">12d</span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">age. Past a week the card gets heavier — quiet cards should not become invisible.</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:1px 7px;">2 blockers</span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">open blockers on this card. Click through in the detail view.</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; display:inline-flex; align-items:center; gap:3px; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 6px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+              routine
+            </span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">generated by a routine, not by a person.</span>
+          </div>
+          <div style="height:1px; background:oklch(0.945 0.003 286.32);"></div>
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="flex:none; display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:1px 7px;">
+              <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+              live
+            </span>
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.45;">a session is running with a heartbeat. Without it the card says it resumes next session — never “broken”.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2b — CARD DETAIL: hand back + blockers ═══════════════ -->
+  <div id="2b" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2b</span>
+      <span style="font-size:13px; font-weight:500;">Card detail — beurtwissel: “Reply &amp; hand back”, blocker-chips, blocker_added</span>
+    </div>
+
+    <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div style="width:1000px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+
+        <div style="height:44px; flex:none; display:flex; align-items:center; gap:8px; padding:0 20px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <span style="font-size:13px; color:oklch(0.505 0.016 285.938);">Client Work</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+          <span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+            needs_input
+          </span>
+        </div>
+
+        <div style="padding:24px 32px 0; display:flex; flex-direction:column;">
+          <h1 style="margin:0; font-size:22px; font-weight:600; line-height:1.25; letter-spacing:-0.01em;">Cookie consent banner missing on client site</h1>
+
+          <!-- blocker chips -->
+          <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:14px;">
+            <span style="font-size:11px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); margin-right:2px;">Blocked by</span>
+            <a href="#2d" style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff); border-radius:999px; padding:3px 10px; text-decoration:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
+              ops_2ae1 · acme.com SSH
+              <span style="font-size:11px; font-weight:600; color:oklch(0.44 0.13 45); background:color-mix(in oklch, oklch(0.60 0.17 45) 12%, #fff); border-radius:999px; padding:0 6px;">blocked 12d</span>
+            </a>
+            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.606 0.016 285.938); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 10px; text-decoration:line-through; text-decoration-color:oklch(0.72 0.02 286);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+              ops_51cd · Trello connection
+            </span>
+            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">1 of 2 resolved</span>
+          </div>
+
+          <div style="height:1px; background:oklch(0.92 0.004 286.32); margin:20px 0 0;"></div>
+
+          <!-- timeline tail -->
+          <div style="display:flex; flex-direction:column; gap:12px; padding:18px 0 0;">
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
+              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
+                <span style="color:oklch(0.35 0.01 285.9);">blocker_added</span> by agent: <a href="#2d" style="font-family:inherit;">ops_2ae1</a> — no SSH access to acme.com
+                <span title="13 Aug 2026 · 10:58 CEST" style="color:oklch(0.606 0.016 285.938);">· 12d ago</span>
+              </p>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2.4" stroke-linecap="round" style="margin-top:3px; flex:none;"><path d="M20 6 9 17l-5-5"/></svg>
+              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
+                <span style="color:oklch(0.35 0.01 285.9);">blocker_resolved</span> by Robbert: ops_51cd — Trello connection written
+                <span title="21 Aug 2026 · 09:31 CEST" style="color:oklch(0.606 0.016 285.938);">· 4d ago</span>
+              </p>
+            </div>
+
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+                </span>
+                <span style="font-size:13px; font-weight:600;">agent</span>
+                <span title="25 Aug 2026 · 08:26 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">2h ago</span>
+              </div>
+              <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">The plugin was deactivated on 3 July and the ad tags have been firing without consent since.</p>
+              <p style="margin:10px 0 0; font-size:14px; line-height:1.55; font-weight:500;">Question: do I restore the plugin, or do you check with the client first?</p>
+            </div>
+          </div>
+
+          <!-- composer -->
+          <div style="padding:20px 0 24px;">
+            <div style="background:#fff; border:1.5px solid color-mix(in oklch, oklch(0.55 0.16 255) 32%, #fff); border-radius:10px; padding:12px 14px; box-shadow:0 1px 3px rgb(15 23 42 / 0.05);">
+              <p style="margin:0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">Restore the plugin, but keep the ad tags off until the client confirms. Note the gap in the audit doc.<span style="display:inline-block; width:1.5px; height:16px; margin-left:2px; background:oklch(0.55 0.16 255); vertical-align:-3px;"></span></p>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+                <div style="display:flex; align-items:center; gap:7px; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:13px; font-weight:600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4l-3 4z"/><path d="m14 9-3 3 3 3"/></svg>
+                  Reply &amp; hand back
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; opacity:0.7;">→ ready</span>
+                </div>
+                <div style="display:flex; align-items:center; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">Just comment</div>
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">⌘↵</span>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                  Archive
+                </div>
+              </div>
+            </div>
+            <p style="margin:8px 2px 0; font-size:12px; color:oklch(0.606 0.016 285.938); line-height:1.5;">Hand back moves the card to <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">ready</span> — the agent picks it up in the next session. No reason dialog here: your comment <em>is</em> the reason. <span style="color:oklch(0.505 0.016 285.938);">Only the agent moves a card to <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">doing</span>.</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- annotated before/after of the quick actions -->
+      <div style="width:400px; flex:none; display:flex; flex-direction:column; gap:12px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:16px;">
+        <span style="font-size:13px; font-weight:600;">Quick actions, retargeted</span>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">Nothing in the UI pushes a card into <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">doing</span> any more. Every human action hands the turn back.</p>
+
+        <div style="display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:10px; background:oklch(0.967 0.001 286.375);">
+          <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938);">was</span>
+          <div style="display:flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; color:oklch(0.606 0.016 285.938); text-decoration:line-through; align-self:flex-start;">Send back to doing</div>
+          <div style="display:flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; color:oklch(0.606 0.016 285.938); text-decoration:line-through; align-self:flex-start;">Request changes → doing</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:10px; background:color-mix(in oklch, oklch(0.55 0.16 255) 5%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, #fff);">
+          <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.42 0.14 255);">is</span>
+          <div style="display:flex; align-items:center; gap:7px; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:13px; font-weight:600; align-self:flex-start;">
+            Reply &amp; hand back <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; opacity:0.7;">→ ready</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:7px; height:30px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500; align-self:flex-start;">
+            Request changes <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">→ ready</span>
+          </div>
+          <p style="margin:2px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">The comment travels with it, so the agent knows what changed.</p>
+        </div>
+
+        <div style="height:1px; background:oklch(0.945 0.003 286.32);"></div>
+        <span style="font-size:13px; font-weight:600;">Blocker chips</span>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">Open blockers are clickable and carry their age. Resolved ones stay visible, struck through and dimmed, so the history reads back.</p>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2c — REVIEW: approve to done, blocker confirmation ═══════════════ -->
+  <div id="2c" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2c</span>
+      <span style="font-size:13px; font-weight:500;">Review — goedkeuren naar done; open blockers signaleren, niet blokkeren</span>
+    </div>
+
+    <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div style="width:800px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+        <div style="height:44px; flex:none; display:flex; align-items:center; gap:8px; padding:0 20px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_88a3</span>
+          <span style="font-size:13px; font-weight:500;">Google Analytics 4 migration</span>
+          <span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:3px 9px;">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="#fff"/></svg>
+            review
+          </span>
+        </div>
+
+        <div style="padding:20px 28px 24px; display:flex; flex-direction:column; gap:14px;">
+          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">agent</span>
+              <span title="23 Aug 2026 · 11:20 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">2d ago</span>
+            </div>
+            <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">Migration finished: GA4 property live, events verified against the old UA stream for 7 days (–2.1% sessions, within tolerance). Report in artifacts.</p>
+          </div>
+
+          <!-- composer with approve -->
+          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 14px;">
+            <span style="font-size:14px; color:oklch(0.606 0.016 285.938);">Add a note (optional)…</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+              <div style="display:flex; align-items:center; gap:7px; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.42 0.13 145); color:#fff; font-size:13px; font-weight:600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Approve
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; opacity:0.75;">→ done</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">
+                Request changes <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">→ ready</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- confirmation popover -->
+          <div style="align-self:flex-start; width:420px; margin-left:8px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:14px; box-shadow:0 12px 32px rgb(15 23 42 / 0.14), 0 2px 8px rgb(15 23 42 / 0.06);">
+            <div style="display:flex; align-items:flex-start; gap:9px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.60 0.17 45)" stroke-width="2" stroke-linecap="round" style="margin-top:2px; flex:none;"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+              <div style="min-width:0;">
+                <p style="margin:0; font-size:14px; font-weight:600; line-height:1.4;">Approve with 1 open blocker?</p>
+                <p style="margin:6px 0 0; font-size:13px; line-height:1.5; color:oklch(0.35 0.01 285.9);">This card still has an unresolved blocker. Approving closes the card anyway — the blocker stays open on its own card.</p>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:10px;">
+                  <a href="#2d" style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 26%, #fff); border-radius:999px; padding:3px 10px; text-decoration:none;">
+                    ops_9f77 · hosting plan tier
+                    <span style="font-size:11px; font-weight:600; color:oklch(0.44 0.13 45);">blocked 6d</span>
+                  </a>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+                  <div style="display:flex; align-items:center; height:30px; padding:0 12px; border-radius:8px; background:oklch(0.42 0.13 145); color:#fff; font-size:13px; font-weight:600;">Approve anyway</div>
+                  <div style="display:flex; align-items:center; height:30px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">Cancel</div>
+                  <a href="#2d" style="margin-left:auto; font-size:12px;">open the blocker</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:320px; flex:none; display:flex; flex-direction:column; gap:10px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:16px;">
+        <span style="font-size:13px; font-weight:600;">Signal, don't block</span>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">The confirmation exists so you never close something by accident — but it is one click away, and “Approve anyway” is the primary. Without open blockers there is no dialog at all: Approve goes straight to <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">done</span>.</p>
+        <div style="height:1px; background:oklch(0.945 0.003 286.32);"></div>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">“Request changes” hands the turn back to <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">ready</span> — never to <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">doing</span>, which only the agent enters.</p>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2d — OPS CARD: secrets intake in the timeline + re-request ═══════════════ -->
+  <div id="2d" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2d</span>
+      <span style="font-size:13px; font-weight:500;">Ops card — intake ónder de vragende comment, gerichte her-aanvraag, “unblocks”-groep</span>
+    </div>
+
+    <div style="width:1000px; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+
+      <div style="height:44px; flex:none; display:flex; align-items:center; gap:8px; padding:0 20px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+        <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:6px; padding:2px 7px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
+          ops_2ae1
+        </span>
+        <span style="font-size:13px; font-weight:500;">Access needed: acme.com SSH</span>
+        <span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">needs_input</span>
+      </div>
+
+      <div style="padding:22px 32px 26px; display:flex; flex-direction:column;">
+        <!-- unblocks group (inverse) -->
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+          <span style="font-size:11px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); margin-right:2px;">Unblocks</span>
+          <a href="#2b" style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff); border-radius:999px; padding:3px 10px; text-decoration:none;">task_5b34 · cookie consent banner<span style="font-size:11px; font-weight:600; color:oklch(0.44 0.13 45);">blocked 12d</span></a>
+          <a href="#2a" style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff); border-radius:999px; padding:3px 10px; text-decoration:none;">task_4d02 · relaunch sitemap<span style="font-size:11px; font-weight:600; color:oklch(0.44 0.11 62);">blocked 5d</span></a>
+        </div>
+
+        <div style="height:1px; background:oklch(0.92 0.004 286.32); margin:18px 0;"></div>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+
+          <!-- first agent request -->
+          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">agent</span>
+              <span title="24 Aug 2026 · 16:02 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">1d ago</span>
+            </div>
+            <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">I need SSH access to write the connection file: host, user and the private key. I store them write-only — after saving I can use them, never read them back to you.</p>
+          </div>
+
+          <!-- intake, resolved, sits under that comment -->
+          <div style="margin-left:24px; border-left:2px solid oklch(0.92 0.004 286.32); padding-left:16px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 10px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                ACME_SSH_HOST <span style="color:oklch(0.40 0.10 145); font-weight:500;">stored</span>
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 10px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                ACME_SSH_USER <span style="color:oklch(0.40 0.10 145); font-weight:500;">stored</span>
+              </span>
+              <!-- the rejected one: never left saying "stored" -->
+              <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.40 0.13 45); background:color-mix(in oklch, oklch(0.60 0.17 45) 9%, #fff); border:1px solid color-mix(in oklch, oklch(0.60 0.17 45) 34%, #fff); border-radius:999px; padding:3px 10px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.55 0.17 45)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                ACME_SSH_KEY <span style="font-weight:600;">needed again</span>
+              </span>
+            </div>
+            <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">secrets_stored · 24 Aug 2026 · 16:41 CEST · 3 values, write-only</p>
+          </div>
+
+          <!-- event: the key failed -->
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.60 0.17 45)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
+              <span style="color:oklch(0.35 0.01 285.9);">secret_rejected</span> by agent: ACME_SSH_KEY — <span style="color:oklch(0.44 0.13 45);">permission denied (publickey)</span>. Host and user work.
+              <span title="25 Aug 2026 · 09:12 CEST" style="color:oklch(0.606 0.016 285.938);">· 1h ago</span>
+            </p>
+          </div>
+
+          <!-- second agent comment: targeted re-request -->
+          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              </span>
+              <span style="font-size:13px; font-weight:600;">agent</span>
+              <span title="25 Aug 2026 · 09:13 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">1h ago</span>
+            </div>
+            <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">The key is refused — the server expects an ed25519 key and this one is an old RSA key. Host and user are fine, I only need the key again.</p>
+          </div>
+
+          <!-- mini-intake for that one secret, under the new comment -->
+          <div style="margin-left:24px; border-left:2px solid color-mix(in oklch, oklch(0.55 0.16 255) 28%, #fff); padding-left:16px;">
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 30%, #fff); border-radius:10px; padding:14px; box-shadow:0 1px 3px rgb(15 23 42 / 0.05);">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span style="font-size:13px; font-weight:600;">1 secret needed again</span>
+                <span style="margin-left:auto; font-size:11px; color:oklch(0.606 0.016 285.938);">write-only · never shown back</span>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+                <span style="width:150px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">ACME_SSH_KEY</span>
+                <div style="flex:1; min-width:0; height:34px; display:flex; align-items:center; padding:0 10px; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 34%, #fff); border-radius:8px; background:#fff; box-shadow:0 0 0 3px color-mix(in oklch, oklch(0.55 0.16 255) 10%, transparent);">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; letter-spacing:0.12em; color:oklch(0.35 0.01 285.9);">••••••••••••••••••••</span>
+                  <span style="display:inline-block; width:1.5px; height:15px; margin-left:2px; background:oklch(0.55 0.16 255);"></span>
+                </div>
+              </div>
+              <p style="margin:8px 0 0 160px; font-size:11px; color:oklch(0.606 0.016 285.938);">paste the ed25519 private key (begins with <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">-----BEGIN OPENSSH</span>)</p>
+
+              <div style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:7px; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:13px; font-weight:600;">
+                  Save &amp; hand back
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; opacity:0.7;">→ ready</span>
+                </div>
+                <div style="display:flex; align-items:center; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">I don't have this</div>
+                <span style="margin-left:auto; font-size:11px; color:oklch(0.606 0.016 285.938);">only this one value — host and user stay stored</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2e — ROUTINES modal ═══════════════ -->
+  <div id="2e" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2e</span>
+      <span style="font-size:13px; font-weight:500;">Routines — read-only lijst, per board gegroepeerd (all-boards), pauze als enige beheeractie</span>
+    </div>
+
+    <div style="width:1240px; padding:28px; border-radius:14px; background:color-mix(in oklch, oklch(0.141 0.005 285.823) 22%, oklch(0.93 0.002 286.375)); display:flex; justify-content:center;">
+      <div style="width:720px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:14px; overflow:hidden; box-shadow:0 24px 60px rgb(15 23 42 / 0.24), 0 4px 12px rgb(15 23 42 / 0.10);">
+
+        <div style="display:flex; align-items:center; gap:8px; padding:14px 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.35 0.01 285.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+          <span style="font-size:15px; font-weight:600;">Routines</span>
+          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">4 across 2 boards · all boards</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </div>
+
+        <!-- board group -->
+        <div style="display:flex; align-items:center; gap:8px; padding:9px 16px; background:oklch(0.967 0.001 286.375); border-bottom:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:8px; height:8px; border-radius:999px; background:oklch(0.55 0.16 255);"></span>
+          <span style="font-size:12px; font-weight:600;">Client Work</span>
+          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">3 routines</span>
+        </div>
+
+        <div style="display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px; font-weight:600;">Monday client sweep</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:5px; padding:1px 6px;">mon 08:00</span>
+            </div>
+            <p style="margin:5px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">last run <a href="#2a">task_4d02</a> · 24 Aug 08:00 — 1 card created · next run mon 31 Aug 08:00</p>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; font-weight:500; color:oklch(0.40 0.10 145);">active</span>
+            <span style="width:34px; height:20px; border-radius:999px; background:oklch(0.42 0.13 145); display:flex; align-items:center; justify-content:flex-end; padding:2px;">
+              <span style="width:16px; height:16px; border-radius:999px; background:#fff;"></span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px; font-weight:600;">Uptime + backup check</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:5px; padding:1px 6px;">daily 06:30</span>
+            </div>
+            <p style="margin:5px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">last run <a href="#2f">no card — nothing to report</a> · today 06:30 · next run tomorrow 06:30</p>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; font-weight:500; color:oklch(0.40 0.10 145);">active</span>
+            <span style="width:34px; height:20px; border-radius:999px; background:oklch(0.42 0.13 145); display:flex; align-items:center; justify-content:flex-end; padding:2px;">
+              <span style="width:16px; height:16px; border-radius:999px; background:#fff;"></span>
+            </span>
+          </div>
+        </div>
+
+        <!-- paused -->
+        <div style="display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border-bottom:1px solid oklch(0.945 0.003 286.32); background:color-mix(in oklch, oklch(0.967 0.001 286.375) 55%, #fff);">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px; font-weight:600; color:oklch(0.35 0.01 285.9);">Invoice reminders</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:5px; padding:1px 6px;">1st of month 09:00</span>
+            </div>
+            <p style="margin:5px 0 0; font-size:12px; color:oklch(0.606 0.016 285.938); line-height:1.5;">last run <a href="#2f">task_a17c</a> · 1 Aug 09:00 · paused since 12 Aug — no next run</p>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; font-weight:500; color:oklch(0.606 0.016 285.938);">paused</span>
+            <span style="width:34px; height:20px; border-radius:999px; background:oklch(0.87 0.005 286.3); display:flex; align-items:center; padding:2px;">
+              <span style="width:16px; height:16px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgb(15 23 42 / 0.15);"></span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; padding:9px 16px; background:oklch(0.967 0.001 286.375); border-bottom:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:8px; height:8px; border-radius:999px; background:oklch(0.606 0.016 285.938);"></span>
+          <span style="font-size:12px; font-weight:600;">Products</span>
+          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">1 routine</span>
+        </div>
+
+        <div style="display:flex; align-items:flex-start; gap:12px; padding:13px 16px;">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px; font-weight:600;">Monthly analytics check</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:5px; padding:1px 6px;">1st of month 07:00</span>
+            </div>
+            <p style="margin:5px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">last run <a href="#2c">task_88a3</a> · 1 Aug 07:00 — now in review · next run 1 Sep 07:00</p>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; font-weight:500; color:oklch(0.40 0.10 145);">active</span>
+            <span style="width:34px; height:20px; border-radius:999px; background:oklch(0.42 0.13 145); display:flex; align-items:center; justify-content:flex-end; padding:2px;">
+              <span style="width:16px; height:16px; border-radius:999px; background:#fff;"></span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; padding:11px 16px; border-top:1px solid oklch(0.92 0.004 286.32); background:oklch(0.988087 0 0);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span style="font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">Read-only. Pausing is the only change you make here — creating, editing or deleting a routine goes through an ops card.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2f — AGENT LOGS tab ═══════════════ -->
+  <div id="2f" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2f</span>
+      <span style="font-size:13px; font-weight:500;">Agent log — samenvatting eerst, sessielijst, sessiedetail met live tail</span>
+    </div>
+
+    <div style="width:1600px; display:flex; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+
+      <!-- left: summary + session list -->
+      <div style="width:620px; flex:none; display:flex; flex-direction:column; border-right:1px solid oklch(0.92 0.004 286.32);">
+        <div style="height:44px; flex:none; display:flex; align-items:center; gap:8px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.35 0.01 285.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+          <span style="font-size:14px; font-weight:600;">Agent log</span>
+          <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">last 7 days</span>
+        </div>
+
+        <!-- summary first -->
+        <div style="padding:16px; display:flex; flex-direction:column; gap:12px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <p style="margin:0; font-size:15px; line-height:1.55; color:oklch(0.25 0.008 285.9); text-wrap:pretty;">Ran <strong>19 sessions</strong> this week and touched <strong>23 cards</strong>. Finished 11, handed 6 back to you, and 2 sessions ended early — both on the same missing SSH key (<a href="#2d">ops_2ae1</a>).</p>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:9px 11px;">
+              <div style="font-size:18px; font-weight:600; letter-spacing:-0.01em;">19</div>
+              <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">sessions</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:9px 11px;">
+              <div style="font-size:18px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.40 0.10 145);">11</div>
+              <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">completed</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:9px 11px;">
+              <div style="font-size:18px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.44 0.11 62);">6</div>
+              <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">handed back</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:9px 11px;">
+              <div style="font-size:18px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.44 0.13 45);">2</div>
+              <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">ended early</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- session list, one line each -->
+        <div style="display:flex; align-items:center; gap:8px; padding:10px 16px 8px;">
+          <span style="font-size:12px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:oklch(0.606 0.016 285.938);">Sessions</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid oklch(0.945 0.003 286.32); background:color-mix(in oklch, oklch(0.55 0.16 255) 5%, #fff);">
+          <span style="width:44px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; font-weight:600;">#482</span>
+          <span style="width:96px; flex:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 10%, #fff); border-radius:999px; padding:2px 7px;">status-change</span>
+          <span style="width:56px; flex:none; display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; color:oklch(0.42 0.14 255);">
+            <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+            live
+          </span>
+          <span style="flex:1; min-width:0; font-size:12px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">task_1b8e — drafting the pricing copy</span>
+          <span style="flex:none; font-size:12px; color:oklch(0.606 0.016 285.938);">running</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:44px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">#481</span>
+          <span style="width:96px; flex:none; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px; text-align:center;">cron 09:00</span>
+          <span style="width:56px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">4m 12s</span>
+          <span style="flex:1; min-width:0; font-size:12px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">3 cards — task_5b34, ops_2ae1, task_77b0</span>
+          <span style="flex:none; font-size:12px; font-weight:500; color:oklch(0.44 0.11 62);">1 handed back</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:44px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">#480</span>
+          <span style="width:96px; flex:none; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px; text-align:center;">cron 06:30</span>
+          <span style="width:56px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">0m 51s</span>
+          <span style="flex:1; min-width:0; font-size:12px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">1 card — task_2fd7 (import invoices)</span>
+          <span style="flex:none; font-size:12px; font-weight:500; color:oklch(0.44 0.13 45);">ended early</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:44px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">#479</span>
+          <span style="width:96px; flex:none; display:inline-flex; align-items:center; justify-content:center; gap:3px; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+            routine
+          </span>
+          <span style="width:56px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">2m 04s</span>
+          <span style="flex:1; min-width:0; font-size:12px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Monday client sweep — 1 card created</span>
+          <span style="flex:none; font-size:12px; color:oklch(0.40 0.10 145);">completed</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+          <span style="width:44px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">#478</span>
+          <span style="width:96px; flex:none; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px; text-align:center;">cron 14:00</span>
+          <span style="width:56px; flex:none; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">6m 33s</span>
+          <span style="flex:1; min-width:0; font-size:12px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">4 cards — GA4 migration finished</span>
+          <span style="flex:none; font-size:12px; color:oklch(0.40 0.10 145);">completed</span>
+        </div>
+      </div>
+
+      <!-- right: session detail -->
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+        <div style="height:44px; flex:none; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; font-weight:600;">session #482</span>
+          <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 10%, #fff); border-radius:999px; padding:2px 8px;">
+            <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+            live · heartbeat 2s ago
+          </span>
+          <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">triggered by status-change · task_1b8e → doing</span>
+        </div>
+
+        <div style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+          <p style="margin:0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">Picked up 1 card. Read the brand context and the last two newsletters, then started drafting. No blockers so far.</p>
+
+          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-size:12px; font-weight:600;">Steps</span>
+              <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">7 so far</span>
+              <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; color:oklch(0.505 0.016 285.938); border:1px solid oklch(0.92 0.004 286.32); border-radius:6px; padding:1px 7px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                reasoning collapsed
+              </span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); width:48px; flex:none;">09:41:02</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">read_file</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">products/brand/_voice.md</span>
+              <span style="margin-left:auto; flex:none; font-size:11px; color:oklch(0.40 0.10 145);">ok · 4.1 KB</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); width:48px; flex:none;">09:41:05</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">search</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">"pricing" in products/**</span>
+              <span style="margin-left:auto; flex:none; font-size:11px; color:oklch(0.40 0.10 145);">9 hits</span>
+            </div>
+            <!-- collapsed reasoning row -->
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32); background:oklch(0.978 0.001 286.3);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); width:48px; flex:none;">09:41:08</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2.4" stroke-linecap="round" style="flex:none;"><path d="m9 18 6-6-6-6"/></svg>
+              <span style="font-size:12px; color:oklch(0.606 0.016 285.938); font-style:italic;">reasoning · 340 words</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); width:48px; flex:none;">09:41:22</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">write_file</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">artifacts/task_1b8e/pricing-draft.md</span>
+              <span style="margin-left:auto; flex:none; font-size:11px; color:oklch(0.40 0.10 145);">written</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); width:48px; flex:none;">09:42:47</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">http_get</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">competitor pricing page</span>
+              <span style="margin-left:auto; flex:none; font-size:11px; color:oklch(0.44 0.13 45);">429 · retried once</span>
+            </div>
+
+            <!-- live tail -->
+            <div style="padding:9px 12px; background:oklch(0.19 0.006 285.9);">
+              <div style="display:flex; align-items:center; gap:7px; margin-bottom:6px;">
+                <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.72 0.17 145); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.78 0.01 286);">live tail</span>
+                <span style="margin-left:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.62 0.01 286);">follow</span>
+              </div>
+              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11.5px; line-height:1.75; color:oklch(0.86 0.01 286);">
+                09:43:01 write_file artifacts/task_1b8e/pricing-draft.md (section 2/4)<br>
+                09:43:04 read_file products/pricing/_tiers.md<br>
+                09:43:06 <span style="color:oklch(0.80 0.12 90);">note</span> tier names differ from the site — flagging in the card<br>
+                09:43:09 heartbeat ok<span style="display:inline-block; width:7px; height:12px; margin-left:4px; background:oklch(0.72 0.17 145); vertical-align:-2px; animation:ab-pulse 1.1s steps(1) infinite;"></span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ 2g — FROM A CARD: what did the agent do here? ═══════════════ -->
+  <div id="2g" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2g</span>
+      <span style="font-size:13px; font-weight:500;">Vanaf de kaart → sessie-fragmenten die díe kaart raakten (de hoofdvraag)</span>
+    </div>
+
+    <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+      <div style="width:760px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+        <div style="height:44px; display:flex; align-items:center; gap:8px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+          <div style="margin-left:auto; display:flex; align-items:center; gap:2px; background:oklch(0.967 0.001 286.375); border-radius:8px; padding:2px;">
+            <span style="font-size:12px; color:oklch(0.505 0.016 285.938); padding:3px 10px; border-radius:6px;">Timeline</span>
+            <span style="font-size:12px; font-weight:600; padding:3px 10px; border-radius:6px; background:#fff; box-shadow:0 1px 2px rgb(15 23 42 / 0.06);">Agent activity</span>
+          </div>
+        </div>
+
+        <div style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+          <p style="margin:0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">Worked on this card in <strong>3 sessions</strong> over 12 days. It got as far as diagnosing the cause; the fix is blocked on SSH access.</p>
+
+          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:oklch(0.978 0.001 286.3); border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <a href="#2f" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; font-weight:600;">#481</a>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 7px;">cron 09:00</span>
+              <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2h ago · 6 steps on this card</span>
+              <span style="margin-left:auto; font-size:12px; font-weight:500; color:oklch(0.44 0.11 62);">handed back to you</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">http_get</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">acme.com — no consent script in the HTML</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">read_file</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">client-work/acme/_client.md</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">ssh</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.44 0.13 45);">permission denied (publickey) → blocker ops_2ae1</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px; background:oklch(0.978 0.001 286.3);">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2.4" stroke-linecap="round" style="flex:none;"><path d="m9 18 6-6-6-6"/></svg>
+              <span style="font-size:12px; color:oklch(0.606 0.016 285.938); font-style:italic;">reasoning · 210 words</span>
+              <a href="#2f" style="margin-left:auto; font-size:11px;">open full session →</a>
+            </div>
+          </div>
+
+          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:oklch(0.978 0.001 286.3); border-bottom:1px solid oklch(0.945 0.003 286.32);">
+              <a href="#2f" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; font-weight:600;">#463</a>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:1px 7px;">cron 09:00</span>
+              <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">12d ago · 2 steps on this card</span>
+              <span style="margin-left:auto; font-size:12px; color:oklch(0.505 0.016 285.938);">blocker added</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:7px 12px;">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); flex:none;">create_card</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">ops_2ae1 — access needed: acme.com SSH</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:320px; flex:none; display:flex; flex-direction:column; gap:10px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:16px;">
+        <span style="font-size:13px; font-weight:600;">Card-first, log-second</span>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">“What did it do here?” is asked from the card, so it lives on the card as a second tab — only the fragments of each session that touched this card, newest first, with the session number as the way out to the full log.</p>
+        <div style="height:1px; background:oklch(0.945 0.003 286.32);"></div>
+        <p style="margin:0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">Steps stay one line each. Reasoning is collapsed everywhere by default — it is available, never in the way.</p>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════ 2h — REALTIME signals ═══════════════ -->
+  <div id="2h" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">2h</span>
+      <span style="font-size:13px; font-weight:500;">Realtime — kaart schuift live naar doing, comment verschijnt zonder verversen</span>
+    </div>
+
+    <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+
+      <!-- live move -->
+      <div style="width:620px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:16px; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:13px; font-weight:600;">Card picked up, live</span>
+          <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 10%, #fff); border-radius:999px; padding:2px 8px;">
+            <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+            connected
+          </span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <!-- ready, leaving -->
+          <div style="width:270px; flex:none; border-radius:12px; background:color-mix(in oklch, oklch(0.967 0.001 286.375) 60%, #fff); padding:8px;">
+            <div style="display:flex; align-items:center; gap:8px; padding:0 6px 8px;">
+              <span style="font-size:12px; font-weight:600; color:oklch(0.35 0.01 285.9);">ready</span>
+              <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">1</span>
+            </div>
+            <!-- ghost slot the card just left -->
+            <div style="height:62px; border-radius:10px; border:1.5px dashed oklch(0.90 0.005 286.3); background:color-mix(in oklch, oklch(0.967 0.001 286.375) 70%, #fff); display:flex; align-items:center; justify-content:center; margin-bottom:8px;">
+              <span style="font-size:11px; color:oklch(0.65 0.012 286);">task_c410 moved to doing</span>
+            </div>
+            <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:11px 10px;">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_9c11</span>
+              <p style="margin:4px 0 0; font-size:14px; font-weight:500; line-height:1.35;">August newsletter draft</p>
+            </div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.55 0.16 255)" stroke-width="2" stroke-linecap="round" style="margin-top:34px; flex:none;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          <!-- doing, arriving -->
+          <div style="width:270px; flex:none; border-radius:12px; background:color-mix(in oklch, oklch(0.55 0.16 255) 5%, #fff); padding:8px;">
+            <div style="display:flex; align-items:center; gap:8px; padding:0 6px 8px;">
+              <span style="font-size:12px; font-weight:600; color:oklch(0.42 0.14 255);">doing</span>
+              <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">1</span>
+            </div>
+            <div style="background:#fff; border:1.5px solid color-mix(in oklch, oklch(0.55 0.16 255) 40%, #fff); border-radius:10px; padding:11px 10px; animation:ab-slidein 0.6s ease-out, ab-ring 2.4s ease-out infinite;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_c410</span>
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:999px; padding:2px 7px;">
+                  <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+                  live · #483
+                </span>
+              </div>
+              <p style="margin:4px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Reply to Chris about the hosting invoice</p>
+              <p style="margin:4px 0 0; font-size:12px; color:oklch(0.42 0.14 255);">picked up just now</p>
+            </div>
+          </div>
+        </div>
+        <p style="margin:12px 2px 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">No refresh, no toast storm: the card slides across and the pulse tells you a session is actually running. The empty slot fades out after a beat.</p>
+      </div>
+
+      <!-- live comment -->
+      <div style="width:560px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:16px; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:13px; font-weight:600;">New comment, no refresh</span>
+          <span style="margin-left:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">task_1b8e · timeline</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:11px 13px; opacity:0.6;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:18px; height:18px; border-radius:999px; background:oklch(0.55 0.16 255); color:#fff; font-size:8px; font-weight:600; display:flex; align-items:center; justify-content:center;">RV</span>
+              <span style="font-size:12px; font-weight:600;">Robbert</span>
+              <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">12 min ago</span>
+            </div>
+            <p style="margin:6px 0 0; font-size:13px; line-height:1.5; color:oklch(0.35 0.01 285.9);">Keep the tier names as they are on the site.</p>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="height:1px; flex:1; background:color-mix(in oklch, oklch(0.55 0.16 255) 25%, #fff);"></span>
+            <span style="font-size:11px; font-weight:500; color:oklch(0.42 0.14 255);">just now</span>
+            <span style="height:1px; flex:1; background:color-mix(in oklch, oklch(0.55 0.16 255) 25%, #fff);"></span>
+          </div>
+
+          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 32%, #fff); border-radius:10px; padding:11px 13px; box-shadow:0 2px 8px color-mix(in oklch, oklch(0.55 0.16 255) 12%, transparent); animation:ab-slidein 0.6s ease-out;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:18px; height:18px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              </span>
+              <span style="font-size:12px; font-weight:600;">agent</span>
+              <span style="font-size:11px; color:oklch(0.42 0.14 255);">arriving live</span>
+            </div>
+            <p style="margin:6px 0 0; font-size:13px; line-height:1.5; color:oklch(0.25 0.008 285.9);">Sections 1 and 2 are drafted. The site lists four tiers but the pricing doc has three — I am following the site and noting it.</p>
+          </div>
+
+          <p style="margin:2px 0 0; font-size:12px; color:oklch(0.505 0.016 285.938); line-height:1.5;">The composer keeps your typed text and your scroll position; the new entry is marked until you interact with it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- T2-END -->
+</section>
+
+<section style="display:flex; flex-direction:column; gap:40px; padding:0 48px 120px;">
 
   <div style="display:flex; align-items:baseline; gap:12px;">
     <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Agentboard</span>
