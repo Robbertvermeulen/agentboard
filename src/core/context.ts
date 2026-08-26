@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import { simpleGit } from 'simple-git';
 import { contextDir, openDb, secretsPath } from './db.js';
 import { addEventIn, assertActor } from './cards.js';
+import { assertRoutineFrontmatter } from './routines.js';
 
 // Paths are always relative to context/, e.g. 'chris/vakantiewoningen-nl.md'.
 function resolveContextPath(relPath: string): string {
@@ -68,6 +69,9 @@ function validateContent(relPath: string, content: string): void {
   }
   if (parsed.data.kind === 'connection' && !parsed.data.secret_ref) {
     throw new Error(`kind: connection requires 'secret_ref' — a name pointing into secrets.env, never a value (${relPath})`);
+  }
+  if (parsed.data.kind === 'routine') {
+    assertRoutineFrontmatter(relPath, parsed.data);
   }
 }
 

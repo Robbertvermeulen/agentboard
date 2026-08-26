@@ -26,6 +26,7 @@ import {
   setSecretFromFile,
   writeContext,
 } from '../core/context.js';
+import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -165,6 +166,51 @@ boards
     run((opts, id: string) => {
       const b = createBoard(id, opts.name);
       output(opts, `Created board ${b.id} (${b.name})`, b);
+    })
+  );
+
+const routines = program.command('routines').description('recurring work: kind: routine context files + run-state');
+
+function routineLines(result: { routines: any[]; errors: any[] }): string {
+  const lines = result.routines.map(
+    (r) =>
+      `  ${r.path.padEnd(40)} ${r.schedule.padEnd(14)} ${r.enabled ? '' : '[paused] '}last ${r.last_run_at}  next ${r.next_run ?? '-'}`
+  );
+  lines.push(...result.errors.map((e: any) => `  ! ${e.path}: ${e.error}`));
+  return lines.join('\n');
+}
+
+routines
+  .command('list')
+  .description('all routines with run-state (seeds new ones, not due at first sight)')
+  .option('--board <id>', 'only this board')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const result = listRoutines(opts.board);
+      output(opts, routineLines(result) || 'No routines yet', result);
+    })
+  );
+
+routines
+  .command('due')
+  .description('routines whose next occurrence has passed (enabled only)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const result = dueRoutines();
+      output(opts, routineLines(result) || 'Nothing due', result);
+    })
+  );
+
+routines
+  .command('mark <pad>')
+  .description('stamp last_run_at = now (the trigger layer calls this at session start)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, pad: string) => {
+      const result = markRoutineRun(pad);
+      output(opts, `Marked ${result.path} at ${result.last_run_at}`, result);
     })
   );
 
