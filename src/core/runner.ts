@@ -58,8 +58,18 @@ export function acquireLock(): 'acquired' | 'held' {
   return 'acquired';
 }
 
+// Only remove a lock this process owns. After a max-age steal, the old
+// (hung-but-alive) session's finally-block must not delete the successor's
+// fresh lock — that would reopen the single-flight window.
 export function releaseLock(): void {
-  fs.rmSync(lockPath(), { force: true });
+  const file = lockPath();
+  try {
+    const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+    if (lock.pid !== process.pid) return; // stolen by a successor — not ours to remove
+    fs.rmSync(file, { force: true });
+  } catch {
+    // missing or unreadable: nothing safe to remove
+  }
 }
 
 function agentMdPath(): string {
@@ -145,18 +155,25 @@ export function runSession(dryRun = false): {
       prompt: buildPrompt(due.routines),
     };
   }
-  if (acquireLock() === 'held') return { started: false, reason: 'session already running' };
+  if (acquireLock() === 'held') {
+    console.error('runner: lock held');
+    return { started: false, reason: 'session already running' };
+  }
+  console.error('runner: lock acquired');
   try {
     const cards = gateWork();
     const due = dueRoutines();
+    console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
     if (cards.length === 0 && due.routines.length === 0) {
       return { started: false, reason: 'gate empty' };
     }
     const sessionStart = now();
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute
+    console.error(`runner: marked ${due.routines.length} routines`);
     const sessionsDir = path.join(dataDir(), 'sessions');
     fs.mkdirSync(sessionsDir, { recursive: true });
     const logFile = path.join(sessionsDir, `${sessionStart.replace(/[:.]/g, '-')}.log`);
+    console.error(`runner: spawning session -> ${logFile}`);
     const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p').split(/\s+/);
     const out = fs.openSync(logFile, 'w');
     let status: number | null;
@@ -167,8 +184,12 @@ export function runSession(dryRun = false): {
     } finally {
       fs.closeSync(out);
     }
+    console.error(`runner: session exited ${status ?? 'null'}`);
     const notified = handbacksSince(sessionStart);
     notify(notified);
+    if (process.env.AGENTBOARD_NOTIFY_CMD && notified.length > 0) {
+      console.error(`runner: notified: ${notified.length}`);
+    }
     return { started: true, reason: `session exited ${status ?? 'null'}`, log: logFile, notified };
   } finally {
     releaseLock();
