@@ -65,6 +65,9 @@ The web UI has the same rule in write-only form: the secret intake on an
 ops card POSTs a value in, and no endpoint can ever read one back —
 secret values never travel to the browser, in any form. The card only
 shows lock-chips with stored names, fed by `secret_stored` events.
+A re-request after a failed value (a new comment with a `secret_ref:`
+line) renders the intake under that comment and marks the earlier chips
+"needed again".
 
 ## Files: uploads, workdir, artifacts, context
 

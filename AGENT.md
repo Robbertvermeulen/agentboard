@@ -34,7 +34,10 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    arrives through cards. Name the secrets you need in the card body on
    a line of its own, exactly `secret_ref: name_a, name_b` — the UI
    turns that line into the intake form; buried mid-sentence it renders
-   nothing. A conditional need (an existing shared key might fit) is
+   nothing. A targeted re-request after a failed value is a new comment
+   with its own `secret_ref:` line naming only the failed secrets — the UI
+   renders the intake under that comment and marks the earlier chips
+   "needed again". A conditional need (an existing shared key might fit) is
    still that one line, plus your one clear question — the user answers
    in a comment or stores the secrets, and you see a `secret_stored`
    event per stored name. Values live only in the vault — never ask for
