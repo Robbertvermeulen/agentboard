@@ -169,13 +169,11 @@ export async function renderCard(root, { boards, cardId }) {
     card.status !== 'archived' &&
     (card.status === 'ready' || (last?.kind === 'comment' && last.author === 'human'));
 
+  // Vision besluit I: quick actions never target doing — the human always
+  // hands back to ready; doing is exclusively the agent's claim.
   const quick = [];
   if (card.status === 'inbox') quick.push({ label: 'Ready', cls: 'btn-dark', to: 'ready', icon: icons.arrowRight(14, '#fff') });
-  if (card.status === 'needs_input') quick.push({ label: 'Send back to doing', cls: 'btn-amber', to: 'doing', icon: icons.arrowRight(14) });
-  if (card.status === 'review') {
-    quick.push({ label: 'Approve → Done', cls: 'btn-green', to: 'done', icon: icons.check(14) });
-    quick.push({ label: 'Request changes', cls: 'btn-ghost', to: 'doing' });
-  }
+  if (card.status === 'review') quick.push({ label: 'Approve → Done', cls: 'btn-green', to: 'done', icon: icons.check(14) });
   const canArchive = card.status !== 'archived';
 
   root.innerHTML = `
@@ -334,14 +332,25 @@ export async function renderCard(root, { boards, cardId }) {
           <div class="composer">
             <textarea id="comment-input" rows="1" placeholder="${card.status === 'needs_input' ? 'Answer the agent…' : 'Add a comment…'}"></textarea>
             <div class="composer-actions">
-              <button type="button" id="comment-send" class="btn-dark">Comment</button>
+              ${
+                card.status === 'needs_input'
+                  ? `<button type="button" id="hand-back" class="btn-dark">${icons.arrowRight(14, '#fff')}Reply & hand back → ready</button>
+                     <button type="button" id="comment-send" class="btn-ghost">Just comment</button>`
+                  : `<button type="button" id="comment-send" class="btn-dark">Comment</button>`
+              }
               <div class="spacer">
                 ${quick.map((q, i) => `<button type="button" class="${q.cls}" data-move="${q.to}" data-q="${i}">${q.icon ?? ''}${esc(q.label)}</button>`).join('')}
+                ${card.status === 'review' ? `<button type="button" id="request-changes" class="btn-ghost">Request changes → ready</button>` : ''}
                 ${canArchive ? `<button type="button" class="btn-ghost" data-move="archived">${icons.archive()}Archive</button>` : ''}
               </div>
             </div>
+            <span id="composer-error" class="field-error" hidden>${icons.alert()}<span></span></span>
           </div>
-          <p class="reason-hint">Every status change asks for a short reason — it is written to the timeline as an event.</p>
+          <p class="reason-hint">${
+            card.status === 'needs_input' || card.status === 'review'
+              ? 'No reason dialog here: your comment is the reason. Only the agent moves a card to doing.'
+              : 'Every status change asks for a short reason — it is written to the timeline as an event.'
+          }</p>
         </div>
         </div>
       </div>
@@ -381,7 +390,7 @@ export async function renderCard(root, { boards, cardId }) {
           : card.status === 'inbox'
             ? `<button type="button" class="m-primary dark" data-move="ready">${icons.arrowRight(16, '#fff')}Ready</button>`
             : card.status === 'needs_input'
-              ? `<button type="button" class="m-primary amber" data-move="doing">${icons.arrowRight(16, '#fff')}Send back to doing</button>`
+              ? `<button type="button" class="m-primary amber" id="m-hand-back">${icons.arrowRight(16, '#fff')}Hand back → ready</button>`
               : `<button type="button" class="m-primary dark" id="m-change-status">Change status</button>`
       }
       <div class="m-secondary">
@@ -504,6 +513,47 @@ export async function renderCard(root, { boards, cardId }) {
       posted.classList.add('flash');
     }
   };
+  const composerError = root.querySelector('#composer-error');
+  const showComposerError = (msg) => {
+    composerError.querySelector('span:last-child').textContent = msg;
+    composerError.hidden = false;
+  };
+  // One action, two calls — comment FIRST so the agent session reads the
+  // answer before the status flips (and the serve-hook fires on the move).
+  const handBackWith = async (reason) => {
+    const text = input.value.trim();
+    try {
+      await api.comment(card.id, text);
+      await api.move(card.id, 'ready', reason);
+      input.value = '';
+      rerender();
+    } catch (err) {
+      showComposerError(err.message);
+    }
+  };
+  const handBack = root.querySelector('#hand-back');
+  if (handBack) {
+    const sync = () => (handBack.disabled = !input.value.trim());
+    sync();
+    input.addEventListener('input', sync);
+    handBack.onclick = () => handBackWith('answered in comment');
+  }
+  const reqChanges = root.querySelector('#request-changes');
+  if (reqChanges) {
+    reqChanges.onclick = () => {
+      if (input.value.trim()) handBackWith('changes requested in comment');
+      else moveWithReason(card, 'ready', rerender); // empty composer: dialog, target ready
+    };
+  }
+  const mHand = root.querySelector('#m-hand-back');
+  if (mHand)
+    mHand.onclick = () => {
+      if (input.value.trim()) handBackWith('answered in comment');
+      else {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus();
+      }
+    };
   const mComment = root.querySelector('#m-comment');
   if (mComment)
     mComment.onclick = () => {
