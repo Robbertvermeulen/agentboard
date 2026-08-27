@@ -105,6 +105,7 @@ printf '%s\n' \
   '{"type":"assistant","message":{"content":[{"type":"thinking","thinking":"drie woorden hier"}]}}' \
   '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"agentboard next"}}]}}' \
   '{"type":"user","message":{"content":[{"type":"tool_result","content":"task_ff00 not found"}]}}' \
+  '{"type":"user","message":{"content":[{"type":"tool_result","content":[{"type":"text","text":"array result task_XXXX"}]}]}}' \
   'geen json' >> "$AGENTBOARD_DATA/sessions/1.jsonl"
 
 $CLI sessions show 1 --json | python3 -c "
@@ -116,7 +117,9 @@ assert 'tool' in types, types
 assert 'result' in types, types
 assert 'raw' in types, types
 assert any(s['label'].startswith('reasoning · 3 words') for s in d['steps']), [s['label'] for s in d['steps']]
-" || fail "parser fixture: missing expected step types or reasoning label"
+assert any(s['label'] == 'array result task_XXXX' for s in d['steps']), [s['label'] for s in d['steps']]
+assert not any(s['label'].startswith('[{\"') for s in d['steps']), [s['label'] for s in d['steps']]
+" || fail "parser fixture: missing expected step types, reasoning label, or array tool_result content"
 
 # ============================================================================
 # Leg 5: prune -- backdated ended session removed (rows + both files),

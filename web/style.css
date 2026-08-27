@@ -439,10 +439,12 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .tl-tab { font-size: 12px; padding: 3px 10px; border-radius: 6px; color: var(--mut); }
 .tl-tab.active { font-weight: 600; color: var(--ink); background: #fff; box-shadow: var(--shadow-card); }
 .tl-filters { display: flex; align-items: center; gap: 6px; }
+.tl-filters[hidden] { display: none; }
 .tl-filter { font-size: 12px; color: var(--mut); padding: 3px 9px; border-radius: 999px; }
 .tl-filter:hover { color: var(--ink); }
 .tl-filter.active { font-weight: 500; color: var(--dark); background: var(--chip-bg); }
 .timeline { display: flex; flex-direction: column; gap: 20px; padding-bottom: 8px; }
+.timeline[hidden] { display: none; }
 .comment-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow-card); }
 .comment-card.agent { border-color: color-mix(in oklch, var(--brand) 20%, var(--line)); }
 .cc-head { display: flex; align-items: center; gap: 8px; }

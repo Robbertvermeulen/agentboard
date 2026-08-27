@@ -30,7 +30,7 @@ import {
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 import { runSession } from '../core/runner.js';
-import { cardSessions, listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
+import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 
 interface OutputOpts {
   json?: boolean;

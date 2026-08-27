@@ -147,7 +147,16 @@ export function parseSessionSteps(jsonlText: string): SessionStep[] {
         } else if (b.type === 'tool_use') {
           push('tool', String(b.name ?? 'tool'), JSON.stringify(b.input ?? {}).slice(0, 500));
         } else if (b.type === 'tool_result') {
-          const content = typeof b.content === 'string' ? b.content : JSON.stringify(b.content ?? '');
+          let content: string;
+          if (typeof b.content === 'string') {
+            content = b.content;
+          } else if (Array.isArray(b.content)) {
+            content = b.content
+              .map((c: any) => (c?.type === 'text' && typeof c.text === 'string' ? c.text : JSON.stringify(c ?? '')))
+              .join('\n');
+          } else {
+            content = JSON.stringify(b.content ?? '');
+          }
           push('result', firstLine(content), content.slice(0, 2000));
         }
       }

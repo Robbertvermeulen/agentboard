@@ -413,20 +413,24 @@ export async function renderCard(root, { boards, cardId }) {
       if (secretBox) secretBox.hidden = activity;
       activityPane.hidden = !activity;
       if (!activity || activityLoaded) return;
-      activityLoaded = true;
-      const data = await api.cardSessions(card.id);
-      const blocks = data.sessions
-        .map(
-          ({ session, steps }) => `
-        <div class="act-session">
-          <div class="act-head">#${session.id} <span class="rt-sched">${esc(session.trigger)}</span>
-            <span class="mut-sm">${esc(relTime(session.started_at))}</span>
-            <a href="#/session/${session.id}">open full session →</a></div>
-          ${steps.map((s) => `<p class="act-step ${s.type}">[${esc(s.type)}] ${esc(s.label)}</p>`).join('') || '<p class="mut-sm">No steps touched this card.</p>'}
-        </div>`
-        )
-        .join('');
-      activityPane.innerHTML = blocks || '<p class="mut-sm">No agent sessions touched this card yet.</p>';
+      try {
+        const data = await api.cardSessions(card.id);
+        const blocks = data.sessions
+          .map(
+            ({ session, steps }) => `
+          <div class="act-session">
+            <div class="act-head">#${session.id} <span class="rt-sched">${esc(session.trigger)}</span>
+              <span class="mut-sm">${esc(relTime(session.started_at))}</span>
+              <a href="#/session/${session.id}">open full session →</a></div>
+            ${steps.map((s) => `<p class="act-step ${s.type}">[${esc(s.type)}] ${esc(s.label)}</p>`).join('') || '<p class="mut-sm">No steps touched this card.</p>'}
+          </div>`
+          )
+          .join('');
+        activityPane.innerHTML = blocks || '<p class="mut-sm">No agent sessions touched this card yet.</p>';
+        activityLoaded = true;
+      } catch (err) {
+        activityPane.innerHTML = `<p class="field-error">${icons.alert()}<span>${esc(err.message)}</span></p>`;
+      }
     };
   });
   // --- comment editing: bare edit, no history — the old text is gone ---
