@@ -279,9 +279,16 @@ dit document bij te stellen.
 3. **Trigger/scheduler** — minuut-cron, single-flight lock,
    event-driven triggers, headless sessies.
 4. **Sessielogging & observer** — sessies vastleggen en nummeren,
-   agent-logs-tab, observer-loop.
-5. **Realtime UI** — live board- en logs-updates (SSE over de
-   event-tabel); mogelijk gevouwen in 4.
+   agent-logs-tab, observer-loop. Gesplitst tijdens de bouw: 4a
+   (capture/index/redactie/kaart-tab — gereed) en 4b (logs-overzicht,
+   live tail, observer — wacht bewust op echte sessies).
+4½. **UI-batch beurtwissel + intake** (design 2b/2c/2d) — Reply & hand
+   back, quick actions nooit naar doing, secrets-intake onder de
+   agent-comment met "needed again". Ingevoegd 2026-08-27: deze batch
+   was in besluit I voorzien maar had nog geen plek in de volgorde.
+5. **Realtime UI** — live board- en logs-updates; per besluit K eerst
+   een cursor-endpoint + polling, SSE later. Daarna 4b en de
+   polish-batch (aging, 2h-choreografie, mobiel).
 
 Elk bouwblok krijgt zijn eigen spec → plan → implementatie-cyclus, met
 dit document als kader.
