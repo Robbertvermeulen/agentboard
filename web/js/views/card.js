@@ -455,6 +455,8 @@ export async function renderCard(root, { boards, cardId }) {
       root.querySelectorAll('.tl-filter').forEach((x) => x.classList.toggle('active', x === b));
       const items = b.dataset.filter === 'all' ? timeline : timeline.filter((t) => t.kind === b.dataset.filter);
       tlList.innerHTML = items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>';
+      // Rebuilt box shows no file indication, so stale file must not win
+      keyFile = null;
     };
   });
   // --- card tab (design 2g): Timeline vs Agent activity, lazy-loaded once ---
@@ -575,7 +577,7 @@ export async function renderCard(root, { boards, cardId }) {
       await api.comment(card.id, text);
       await api.move(card.id, 'ready', reason);
       input.value = '';
-      rerender();
+      await rerender();
     } catch (err) {
       showComposerError(err.message);
     }
@@ -698,7 +700,7 @@ export async function renderCard(root, { boards, cardId }) {
       const secError = root.querySelector('#sec-error');
       let value;
       let encoding;
-      if (keyFile) {
+      if (keyFile && secValue.disabled) {
         const bytes = new Uint8Array(await keyFile.arrayBuffer());
         let bin = '';
         for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
