@@ -136,16 +136,17 @@ Unattended operation is three layers: the gate, the runner, and your clock:
    the gate + session. Lock lives in `session.lock` (stale if a dead
    process owns it or if `AGENTBOARD_LOCK_MAX_AGE` minutes have passed,
    default 120). The runner marks due routines, spawns a headless agent
-   session via `AGENTBOARD_SESSION_CMD` (default `claude -p`), passes
-   `AGENTBOARD_AGENT_MD` (path to AGENT.md) and the due routine paths
-   to the prompt, logs raw output to `sessions/<timestamp>.log`, and
-   sends a one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional
-   — e.g. a script that posts to a webhook). Dry-run:
-   `agentboard runner --dry-run`.
+   session via `AGENTBOARD_SESSION_CMD` (default `claude -p
+   --output-format stream-json --verbose`), passes `AGENTBOARD_AGENT_MD`
+   (path to AGENT.md) and the due routine paths to the prompt, logs raw
+   output to `sessions/<nr>.jsonl` (+ `.stderr.log`), and sends a
+   one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional — e.g.
+   a script that posts to a webhook). Dry-run: `agentboard runner
+   --dry-run`.
 3. **Clock** — install the scheduler via cron or launchd (macOS). Cron:
 
    ```
-   * * * * * cd ~ && agentboard runner
+   * * * * * cd ~ && agentboard runner --trigger cron
    ```
 
    Or launchd plist (save as `~/Library/LaunchAgents/agentboard.plist`,
@@ -163,6 +164,8 @@ Unattended operation is three layers: the gate, the runner, and your clock:
      <array>
        <string>/usr/local/bin/agentboard</string>
        <string>runner</string>
+       <string>--trigger</string>
+       <string>cron</string>
      </array>
      <key>EnvironmentVariables</key>
      <dict>
@@ -189,6 +192,30 @@ immediately, rather than wait for the cron tick).
 in gmail-zakelijk" --as agent --check-after 2d`. The card leaves
 "Needs me" and the gate brings it back when the check time expires,
 allowing the next session to pick up where you left off.
+
+## Sessions
+
+Transcripts live in `sessions/` (JSONL + stderr). Each session gets a
+numeric id; the runner stamps `started_at`, `ended_at` (null if running),
+`trigger` (cron|serve|manual), `exit_status`, and `handed_back` (cards
+returned to the user). The session is the working log; the timeline
+(event history on cards) stays the durable truth.
+
+Commands: `agentboard sessions list` (all, newest first), `sessions
+show <nr>` (meta + parsed steps, secrets redacted), `sessions prune
+--older-than 30d|12h|45m` (logs + index rows; running sessions kept).
+Pruning is the one place delete exists; it's safe because the timeline
+outlives the transcript.
+
+Secrets redaction happens at display time. The raw JSONL file on disk
+shares `secrets.env`'s trust boundary — AGENT.md rule 4 guards the
+prompt, this is the net. Every `secrets.env` value (and decoded lines
+from base64 values) becomes `[secret:name]` in show/web views.
+
+The runner records a heartbeat: `session.started_at` is when the session
+began. If a session never ends (`ended_at` is null), the runner crashed
+or hung; the lock timeout (default 120 minutes) will unblock the next
+cron tick.
 
 ## External refs
 
@@ -235,6 +262,15 @@ what happened. `secret_stored` carries the name only, never the value.
 
 **routine_run** — `path`, `last_run_at`. One row per routine, stamped at
 session start.
+
+**session** — `id` (autoincrement), `started_at`, `ended_at` (null if
+still running), `trigger` (cron|serve|manual), `exit_status` (null if
+running), `handed_back` (JSON array of `{id, to}` handbacks). One row
+per runner invocation; the transcript lives in `sessions/<id>.jsonl` +
+`.stderr.log`.
+
+**session_card** — `session_id`, `card_id`. Many-to-many: mined from the
+transcript at session end. Used to link sessions to cards they touched.
 
 ## The four invariants (enforced in core, not in the CLI)
 
