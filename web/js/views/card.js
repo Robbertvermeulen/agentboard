@@ -278,13 +278,17 @@ export async function renderCard(root, { boards, cardId }) {
             }
           </div>
           <div class="detail-sep"></div>
-          <div class="tl-head"><span class="t">Timeline</span>
+          <div class="tl-head"><div class="tl-tabs">
+              <button type="button" class="tl-tab active" data-tab="timeline">Timeline</button>
+              <button type="button" class="tl-tab" data-tab="activity">Agent activity</button>
+            </div>
             <div class="tl-filters">
               <button type="button" class="tl-filter active" data-filter="all">All</button>
               <button type="button" class="tl-filter" data-filter="comment">Comments</button>
               <button type="button" class="tl-filter" data-filter="event">Events</button>
             </div>
           </div>
+          <div id="activity-pane" hidden></div>
           ${
             showSecretIntake
               ? `<div class="secret-box">
@@ -393,6 +397,36 @@ export async function renderCard(root, { boards, cardId }) {
       root.querySelectorAll('.tl-filter').forEach((x) => x.classList.toggle('active', x === b));
       const items = b.dataset.filter === 'all' ? timeline : timeline.filter((t) => t.kind === b.dataset.filter);
       tlList.innerHTML = items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>';
+    };
+  });
+  // --- card tab (design 2g): Timeline vs Agent activity, lazy-loaded once ---
+  const activityPane = root.querySelector('#activity-pane');
+  const tlFilters = root.querySelector('.tl-filters');
+  const secretBox = root.querySelector('.secret-box');
+  let activityLoaded = false;
+  root.querySelectorAll('.tl-tab').forEach((b) => {
+    b.onclick = async () => {
+      root.querySelectorAll('.tl-tab').forEach((x) => x.classList.toggle('active', x === b));
+      const activity = b.dataset.tab === 'activity';
+      tlList.hidden = activity;
+      tlFilters.hidden = activity;
+      if (secretBox) secretBox.hidden = activity;
+      activityPane.hidden = !activity;
+      if (!activity || activityLoaded) return;
+      activityLoaded = true;
+      const data = await api.cardSessions(card.id);
+      const blocks = data.sessions
+        .map(
+          ({ session, steps }) => `
+        <div class="act-session">
+          <div class="act-head">#${session.id} <span class="rt-sched">${esc(session.trigger)}</span>
+            <span class="mut-sm">${esc(relTime(session.started_at))}</span>
+            <a href="#/session/${session.id}">open full session →</a></div>
+          ${steps.map((s) => `<p class="act-step ${s.type}">[${esc(s.type)}] ${esc(s.label)}</p>`).join('') || '<p class="mut-sm">No steps touched this card.</p>'}
+        </div>`
+        )
+        .join('');
+      activityPane.innerHTML = blocks || '<p class="mut-sm">No agent sessions touched this card yet.</p>';
     };
   });
   // --- comment editing: bare edit, no history — the old text is gone ---

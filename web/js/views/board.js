@@ -15,15 +15,19 @@ export const openCount = (columns) => STATUSES.filter((s) => s !== 'done').reduc
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function column(status, cards, { boardId, archivedCount, showAllDone }) {
+function column(status, cards, { boardId, archivedCount, showAllDone, sessionStatus }) {
   const meta = STATUS_META[status];
   const head = `<div class="col-head">
     <div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div>
     <button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>
   </div>`;
   if (status !== 'done') {
+    const tile = (c) =>
+      status === 'doing' && c.owner === 'agent'
+        ? cardTile(c, { presence: sessionStatus.running ? 'live' : 'dormant' })
+        : cardTile(c);
     return `<div class="column ${meta.chip !== 'neutral' ? status : ''} ${status}">${head}
-      <div class="col-cards">${cards.map((c) => cardTile(c)).join('')}</div>
+      <div class="col-cards">${cards.map(tile).join('')}</div>
     </div>`;
   }
   const recent = cards.filter((c) => Date.now() - new Date(c.updated_at).getTime() < 7 * DAY);
@@ -37,7 +41,11 @@ function column(status, cards, { boardId, archivedCount, showAllDone }) {
 }
 
 export async function renderBoard(root, { boards, boardId }) {
-  const [{ board, columns }, { cards: archived }] = await Promise.all([api.board(boardId), api.archived(boardId)]);
+  const [{ board, columns }, { cards: archived }, sessionStatus] = await Promise.all([
+    api.board(boardId),
+    api.archived(boardId),
+    api.sessionStatus().catch(() => ({ running: false })),
+  ]);
   const needYou = needYouCount(columns);
   const total = openCount(columns) + (columns.done?.length ?? 0);
   let showAllDone = false;
@@ -80,7 +88,7 @@ export async function renderBoard(root, { boards, boardId }) {
           ? `<div class="board-empty">${icons.allClear()}<span class="big">Nothing here yet</span><span class="sub">Create the first card — it lands in inbox.</span></div>`
           : total === 0
             ? `<div class="board-empty">${icons.allClear()}<span class="big">Nothing waiting on you</span><span class="sub">Every card is done or archived.</span><a class="archived-link" href="#/board/${esc(boardId)}/archived">${icons.archive(13, 'var(--brand-stroke)')}Archived · ${archived.length}</a></div>`
-            : `<div class="columns">${STATUSES.map((s) => column(s, columns[s] ?? [], { boardId, archivedCount: archived.length, showAllDone })).join('')}</div>`
+            : `<div class="columns">${STATUSES.map((s) => column(s, columns[s] ?? [], { boardId, archivedCount: archived.length, showAllDone, sessionStatus })).join('')}</div>`
       }
     `;
     if (total > 0 && lastMoved && needYou === 0) {

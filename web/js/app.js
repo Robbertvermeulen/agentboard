@@ -6,6 +6,7 @@ import { closeOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
 import { renderCard, stopCardPolling } from './views/card.js';
+import { renderSession } from './views/session.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
 import { openRoutinesModal } from './views/routines.js';
@@ -21,6 +22,7 @@ function parseRoute() {
   let m;
   if ((m = hash.match(/^\/board\/([^/]+)\/archived$/))) return { name: 'archive', boardId: decodeURIComponent(m[1]) };
   if ((m = hash.match(/^\/board\/([^/]+)$/))) return { name: 'board', boardId: decodeURIComponent(m[1]) };
+  if ((m = hash.match(/^\/session\/(\d+)$/))) return { name: 'session', id: Number(m[1]) };
   if ((m = hash.match(/^\/card\/([^/]+)$/))) return { name: 'card', cardId: decodeURIComponent(m[1]) };
   if (hash === '/ctx') return { name: 'ctx', path: null };
   if ((m = hash.match(/^\/ctx\/(.+)$/))) return { name: 'ctx', path: decodeURIComponent(m[1]) };
@@ -92,6 +94,7 @@ async function route() {
     else if (r.name === 'board') await renderBoard(view, { boards, boardId: r.boardId });
     else if (r.name === 'archive') await renderArchive(view, { boards, boardId: r.boardId });
     else if (r.name === 'card') await renderCard(view, { boards, cardId: r.cardId });
+    else if (r.name === 'session') await renderSession(view, { id: r.id });
     else if (r.name === 'ctx') await renderCtx(view, { path: r.path });
     // Sidebar counts arrive after the view; cheap against the local API.
     const views = await Promise.all(boards.map((b) => api.board(b.id)));

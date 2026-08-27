@@ -41,4 +41,8 @@ export const api = {
     req(`/api/cards/${encodeURIComponent(id)}/secrets`, json('POST', { name, value, encoding })),
   routines: (board) => req(`/api/routines${board ? `?board=${encodeURIComponent(board)}` : ''}`),
   toggleRoutine: (path, enabled) => req('/api/routines/toggle', json('POST', { path, enabled })),
+  sessions: () => req('/api/sessions'),
+  session: (id) => req(`/api/sessions/${encodeURIComponent(id)}`),
+  cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
+  sessionStatus: () => req('/api/session-status'),
 };

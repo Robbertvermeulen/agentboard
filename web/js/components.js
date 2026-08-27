@@ -59,7 +59,7 @@ export function cardRefChip(ref) {
 }
 
 // One card tile on a board column. compact = the all-boards mini variant.
-export function cardTile(card, { compact = false } = {}) {
+export function cardTile(card, { compact = false, presence } = {}) {
   const amber = card.status === 'needs_input' ? 'amber-border' : '';
   const cls = ['card-tile', card.type === 'ops' ? 'ops-border' : amber, compact ? 'compact' : '', card.status === 'done' ? 'done-tile' : '']
     .filter(Boolean)
@@ -78,6 +78,8 @@ export function cardTile(card, { compact = false } = {}) {
     </div>
     <p class="tile-title">${esc(card.title)}</p>
     ${reasonLine(card)}
+    ${presence === 'live' ? '<p class="presence live"><span class="live-dot"></span>live session</p>' : ''}
+    ${presence === 'dormant' ? '<p class="presence">no live session — resumes at the next run</p>' : ''}
     ${
       !compact && (card.labels?.length || linked)
         ? `<div class="tile-foot">${labelChips(card.labels)}${linked ? `<span class="tile-link">${icons.link()}${esc(linked.label.match(CARD_ID_RE)[0])}</span>` : ''}</div>`
