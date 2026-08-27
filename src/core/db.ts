@@ -72,6 +72,21 @@ CREATE TABLE IF NOT EXISTS routine_run (
   path        TEXT PRIMARY KEY,
   last_run_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS session (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at  TEXT NOT NULL,
+  ended_at    TEXT,
+  "trigger"   TEXT NOT NULL,
+  exit_status INTEGER,
+  handed_back TEXT NOT NULL DEFAULT '[]'
+);
+
+CREATE TABLE IF NOT EXISTS session_card (
+  session_id INTEGER NOT NULL REFERENCES session(id),
+  card_id    TEXT NOT NULL REFERENCES card(id),
+  PRIMARY KEY (session_id, card_id)
+);
 `;
 
 export function dataDir(): string {
