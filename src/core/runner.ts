@@ -73,6 +73,28 @@ export function releaseLock(): void {
   }
 }
 
+// Heartbeat: is a runner-started session alive right now? The lock proves a
+// live process; the open session row names it. Both required — a stale row
+// after a crash must not read as "live".
+export function sessionStatus(): { running: boolean; session_id: number | null } {
+  let alive = false;
+  try {
+    const lock = JSON.parse(fs.readFileSync(lockPath(), 'utf8')) as SessionLock;
+    alive = lock.hostname === os.hostname() && processAlive(lock.pid);
+  } catch {
+    alive = false;
+  }
+  const db = openDb();
+  try {
+    const row = db.prepare('SELECT id FROM session WHERE ended_at IS NULL ORDER BY id DESC LIMIT 1').get() as
+      | { id: number }
+      | undefined;
+    return { running: alive && row !== undefined, session_id: alive && row ? row.id : null };
+  } finally {
+    db.close();
+  }
+}
+
 function agentMdPath(): string {
   return (
     process.env.AGENTBOARD_AGENT_MD ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../AGENT.md')

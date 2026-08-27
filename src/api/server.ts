@@ -22,6 +22,8 @@ import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
+import { sessionStatus } from '../core/runner.js';
+import { cardSessions, listSessions, sessionDetail } from '../core/sessions.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
@@ -293,6 +295,38 @@ export function createApp(): Hono {
         message: `ctx: ${enabled ? 'resume' : 'pause'} routine ${name} (${card})`,
       });
       return c.json(result);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/sessions', (c) => {
+    try {
+      return c.json({ sessions: listSessions() });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/sessions/:id', (c) => {
+    try {
+      return c.json(sessionDetail(Number(c.req.param('id'))));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/cards/:id/sessions', (c) => {
+    try {
+      return c.json({ sessions: cardSessions(c.req.param('id')) });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/session-status', (c) => {
+    try {
+      return c.json(sessionStatus());
     } catch (err) {
       return errorResponse(c, err);
     }
