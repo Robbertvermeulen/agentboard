@@ -30,6 +30,7 @@ import {
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 import { runSession } from '../core/runner.js';
+import { cardSessions, listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -586,6 +587,57 @@ secret
         process.stdout.write(data);
         if (!data.length || data[data.length - 1] !== 0x0a) process.stdout.write('\n');
       }
+    })
+  );
+
+const sessions = program.command('sessions').description('recorded runner sessions (JSONL + index)');
+
+function sessionLine(s: any): string {
+  const dur =
+    s.ended_at !== null
+      ? `${Math.max(1, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s`
+      : 'running';
+  const outcome =
+    s.ended_at === null ? 'running' : s.exit_status === 0 ? 'completed' : `ended early (${s.exit_status ?? 'crash'})`;
+  const handed = s.handed_back.length ? `  handed back: ${s.handed_back.map((h: any) => h.id).join(', ')}` : '';
+  return `  #${String(s.id).padEnd(4)} ${s.trigger.padEnd(7)} ${s.started_at}  ${dur.padEnd(8)} ${outcome}${
+    s.cards.length ? `  [${s.cards.join(', ')}]` : ''
+  }${handed}`;
+}
+
+sessions
+  .command('list')
+  .description('all recorded sessions, newest first')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const all = listSessions();
+      output(opts, all.length ? all.map(sessionLine).join('\n') : 'No sessions yet', { sessions: all });
+    })
+  );
+
+sessions
+  .command('show <nr>')
+  .description('meta + parsed steps of one session (secrets redacted)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, nr: string) => {
+      const detail = sessionDetail(Number(nr));
+      const lines = [sessionLine(detail.session), ''];
+      lines.push(...detail.steps.map((s) => `  [${s.type.padEnd(6)}] ${s.label}`));
+      output(opts, lines.join('\n'), detail);
+    })
+  );
+
+sessions
+  .command('prune')
+  .description('remove session logs + index rows older than a duration (running sessions are kept)')
+  .requiredOption('--older-than <dur>', '30d, 12h or 45m')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const result = pruneSessions(opts.olderThan);
+      output(opts, result.removed.length ? `Pruned ${result.removed.length} session(s): ${result.removed.join(', ')}` : 'Nothing to prune', result);
     })
   );
 
