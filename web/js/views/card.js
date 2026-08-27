@@ -143,21 +143,98 @@ export async function renderCard(root, { boards, cardId }) {
   }
 
   // Secrets are write-only; the UI only ever knows names, via the events.
-  const storedSecrets = [
-    ...new Set(events.filter((e) => e.kind === 'secret_stored').map((e) => String(e.payload.name ?? '').toLowerCase())),
-  ];
-  const requestedSecrets = (card.body?.match(/^secret_ref:\s*(.+)$/m)?.[1] ?? '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  // Only when the agent asked (a secret_ref line in the body) — an ops
-  // card without a request gets no intake form.
+  const SECRET_LINE = /^secret_ref:\s*(.+)$/m;
+  const parseSecretNames = (text) =>
+    (text?.match(SECRET_LINE)?.[1] ?? '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  const bodySecrets = parseSecretNames(card.body);
+  // A targeted re-request is an agent comment with its own secret_ref: line
+  // (AGENT.md rule 3); the intake nests under the newest one (design 2d).
+  const secretRequests = comments
+    .filter((c) => c.author === 'agent' && SECRET_LINE.test(c.body))
+    .map((c) => ({ comment: c, names: parseSecretNames(c.body) }));
+  const latestRequest = secretRequests.at(-1) ?? null;
+  const requestedSecrets = [...new Set([...bodySecrets, ...secretRequests.flatMap((r) => r.names)])];
+  // Only when the agent asked (a secret_ref line in the body or a comment)
+  // — an ops card without a request gets no intake form.
   const showSecretIntake =
     card.type === 'ops' && card.status !== 'done' && card.status !== 'archived' && requestedSecrets.length > 0;
+  // Nested placement wins whenever a comment-level request exists; the gate
+  // above (ops, not done/archived) still applies to that placement too.
+  const nestedRequest = showSecretIntake ? latestRequest : null;
   const canUpload = card.status !== 'done' && card.status !== 'archived';
 
+  const storedAt = new Map(); // name -> newest secret_stored time
+  for (const e of events) {
+    if (e.kind !== 'secret_stored') continue;
+    const n = String(e.payload.name ?? '').toLowerCase();
+    const prev = storedAt.get(n);
+    if (!prev || e.created_at > prev) storedAt.set(n, e.created_at);
+  }
+  const storedSecrets = [...storedAt.keys()];
+  // "Needed again": requested in a comment newer than its latest store —
+  // a chip may never keep saying "stored" about a rejected value.
+  const neededAgain = (n) => {
+    const req = secretRequests
+      .filter((r) => r.names.includes(n))
+      .map((r) => r.comment.created_at)
+      .sort()
+      .at(-1);
+    const st = storedAt.get(n);
+    return !!req && !!st && req > st;
+  };
+
+  // One box builder, two placements: nested under the newest comment that
+  // re-asked, or standalone (body-only requests, unchanged position).
+  function secretBoxHtml(names, { nested = false } = {}) {
+    const allNeededAgain = nested && names.length > 0 && names.every(neededAgain);
+    const otherStored = nested && [...storedAt.keys()].some((n) => !names.includes(n));
+    return `<div class="secret-box${nested ? ' nested' : ''}">
+        <div class="sb-head">
+          <span class="cc-avatar agent">${icons.bot(12)}</span><span class="t">agent asks ${allNeededAgain ? 'again ' : ''}for ${names.length} secret${names.length === 1 ? '' : 's'}</span>
+          <span class="sb-req">${icons.clock(11)}action required</span>
+        </div>
+        <div class="sb-chips">
+          ${names
+            .map((n) => {
+              if (neededAgain(n))
+                return `<button type="button" class="sb-prefill sb-needed" data-name="${esc(n)}">${icons.lock(11)}${esc(n)}<span class="again">needed again</span></button>`;
+              if (storedAt.has(n)) return `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`;
+              return `<button type="button" class="sb-prefill" data-name="${esc(n)}">${esc(n)}</button>`;
+            })
+            .join('')}
+        </div>
+        ${
+          otherStored
+            ? `<p class="sb-scope-note mut-sm">only ${names.length === 1 ? 'this one value' : 'these values'} — the rest stays stored</p>`
+            : ''
+        }
+        <div class="sb-row">
+          <div class="sb-f"><span>name</span><input id="sec-name" class="mono" autocomplete="off" spellcheck="false" placeholder="e.g. ssh_acme_web"></div>
+          <div class="sb-f value"><span>value</span><input id="sec-value" type="password" autocomplete="new-password" placeholder="Paste or type the value"></div>
+          <button type="button" class="sb-keyfile" id="sec-file-btn">${icons.file(12)}<span>or a key file</span></button>
+          <input type="file" id="sec-file" hidden>
+        </div>
+        <div class="sb-actions">
+          <button type="button" id="sec-store" class="btn-dark">${icons.lock(13, '#fff')}Store secret</button>
+          <span id="sec-error" class="field-error" hidden>${icons.alert()}<span></span></span>
+          <span class="sb-note">${icons.lock(11)}write-only · same name overwrites</span>
+        </div>
+      </div>`;
+  }
+
   const timeline = [
-    ...comments.map((c) => ({ at: c.created_at, kind: 'comment', author: c.author, html: commentCard(c) })),
+    ...comments.map((c) => ({
+      at: c.created_at,
+      kind: 'comment',
+      author: c.author,
+      // Nested under the newest re-request's own comment entry, so a
+      // timeline-filter rerender (which replaces #timeline-list wholesale
+      // from these cached html strings) carries the box along with it.
+      html: commentCard(c) + (c === nestedRequest?.comment ? secretBoxHtml(nestedRequest.names, { nested: true }) : ''),
+    })),
     ...events.map((e) => ({ at: e.created_at, kind: 'event', author: e.actor, html: eventLine(e) })),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
@@ -288,38 +365,10 @@ export async function renderCard(root, { boards, cardId }) {
           </div>
           <div id="activity-pane" hidden></div>
           ${
-            showSecretIntake
-              ? `<div class="secret-box">
-                  <div class="sb-head">
-                    <span class="cc-avatar agent">${icons.bot(12)}</span><span class="t">agent asks for ${requestedSecrets.length} secret${requestedSecrets.length === 1 ? '' : 's'}</span>
-                    <span class="sb-req">${icons.clock(11)}action required</span>
-                  </div>
-                  <div class="sb-chips">
-                    ${requestedSecrets
-                      .map((n) =>
-                        storedSecrets.includes(n)
-                          ? `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`
-                          : `<button type="button" class="sb-prefill" data-name="${esc(n)}">${esc(n)}</button>`
-                      )
-                      .join('')}
-                    ${storedSecrets
-                      .filter((n) => !requestedSecrets.includes(n))
-                      .map((n) => `<span class="sb-stored">${esc(n)}<span class="ok">stored</span></span>`)
-                      .join('')}
-                  </div>
-                  <div class="sb-row">
-                    <div class="sb-f"><span>name</span><input id="sec-name" class="mono" autocomplete="off" spellcheck="false" placeholder="e.g. ssh_acme_web"></div>
-                    <div class="sb-f value"><span>value</span><input id="sec-value" type="password" autocomplete="new-password" placeholder="Paste or type the value"></div>
-                    <button type="button" class="sb-keyfile" id="sec-file-btn">${icons.file(12)}<span>or a key file</span></button>
-                    <input type="file" id="sec-file" hidden>
-                  </div>
-                  <div class="sb-actions">
-                    <button type="button" id="sec-store" class="btn-dark">${icons.lock(13, '#fff')}Store secret</button>
-                    <span id="sec-error" class="field-error" hidden>${icons.alert()}<span></span></span>
-                    <span class="sb-note">${icons.lock(11)}write-only · same name overwrites</span>
-                  </div>
-                </div>`
-              : ''
+            // The comment-nested placement (in the timeline below) takes
+            // over once a comment re-asked; this fallback only fires for a
+            // body-only request on an existing card.
+            showSecretIntake && !nestedRequest ? secretBoxHtml(requestedSecrets, { nested: false }) : ''
           }
           <div class="timeline" id="timeline-list">${timeline.map((t) => t.html).join('') || '<p class="mut-sm">Nothing yet.</p>'}</div>
           ${
@@ -621,28 +670,32 @@ export async function renderCard(root, { boards, cardId }) {
   }
 
   // --- secret intake: write-only, value cleared the moment it is submitted ---
-  const secName = root.querySelector('#sec-name');
-  const secValue = root.querySelector('#sec-value');
-  if (secName) {
-    const secFile = root.querySelector('#sec-file');
-    const secError = root.querySelector('#sec-error');
-    let keyFile = null;
-    root.querySelectorAll('.sb-prefill').forEach((b) => {
-      b.onclick = () => {
-        secName.value = b.dataset.name;
-        (keyFile ? secName : secValue).focus();
-      };
-    });
-    root.querySelector('#sec-file-btn').onclick = () => secFile.click();
-    secFile.onchange = () => {
-      keyFile = secFile.files[0] ?? null;
-      secValue.value = '';
-      secValue.disabled = !!keyFile;
-      secValue.placeholder = keyFile ? `key file: ${keyFile.name}` : 'Paste or type the value';
-      secFile.value = '';
-    };
-    root.querySelector('#sec-store').onclick = async () => {
-      const name = secName.value.trim();
+  // Delegated: the intake may live inside #timeline-list (filter-switch
+  // rerenders replace that DOM wholesale) or standalone — one code path
+  // serves both. Bound on .detail-inner rather than root: root is the
+  // persistent view container reused by every rerender() (background poll,
+  // a successful store), so binding there would stack a fresh listener on
+  // every rerender and double-fire the next click. .detail-inner is rebuilt
+  // fresh each render yet — being an ancestor of #timeline-list rather than
+  // a part of the DOM a filter-switch replaces — still survives those.
+  const secretScope = root.querySelector('.detail-inner');
+  let keyFile = null;
+  secretScope.addEventListener('click', async (ev) => {
+    const prefill = ev.target.closest('.sb-prefill');
+    if (prefill) {
+      const name = root.querySelector('#sec-name');
+      name.value = prefill.dataset.name;
+      (keyFile ? name : root.querySelector('#sec-value'))?.focus();
+      return;
+    }
+    if (ev.target.closest('#sec-file-btn')) {
+      root.querySelector('#sec-file')?.click();
+      return;
+    }
+    if (ev.target.closest('#sec-store')) {
+      const name = root.querySelector('#sec-name').value.trim();
+      const secValue = root.querySelector('#sec-value');
+      const secError = root.querySelector('#sec-error');
       let value;
       let encoding;
       if (keyFile) {
@@ -667,8 +720,17 @@ export async function renderCard(root, { boards, cardId }) {
         secError.querySelector('span:last-child').textContent = err.message;
         secError.hidden = false;
       }
-    };
-  }
+    }
+  });
+  secretScope.addEventListener('change', (ev) => {
+    if (ev.target?.id !== 'sec-file') return;
+    const secValue = root.querySelector('#sec-value');
+    keyFile = ev.target.files[0] ?? null;
+    secValue.value = '';
+    secValue.disabled = !!keyFile;
+    secValue.placeholder = keyFile ? `key file: ${keyFile.name}` : 'Paste or type the value';
+    ev.target.value = '';
+  });
 
   // Light liveness: poll the card every 30s, rerender only on a real change
   // (fingerprint), and never while the composer has focus or text — a
@@ -684,7 +746,9 @@ export async function renderCard(root, { boards, cardId }) {
   const dirty = () =>
     staged.length > 0 ||
     !!root.querySelector('.cc-editor') ||
-    [input, secName, secValue].some((el) => el && (document.activeElement === el || el.value.trim()));
+    [input, root.querySelector('#sec-name'), root.querySelector('#sec-value')].some(
+      (el) => el && (document.activeElement === el || el.value.trim())
+    );
   const tryRefresh = async () => {
     if (!changePending) return;
     if (dirty()) return;

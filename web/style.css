@@ -423,6 +423,23 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .sb-keyfile:hover { border-color: var(--mut-2); color: var(--ink); }
 .sb-actions { display: flex; align-items: center; gap: 8px; padding: 12px 14px 14px; flex-wrap: wrap; }
 .sb-note { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--mut); }
+.sb-scope-note { margin: 0; padding: 6px 14px 0; }
+.secret-box.nested {
+  margin: 6px 0 14px 34px;
+  border-left: 3px solid var(--line, #e5e7eb);
+}
+.sb-prefill.sb-needed {
+  font-weight: 700;
+  color: oklch(0.4 0.13 45);
+  background: color-mix(in oklch, oklch(0.6 0.17 45) 9%, #fff);
+  border: 1px solid color-mix(in oklch, oklch(0.6 0.17 45) 34%, #fff);
+}
+.sb-needed .again {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 4px;
+}
 
 /* secrets in the properties panel: names only */
 .secret-name-chip {
