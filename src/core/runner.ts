@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dataDir, now, openDb } from './db.js';
 import { gateWork } from './cards.js';
 import { RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
+import { finishSessionRecord, scanSessionCards, startSessionRecord } from './sessions.js';
 
 const lockPath = () => path.join(dataDir(), 'session.lock');
 
@@ -137,12 +138,16 @@ function notify(handbacks: { id: string; to: string }[]): void {
   }
 }
 
-export function runSession(dryRun = false): {
+export function runSession(
+  dryRun = false,
+  trigger = 'manual'
+): {
   started: boolean;
   reason: string;
   gate?: { cards: number; routines: number };
   prompt?: string;
   log?: string;
+  session?: number;
   notified?: { id: string; to: string }[];
 } {
   if (dryRun) {
@@ -170,27 +175,39 @@ export function runSession(dryRun = false): {
     const sessionStart = now();
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute
     console.error(`runner: marked ${due.routines.length} routines`);
-    const sessionsDir = path.join(dataDir(), 'sessions');
-    fs.mkdirSync(sessionsDir, { recursive: true });
-    const logFile = path.join(sessionsDir, `${sessionStart.replace(/[:.]/g, '-')}.log`);
-    console.error(`runner: spawning session -> ${logFile}`);
-    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p').split(/\s+/);
-    const out = fs.openSync(logFile, 'w');
-    let status: number | null;
+    const rec = startSessionRecord(trigger);
+    console.error(`runner: session #${rec.id} -> ${rec.jsonl}`);
+    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(
+      /\s+/
+    );
+    let status: number | null = null;
+    let notified: { id: string; to: string }[] = [];
     try {
-      status = spawnSync(parts[0], [...parts.slice(1), buildPrompt(due.routines)], {
-        stdio: ['ignore', out, out],
-      }).status;
+      const out = fs.openSync(rec.jsonl, 'w');
+      const err = fs.openSync(rec.stderr, 'w');
+      try {
+        // stdout is the JSONL transcript; stderr goes to its own file so a
+        // stray warning can never corrupt a transcript line.
+        status = spawnSync(parts[0], [...parts.slice(1), buildPrompt(due.routines)], {
+          stdio: ['ignore', out, err],
+        }).status;
+      } finally {
+        fs.closeSync(out);
+        fs.closeSync(err);
+      }
+      console.error(`runner: session exited ${status ?? 'null'}`);
+      scanSessionCards(rec.id);
+      notified = handbacksSince(sessionStart);
+      notify(notified);
+      if (process.env.AGENTBOARD_NOTIFY_CMD && notified.length > 0) {
+        console.error(`runner: notified: ${notified.length}`);
+      }
+      return { started: true, reason: `session exited ${status ?? 'null'}`, log: rec.jsonl, session: rec.id, notified };
     } finally {
-      fs.closeSync(out);
+      // ended_at is always set, crash or not — a session row may never
+      // stay open forever (the heartbeat and prune both depend on it).
+      finishSessionRecord(rec.id, status, notified);
     }
-    console.error(`runner: session exited ${status ?? 'null'}`);
-    const notified = handbacksSince(sessionStart);
-    notify(notified);
-    if (process.env.AGENTBOARD_NOTIFY_CMD && notified.length > 0) {
-      console.error(`runner: notified: ${notified.length}`);
-    }
-    return { started: true, reason: `session exited ${status ?? 'null'}`, log: logFile, notified };
   } finally {
     releaseLock();
   }

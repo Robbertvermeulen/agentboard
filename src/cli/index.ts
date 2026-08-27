@@ -266,10 +266,11 @@ program
   .command('runner')
   .description('single-flight scheduler step: lock, gate, mark due routines, start a headless agent session')
   .option('--dry-run', 'print lock status, gate counts and the prompt without starting anything')
+  .option('--trigger <label>', 'what started this runner (cron | serve | manual)', 'manual')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const result = runSession(opts.dryRun === true);
+      const result = runSession(opts.dryRun === true, opts.trigger);
       const text = result.started
         ? `Session done (${result.reason}), log: ${result.log}${result.notified?.length ? `, handed back: ${result.notified.map((n) => n.id).join(', ')}` : ''}`
         : `No session: ${result.reason}${result.gate ? ` (gate: ${result.gate.cards} cards, ${result.gate.routines} routines)` : ''}`;

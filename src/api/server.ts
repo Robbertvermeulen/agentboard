@@ -72,7 +72,7 @@ function webDir(): string {
 function maybeAutorun(): void {
   if (process.env.AGENTBOARD_AUTORUN !== '1') return;
   const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
-  const child = spawn(process.execPath, [cli, 'runner'], { detached: true, stdio: 'ignore' });
+  const child = spawn(process.execPath, [cli, 'runner', '--trigger', 'serve'], { detached: true, stdio: 'ignore' });
   child.unref();
 }
 
