@@ -30,7 +30,7 @@ export function pokeCardRefresh() {
   return refreshHook?.();
 }
 export function retryCardRefresh() {
-  retryHook?.();
+  return retryHook?.();
 }
 
 function eventLine(e) {

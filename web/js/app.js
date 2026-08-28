@@ -119,7 +119,7 @@ async function tick() {
     const name = parseRoute().name;
     if (!changed) {
       cursor = res.cursor;
-      if (name === 'card') retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no fetch)
+      if (name === 'card') await retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no extra fetch; awaited so the busy flag covers it)
       return;
     }
     const overlay = document.getElementById('overlay');
