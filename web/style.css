@@ -257,6 +257,11 @@ input, textarea, select { font: inherit; color: var(--ink); }
   0%, 35% { background: color-mix(in oklch, var(--brand) 9%, #fff); border-color: color-mix(in oklch, var(--brand) 35%, #fff); }
   100% { background: #fff; }
 }
+.card-tile.tile-flash { animation: tile-pulse 1.2s ease-out 1; }
+@keyframes tile-pulse {
+  0% { box-shadow: 0 0 0 3px color-mix(in oklch, var(--brand) 45%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
 .card-tile.compact { padding: 10px; border-radius: 10px; }
 .card-tile.compact .tile-title { font-size: 13px; line-height: 1.3; margin-top: 3px; }
 .card-tile.compact .waiting-line, .card-tile.compact .review-line { font-size: 11px; line-height: 1.35; margin-top: 3px; }
@@ -632,6 +637,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .rt-toggle.on { background: oklch(0.42 0.13 145); }
 .rt-toggle.on .knob { left: 16px; }
 .rt-paused-tag { margin-left: 6px; font-size: 11px; color: var(--mut); }
+.rt-overdue { color: oklch(0.44 0.13 45); font-weight: 600; }
 .rt-footer { margin-top: 10px; font-size: 11.5px; color: var(--mut); }
 
 /* ---------- archive ---------- */

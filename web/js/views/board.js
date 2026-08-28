@@ -15,6 +15,9 @@ export const openCount = (columns) => STATUSES.filter((s) => s !== 'done').reduc
 
 const DAY = 24 * 60 * 60 * 1000;
 
+let lastSeen = new Map(); // card id -> status, van de vorige render
+let lastBoard = null;
+
 function column(status, cards, { boardId, archivedCount, showAllDone, sessionStatus }) {
   const meta = STATUS_META[status];
   const head = `<div class="col-head">
@@ -108,6 +111,19 @@ export async function renderBoard(root, { boards, boardId }) {
         showAllDone = true;
         draw();
       };
+    if (lastBoard !== boardId) {
+      lastSeen = new Map();
+      lastBoard = boardId;
+    }
+    const seenNow = new Map();
+    for (const cards of Object.values(columns)) for (const c of cards) seenNow.set(c.id, c.status);
+    if (lastSeen.size) {
+      root.querySelectorAll('.card-tile[data-id]').forEach((el) => {
+        const prev = lastSeen.get(el.dataset.id);
+        if (prev !== seenNow.get(el.dataset.id)) el.classList.add('tile-flash');
+      });
+    }
+    lastSeen = seenNow;
   };
   draw();
 }

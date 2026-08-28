@@ -16,12 +16,14 @@ import {
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
 
-// One poll loop at most, only while a card detail is open; the router
-// stops it on every route change.
-let pollTimer = null;
+// The global app poller pokes the open card view; the view decides whether
+// a refresh is safe (fingerprint + dirty-guards stay the gate).
+let refreshHook = null;
 export function stopCardPolling() {
-  clearInterval(pollTimer);
-  pollTimer = null;
+  refreshHook = null;
+}
+export function pokeCardRefresh() {
+  refreshHook?.();
 }
 
 function eventLine(e) {
@@ -766,12 +768,12 @@ export async function renderCard(root, { boards, cardId }) {
   };
   input.addEventListener('blur', tryRefresh);
   stopCardPolling();
-  pollTimer = setInterval(async () => {
+  refreshHook = async () => {
     try {
       if (fingerprint(await api.card(cardId)) !== shownFp) changePending = true;
     } catch {
-      /* server hiccup — try again next tick */
+      /* server hiccup — the next poke retries */
     }
     tryRefresh();
-  }, 30000);
+  };
 }

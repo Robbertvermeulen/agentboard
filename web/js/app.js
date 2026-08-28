@@ -5,7 +5,7 @@ import { esc } from './util.js';
 import { closeOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
-import { renderCard, stopCardPolling } from './views/card.js';
+import { renderCard, stopCardPolling, pokeCardRefresh } from './views/card.js';
 import { renderSession } from './views/session.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
@@ -106,3 +106,29 @@ async function route() {
 
 window.addEventListener('hashchange', route);
 route();
+
+// --- realtime (vision besluit K): one cheap poll drives every view ---
+let cursor = null;
+let ticking = false;
+async function tick() {
+  if (document.hidden || ticking) return;
+  ticking = true;
+  try {
+    const res = await api.changes(cursor ?? undefined);
+    const changed = cursor !== null && res.changed;
+    cursor = res.cursor;
+    if (!changed) return;
+    const overlay = document.getElementById('overlay');
+    if (overlay && !overlay.hidden) return; // never yank an open dialog away
+    if (parseRoute().name === 'card') pokeCardRefresh();
+    else await route(); // cheap full re-render; overlay is closed, so no loss
+  } catch {
+    /* server hiccup — next tick retries */
+  } finally {
+    ticking = false;
+  }
+}
+setInterval(tick, 2500);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) tick();
+});

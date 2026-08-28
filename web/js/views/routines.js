@@ -45,7 +45,7 @@ export async function openRoutinesModal({ boards, boardId }) {
           ? `last run <a href="#/card/${esc(r.last_card.id)}">${esc(r.last_card.id)}</a> · ${esc(relTime(r.last_run_at))} (${esc(r.last_card.status)})`
           : `last run ${esc(relTime(r.last_run_at))}`
       }
-      — next ${r.next_run ? esc(relTime(r.next_run)) : '-'}
+      — next ${r.next_run ? (r.next_run <= new Date().toISOString() ? '<span class="rt-overdue">overdue</span>' : esc(relTime(r.next_run))) : '-'}
       ${r.enabled ? '' : '<span class="rt-paused-tag">paused</span>'}
     </div>
     <button type="button" class="rt-toggle${r.enabled ? ' on' : ''}" aria-label="${r.enabled ? 'Pause' : 'Resume'} ${esc(r.name)}"><span class="knob"></span></button>
