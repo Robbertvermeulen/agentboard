@@ -23,7 +23,7 @@ export function stopCardPolling() {
   refreshHook = null;
 }
 export function pokeCardRefresh() {
-  refreshHook?.();
+  return refreshHook?.();
 }
 
 function eventLine(e) {
@@ -759,12 +759,16 @@ export async function renderCard(root, { boards, cardId }) {
     const saved = input.value;
     const scroller = root.querySelector('.detail-scroll');
     const savedScroll = { pane: scroller?.scrollTop ?? 0, win: window.scrollY };
+    const prevIds = new Set([...root.querySelectorAll('.comment-card')].map((el) => el.dataset.cid));
     await rerender();
     const freshScroller = root.querySelector('.detail-scroll');
     if (freshScroller) freshScroller.scrollTop = savedScroll.pane;
     window.scrollTo(0, savedScroll.win);
     const fresh = root.querySelector('#comment-input');
     if (fresh && saved) fresh.value = saved;
+    root.querySelectorAll('.comment-card').forEach((el) => {
+      if (!prevIds.has(el.dataset.cid)) el.classList.add('flash');
+    });
   };
   input.addEventListener('blur', tryRefresh);
   stopCardPolling();
@@ -774,6 +778,6 @@ export async function renderCard(root, { boards, cardId }) {
     } catch {
       /* server hiccup — the next poke retries */
     }
-    tryRefresh();
+    await tryRefresh();
   };
 }

@@ -116,11 +116,14 @@ async function tick() {
   try {
     const res = await api.changes(cursor ?? undefined);
     const changed = cursor !== null && res.changed;
-    cursor = res.cursor;
-    if (!changed) return;
+    if (!changed) {
+      cursor = res.cursor;
+      return;
+    }
     const overlay = document.getElementById('overlay');
-    if (overlay && !overlay.hidden) return; // never yank an open dialog away
-    if (parseRoute().name === 'card') pokeCardRefresh();
+    if (overlay && !overlay.hidden) return; // keep the old cursor: the next tick re-sees the change after the dialog closes
+    cursor = res.cursor;
+    if (parseRoute().name === 'card') await pokeCardRefresh();
     else await route(); // cheap full re-render; overlay is closed, so no loss
   } catch {
     /* server hiccup — next tick retries */
