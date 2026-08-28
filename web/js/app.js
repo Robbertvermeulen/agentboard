@@ -5,7 +5,7 @@ import { esc } from './util.js';
 import { closeOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
-import { renderCard, stopCardPolling, pokeCardRefresh } from './views/card.js';
+import { renderCard, stopCardPolling, pokeCardRefresh, retryCardRefresh } from './views/card.js';
 import { renderSession } from './views/session.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
@@ -116,15 +116,20 @@ async function tick() {
   try {
     const res = await api.changes(cursor ?? undefined);
     const changed = cursor !== null && res.changed;
+    const name = parseRoute().name;
     if (!changed) {
       cursor = res.cursor;
+      if (name === 'card') retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no fetch)
       return;
     }
     const overlay = document.getElementById('overlay');
     if (overlay && !overlay.hidden) return; // keep the old cursor: the next tick re-sees the change after the dialog closes
     cursor = res.cursor;
-    if (parseRoute().name === 'card') await pokeCardRefresh();
-    else await route(); // cheap full re-render; overlay is closed, so no loss
+    if (name === 'card') await pokeCardRefresh();
+    else if (name === 'session') {
+      /* policy, not overlay-suppression: the session view stays static until
+         live tail (4b) — cursor still advances above, just no rerender here */
+    } else await route(); // cheap full re-render; overlay is closed, so no loss
   } catch {
     /* server hiccup — next tick retries */
   } finally {

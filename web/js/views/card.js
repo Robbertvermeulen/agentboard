@@ -19,11 +19,18 @@ const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
 // The global app poller pokes the open card view; the view decides whether
 // a refresh is safe (fingerprint + dirty-guards stay the gate).
 let refreshHook = null;
+// Local retry for a change a dirty-guard held back without a blur (e.g.
+// cancelling the comment editor) — no fetch, just re-tries the pending refresh.
+let retryHook = null;
 export function stopCardPolling() {
   refreshHook = null;
+  retryHook = null;
 }
 export function pokeCardRefresh() {
   return refreshHook?.();
+}
+export function retryCardRefresh() {
+  retryHook?.();
 }
 
 function eventLine(e) {
@@ -750,6 +757,7 @@ export async function renderCard(root, { boards, cardId }) {
   const dirty = () =>
     staged.length > 0 ||
     !!root.querySelector('.cc-editor') ||
+    keyFile !== null ||
     [input, root.querySelector('#sec-name'), root.querySelector('#sec-value')].some(
       (el) => el && (document.activeElement === el || el.value.trim())
     );
@@ -760,6 +768,10 @@ export async function renderCard(root, { boards, cardId }) {
     const scroller = root.querySelector('.detail-scroll');
     const savedScroll = { pane: scroller?.scrollTop ?? 0, win: window.scrollY };
     const prevIds = new Set([...root.querySelectorAll('.comment-card')].map((el) => el.dataset.cid));
+    // A poll-rerender must not reset "watch the agent": save the active
+    // tl-tab and timeline-filter, restore them below.
+    const activeTab = root.querySelector('.tl-tab.active')?.dataset.tab;
+    const activeFilter = root.querySelector('.tl-filter.active')?.dataset.filter;
     await rerender();
     const freshScroller = root.querySelector('.detail-scroll');
     if (freshScroller) freshScroller.scrollTop = savedScroll.pane;
@@ -769,6 +781,10 @@ export async function renderCard(root, { boards, cardId }) {
     root.querySelectorAll('.comment-card').forEach((el) => {
       if (!prevIds.has(el.dataset.cid)) el.classList.add('flash');
     });
+    // Reuse the real tab-switch/filter click paths (not a second render
+    // implementation) — a click on the activity tab also (re)loads its pane.
+    if (activeTab && activeTab !== 'timeline') root.querySelector(`.tl-tab[data-tab="${activeTab}"]`)?.click();
+    if (activeFilter && activeFilter !== 'all') root.querySelector(`.tl-filter[data-filter="${activeFilter}"]`)?.click();
   };
   input.addEventListener('blur', tryRefresh);
   stopCardPolling();
@@ -780,4 +796,5 @@ export async function renderCard(root, { boards, cardId }) {
     }
     await tryRefresh();
   };
+  retryHook = tryRefresh;
 }
