@@ -263,12 +263,14 @@ dit document bij te stellen.
   `agentboard observe <sessie>`-commando (handmatig of cron):
   transcript + visiedocument + AGENT.md beoordelen, rapport als
   artifact, eventueel een ops card bij een regelschending.
-- **K. Realtime (bouwblok 5) — de aanpak.** Eén cursor-endpoint
-  (`GET /api/events?after=<id>`) met 2–3s-polling in de UI als eerste
-  stap; SSE is een latere optimalisatie op hetzelfde endpoint, geen
-  ander ontwerp. Let op: comments zijn geen events — de blok-5-spec
-  beslist tussen een `comment_added`-event of een cursor over beide
-  tabellen.
+- **K. Realtime (bouwblok 5) — de aanpak.** Eén cursor-endpoint met
+  2–3s-polling in de UI als eerste stap; SSE is een latere
+  optimalisatie op hetzelfde endpoint, geen ander ontwerp.
+  *Amendement 2026-08-28:* de cursor is samengesteld (max event-id +
+  max comment-id + jongste card.updated_at) in plaats van alleen
+  events — een nieuwe kaart en een kaart-edit schrijven geen event, en
+  comments zijn geen events; `GET /api/changes?since=<cursor>` dekt
+  alle drie zonder schemawijziging of `comment_added`-event.
 
 ## Bouwvolgorde
 
