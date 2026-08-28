@@ -380,6 +380,8 @@ export function createApp(): Hono {
     }
     return c.body(new Uint8Array(fs.readFileSync(abs)), 200, {
       'Content-Type': WEB_TYPES[path.extname(abs).toLowerCase()] ?? 'application/octet-stream',
+      // Revalidate, don't cache blind: a stale app.js would silently miss realtime.
+      'Cache-Control': 'no-cache',
     });
   });
 
