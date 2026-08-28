@@ -30,6 +30,10 @@ events. Daarom:
   roepen. SSE wordt later een tweede transport op ditzelfde endpoint;
   het cursorbegrip verandert niet. Het visiedocument (besluit K) krijgt
   in dezelfde commit een amendement dat deze verbreding vastlegt.
+- *Amendement 2026-08-28 (eindreview blok 5):* de cursor draagt ook
+  sessie-liveness mee (max sessie-id + running-vlag), zodat
+  heartbeat-presence ook bij een sessiecrash of -stilte binnen enkele
+  ticks omklapt.
 
 ## 2. De client-loop (app-shell)
 

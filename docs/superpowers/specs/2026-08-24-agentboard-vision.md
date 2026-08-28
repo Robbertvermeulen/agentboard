@@ -271,6 +271,10 @@ dit document bij te stellen.
   events — een nieuwe kaart en een kaart-edit schrijven geen event, en
   comments zijn geen events; `GET /api/changes?since=<cursor>` dekt
   alle drie zonder schemawijziging of `comment_added`-event.
+  *Amendement 2026-08-28 (eindreview blok 5):* de cursor draagt ook
+  sessie-liveness mee (max sessie-id + running-vlag), zodat
+  heartbeat-presence ook bij een sessiecrash of -stilte binnen enkele
+  ticks omklapt.
 
 ## Bouwvolgorde
 

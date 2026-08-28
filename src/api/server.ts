@@ -335,7 +335,7 @@ export function createApp(): Hono {
 
   app.get('/api/changes', (c) => {
     try {
-      return c.json(changesSince(c.req.query('since') || undefined));
+      return c.json(changesSince(c.req.query('since') || undefined, sessionStatus().running));
     } catch (err) {
       return errorResponse(c, err);
     }

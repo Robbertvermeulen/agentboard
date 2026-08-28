@@ -621,15 +621,19 @@ export function gateWork(): Card[] {
 
 // One cheap question for the UI poller (vision besluit K, amended): did
 // anything change? Events alone are too narrow — card creation and edits
-// only touch card.updated_at, and comments are not events. The cursor is
-// opaque to clients; any advance changes the string.
-export function changesSince(since?: string): { cursor: string; changed: boolean } {
+// only touch card.updated_at, and comments are not events. Session liveness
+// rides along too (amendement 2026-08-28): a session start/end/crash moves
+// neither an event, comment nor card, so without it a crashed session could
+// leave presence showing "live" forever on an otherwise quiet board. The
+// cursor is opaque to clients; any advance changes the string.
+export function changesSince(since?: string, running = false): { cursor: string; changed: boolean } {
   const db = openDb();
   try {
     const e = (db.prepare('SELECT MAX(id) AS m FROM event').get() as { m: number | null }).m ?? 0;
     const c = (db.prepare('SELECT MAX(id) AS m FROM comment').get() as { m: number | null }).m ?? 0;
+    const s = (db.prepare('SELECT MAX(id) AS m FROM session').get() as { m: number | null }).m ?? 0;
     const u = (db.prepare('SELECT MAX(updated_at) AS m FROM card').get() as { m: string | null }).m ?? '';
-    const cursor = `e${e}.c${c}.u${u}`;
+    const cursor = `e${e}.c${c}.s${s}.r${running ? 1 : 0}.u${u}`;
     return { cursor, changed: since !== undefined && since !== cursor };
   } finally {
     db.close();
