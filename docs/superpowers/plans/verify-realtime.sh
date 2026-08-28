@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# End-to-end probe for the realtime changesSince endpoint (spec 2026-08-28):
-# the composite cursor (e{maxEventId}.c{maxCommentId}.u{maxUpdatedAt}) responds
-# correctly to card creation (no event, cursor advances via updated_at), move
-# (event), comment, and label edit (updated_at only). The changed flag is
-# false on identical since and on missing since; true against each previous
-# cursor. Composed from the verified curl matrix of Task 1. One throwaway
-# AGENTBOARD_DATA for the whole run, so cursors stay predictable.
+# End-to-end probe for the realtime changesSince endpoint (spec 2026-08-28,
+# amended eindreview blok 5): the composite cursor
+# (e{maxEventId}.c{maxCommentId}.s{maxSessionId}.r{running}.u{maxUpdatedAt})
+# responds correctly to card creation (no event, cursor advances via
+# updated_at), move (event), comment, and label edit (updated_at only), plus
+# session liveness (a live lock + open session row flips the running flag).
+# The changed flag is false on identical since and on missing since; true
+# against each previous cursor.
+# Composed from the verified curl matrix of Task 1. One throwaway
+# AGENTBOARD_DATA for the whole run, so cursors stay predictable. No real
+# claude session is ever spawned and AGENTBOARD_AUTORUN is never set.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 CLI="node dist/cli/index.js"
@@ -20,9 +24,10 @@ trap cleanup EXIT
 export AGENTBOARD_DATA="$(mktemp -d)/abdata"
 $CLI init >/dev/null
 
-# Find a free port
+# Find a free port. macOS netstat prints addresses as "*.4690" (no colon
+# before the port), so the pattern must match either separator.
 PORT=4690
-while netstat -an 2>/dev/null | grep -q ":$PORT "; do PORT=$((PORT + 1)); done
+while netstat -an 2>/dev/null | grep -q "[.:]$PORT "; do PORT=$((PORT + 1)); done
 
 # Start the serve
 $CLI serve --port "$PORT" &
@@ -73,7 +78,6 @@ assert d['cursor'] != '$CURSOR1', ('cursor did not advance after card creation',
 CURSOR2=$(echo "$RESP" | python3 -c "import json, sys; print(json.load(sys.stdin)['cursor'])")
 
 # Verify: cursor change is in updated_at (no event created for card creation)
-echo "$CURSOR1" | grep -qF 'e0.c0.' || true
 echo "$CURSOR2" | python3 -c "
 import sys
 c = sys.stdin.read().strip()
@@ -179,7 +183,44 @@ for c in cursors:
 print('All cursors unique and in sequence')
 "
 
+# ============================================================================
+# Test 9: session liveness rides the cursor (eindreview blok 5 amendement).
+# No real session is ever spawned; a lock is written in acquireLock's exact
+# shape (src/core/runner.ts: pid/hostname/started_at at <data>/session.lock)
+# using $$ (this script's own, alive pid) and the real hostname so it reads
+# as live and owned, and an open session row is inserted directly (same
+# approach as verify-sessions.sh) — sessionStatus() requires both a live
+# lock AND an open row to report running:true.
+# ============================================================================
+CURSOR6=$(curl -s "localhost:$PORT/api/changes" | python3 -c "import json, sys; print(json.load(sys.stdin)['cursor'])")
+
+sqlite3 "$AGENTBOARD_DATA/board.db" \
+  "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
+cat > "$AGENTBOARD_DATA/session.lock" << EOF
+{"pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
+EOF
+
+RESP=$(curl -s "localhost:$PORT/api/changes?since=$CURSOR6")
+echo "$RESP" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+assert d['changed'] is True, ('changed should be True once a live lock + open session appear', d)
+assert '.r1.' in d['cursor'], ('cursor should carry running=1 while the lock is live', d['cursor'])
+" || fail "liveness leg: changed/running not True with a live lock + open session row"
+
+CURSOR7=$(echo "$RESP" | python3 -c "import json, sys; print(json.load(sys.stdin)['cursor'])")
+
+rm -f "$AGENTBOARD_DATA/session.lock"
+
+RESP=$(curl -s "localhost:$PORT/api/changes?since=$CURSOR7")
+echo "$RESP" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+assert d['changed'] is True, ('changed should flip True again once the lock disappears', d)
+assert '.r0.' in d['cursor'], ('cursor should carry running=0 once the lock is gone', d['cursor'])
+" || fail "liveness leg: changed/running not True after the lock disappeared"
+
 kill "$SERVE_PID" >/dev/null 2>&1 || true
 wait "$SERVE_PID" 2>/dev/null || true
 
-echo "OK: realtime verified (cursor progression, changed flag, create/move/comment/edit)"
+echo "OK: realtime verified (cursor progression, changed flag, create/move/comment/edit, session liveness)"
