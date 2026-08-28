@@ -619,6 +619,23 @@ export function gateWork(): Card[] {
   }
 }
 
+// One cheap question for the UI poller (vision besluit K, amended): did
+// anything change? Events alone are too narrow — card creation and edits
+// only touch card.updated_at, and comments are not events. The cursor is
+// opaque to clients; any advance changes the string.
+export function changesSince(since?: string): { cursor: string; changed: boolean } {
+  const db = openDb();
+  try {
+    const e = (db.prepare('SELECT MAX(id) AS m FROM event').get() as { m: number | null }).m ?? 0;
+    const c = (db.prepare('SELECT MAX(id) AS m FROM comment').get() as { m: number | null }).m ?? 0;
+    const u = (db.prepare('SELECT MAX(updated_at) AS m FROM card').get() as { m: string | null }).m ?? '';
+    const cursor = `e${e}.c${c}.u${u}`;
+    return { cursor, changed: since !== undefined && since !== cursor };
+  } finally {
+    db.close();
+  }
+}
+
 export function cardDetail(id: string): {
   card: Card;
   comments: Comment[];

@@ -10,6 +10,7 @@ import {
   archivedCards,
   boardView,
   cardDetail,
+  changesSince,
   createBoard,
   createCard,
   editCard,
@@ -327,6 +328,14 @@ export function createApp(): Hono {
   app.get('/api/session-status', (c) => {
     try {
       return c.json(sessionStatus());
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/changes', (c) => {
+    try {
+      return c.json(changesSince(c.req.query('since') || undefined));
     } catch (err) {
       return errorResponse(c, err);
     }

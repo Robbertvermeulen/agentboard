@@ -45,4 +45,5 @@ export const api = {
   session: (id) => req(`/api/sessions/${encodeURIComponent(id)}`),
   cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
   sessionStatus: () => req('/api/session-status'),
+  changes: (since) => req(`/api/changes${since ? `?since=${encodeURIComponent(since)}` : ''}`),
 };
