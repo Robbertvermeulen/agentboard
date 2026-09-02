@@ -200,7 +200,11 @@ dit document bij te stellen.
   de agent + routines-due + `needs_input` met een verlópen wait-check.
   Kale `needs_input` telt nooit mee — anders start één onbeantwoorde
   vraag elke minuut een zinloze sessie; die kaarten komen alleen terug
-  via een human-actie.
+  via een human-actie. *Amendement 2026-09-02 (blok-3-erratum, issue
+  #12): "doing van de agent" is verbreed naar élke doing-kaart — sinds
+  besluit I is doing exclusief agent-territorium en claimen verandert
+  de owner niet; het owner-filter liet een human-owned kaart na een
+  sessiecrash voorgoed in doing stranden.*
 - **D. Routines leven in context, run-state in SQLite.**
   - Definitie: markdown-file, `kind: routine` + machinaal parseerbare
     `schedule:` in de frontmatter, body = vrije instructie. Plaatsing

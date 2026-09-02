@@ -140,10 +140,12 @@ routines read-only; pausing is the only direct action and commits
 Unattended operation is three layers: the gate, the runner, and your clock:
 
 1. **Gate** — `agentboard gate --json` is the scheduler's question: ready
-   cards without open blockers, cards in doing@agent, and cards with
-   expired wait-checks. Bare needs_input never counts — one unanswered
-   question must not start a session every minute. Only an expired
-   wait-check brings a needs_input card back to the gate.
+   cards without open blockers, every card in doing (doing is agent
+   territory and claiming never changes the owner, so any doing card is
+   resumable after a crash), and cards with expired wait-checks. Bare
+   needs_input never counts — one unanswered question must not start a
+   session every minute. Only an expired wait-check brings a needs_input
+   card back to the gate.
 2. **Runner** — `agentboard runner` is a single-flight lock protecting
    the gate + session. Lock lives in `session.lock` (stale if a dead
    process owns it or if `AGENTBOARD_LOCK_MAX_AGE` minutes have passed,
@@ -153,8 +155,26 @@ Unattended operation is three layers: the gate, the runner, and your clock:
    (path to AGENT.md) and the due routine paths to the prompt, logs raw
    output to `sessions/<nr>.jsonl` (+ `.stderr.log`), and sends a
    one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional — e.g.
-   a script that posts to a webhook). Dry-run: `agentboard runner
-   --dry-run`.
+   a script that posts to a webhook). Sessions run in a neutral working
+   directory (`AGENTBOARD_WORK`, default `<data>/work`) — never in the
+   caller's cwd, so a stray project checkout's CLAUDE.md can't leak into
+   a session. Dry-run: `agentboard runner --dry-run`.
+
+   **Permission mode.** Headless sessions need to act without a human
+   at the keyboard. The pragmatic choice is running the session command
+   with `--dangerously-skip-permissions`:
+
+   ```
+   AGENTBOARD_SESSION_CMD="claude -p --output-format stream-json --verbose --dangerously-skip-permissions"
+   ```
+
+   That is a deliberate trade: the guardrails live in the tool, not in
+   per-call prompts — the review gate (an agent can never move a card
+   to done), the AGENT.md rulebook, and the write-only secrets vault.
+   The stricter alternative is an allowlist (`--allowedTools` /
+   settings-based permissions) that names exactly what a session may
+   run; start with skip-permissions, tighten to an allowlist once the
+   command surface of your routines has settled.
 3. **Clock** — install the scheduler via cron or launchd (macOS). Cron:
 
    ```

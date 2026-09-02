@@ -257,4 +257,52 @@ if [ -s "$FAKE_OUT" ]; then fail "runner was spawned without AGENTBOARD_AUTORUN 
 kill "$SERVE_PID" >/dev/null 2>&1 || true
 wait "$SERVE_PID" 2>/dev/null || true
 
-echo "OK: trigger/scheduler verified (gate, check-after, hardenings, runner+lock+notify, serve-hook)"
+# ============================================================================
+# Leg 8: blok-3-erratum (issue #12) -- a human-owned doing card is resumable
+# (gate + next), and sessions run in a neutral cwd, never the caller's
+# ============================================================================
+export AGENTBOARD_DATA="$(mktemp -d)/abdata"
+$CLI init >/dev/null
+
+# 8a: claim never changes the owner; the crashed card must stay reachable
+STRAND=$($CLI card new --type task --title "human-owned claim" --json | id_of)
+$CLI card move "$STRAND" ready --reason t >/dev/null
+$CLI card move "$STRAND" doing --from ready --as agent --reason Claiming >/dev/null
+$CLI card show "$STRAND" --json | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['card']
+assert d['owner'] == 'human', ('claim changed the owner', d['owner'])
+" || fail "precondition broken: claiming changed the owner"
+$CLI gate --json | python3 -c "
+import json,sys
+ids=[c['id'] for c in json.load(sys.stdin)['cards']]
+assert '$STRAND' in ids, ('gate missing human-owned doing card', ids)
+" || fail "gate does not resume a human-owned doing card"
+$CLI next --json | python3 -c "
+import json,sys
+ids=[c['id'] for c in json.load(sys.stdin)['cards']]
+assert '$STRAND' in ids, ('next missing human-owned doing card', ids)
+" || fail "next does not list a human-owned doing card"
+
+# 8b: the session spawn gets a neutral cwd -- default <data>/work, override
+# via AGENTBOARD_WORK -- even when the runner is invoked from elsewhere
+SCRATCH3="$(mktemp -d)"
+export FAKE_OUT="$SCRATCH3/calls.log"
+cat > "$SCRATCH3/pwd.sh" << 'EOF'
+#!/usr/bin/env bash
+pwd >> "$FAKE_OUT"
+EOF
+chmod +x "$SCRATCH3/pwd.sh"
+
+: > "$FAKE_OUT"
+(cd "$SCRATCH3" && AGENTBOARD_SESSION_CMD="$SCRATCH3/pwd.sh" $CLI_ABS runner >/dev/null)
+EXPECTED="$(cd "$AGENTBOARD_DATA/work" && pwd -P)"
+[ "$(tail -1 "$FAKE_OUT")" = "$EXPECTED" ] || fail "session cwd is not <data>/work (got: $(tail -1 "$FAKE_OUT"), want: $EXPECTED)"
+
+$CLI card move "$STRAND" ready --as agent --reason retry >/dev/null   # keep the gate non-empty for a second spawn
+: > "$FAKE_OUT"
+(cd "$SCRATCH3" && AGENTBOARD_WORK="$SCRATCH3/custom" AGENTBOARD_SESSION_CMD="$SCRATCH3/pwd.sh" $CLI_ABS runner >/dev/null)
+EXPECTED="$(cd "$SCRATCH3/custom" && pwd -P)"
+[ "$(tail -1 "$FAKE_OUT")" = "$EXPECTED" ] || fail "AGENTBOARD_WORK override not honoured (got: $(tail -1 "$FAKE_OUT"), want: $EXPECTED)"
+
+echo "OK: trigger/scheduler verified (gate, check-after, hardenings, runner+lock+notify, serve-hook, doing-any-owner, neutral-cwd)"

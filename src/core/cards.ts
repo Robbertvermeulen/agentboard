@@ -555,7 +555,9 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
 }
 
 // Worklist for an agent session (and the cheap gate for a cron trigger:
-// empty list = no session). ready = new work, doing@agent = resumable,
+// empty list = no session). ready = new work, doing = resumable — doing is
+// agent territory (vision besluit I) and claiming never changes the owner,
+// so filtering on owner here would strand a human-owned card after a crash.
 // needs_input = possibly self-unblockable via a wait-check in the timeline.
 export function nextWork(): Card[] {
   const db = openDb();
@@ -564,7 +566,7 @@ export function nextWork(): Card[] {
       .prepare(
         `SELECT * FROM card
          WHERE status = 'ready' OR status = 'needs_input'
-            OR (status = 'doing' AND owner = 'agent')
+            OR status = 'doing'
          ORDER BY updated_at ASC`
       )
       .all()
@@ -587,7 +589,8 @@ export function nextWork(): Card[] {
 // The scheduler's question (vision besluit C) — deliberately narrower than
 // next: bare needs_input never counts (one unanswered question must not
 // start a session every minute), and blocked ready cards wait for their
-// blockers. doing@agent counting is the implicit crash recovery.
+// blockers. doing counting is the implicit crash recovery (any owner:
+// claiming never changes it, and doing is agent territory per besluit I).
 export function gateWork(): Card[] {
   const db = openDb();
   try {
@@ -595,7 +598,7 @@ export function gateWork(): Card[] {
       .prepare(
         `SELECT * FROM card
          WHERE status = 'ready' OR status = 'needs_input'
-            OR (status = 'doing' AND owner = 'agent')
+            OR status = 'doing'
          ORDER BY updated_at ASC`
       )
       .all()

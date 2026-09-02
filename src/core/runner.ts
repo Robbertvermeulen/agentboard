@@ -95,6 +95,15 @@ export function sessionStatus(): { running: boolean; session_id: number | null }
   }
 }
 
+// Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
+// any stray project context) would leak into the session. The runner owns
+// its workspace — AGENTBOARD_WORK overrides, <data>/work is the default.
+function workDir(): string {
+  const dir = process.env.AGENTBOARD_WORK ?? path.join(dataDir(), 'work');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function agentMdPath(): string {
   return (
     process.env.AGENTBOARD_AGENT_MD ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../AGENT.md')
@@ -213,6 +222,7 @@ export function runSession(
         // stray warning can never corrupt a transcript line.
         status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(due.routines)], {
           stdio: ['ignore', out, err],
+          cwd: workDir(),
         }).status;
       } finally {
         fs.closeSync(out);
