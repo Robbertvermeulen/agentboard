@@ -508,6 +508,11 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .session-steps .step-type { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; color: var(--mut); }
 .session-steps pre { white-space: pre-wrap; font-size: 12px; background: var(--chip-bg); border-radius: 8px; padding: 8px; margin: 6px 0 4px; overflow-x: auto; }
 .session-steps .reasoning summary em { color: var(--mut); font-style: italic; }
+.follow-btn { margin-left: auto; font-size: 11px; border: 1px solid var(--line); border-radius: 7px; padding: 3px 10px; background: var(--card); color: var(--mut); cursor: pointer; }
+.follow-btn.on { border-color: oklch(0.5 0.11 155); color: oklch(0.5 0.11 155); font-weight: 600; }
+.observation { margin-top: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.observation h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--mut); }
+.observation pre { margin: 0; white-space: pre-wrap; font-size: 12.5px; }
 
 /* agent log overview (design 2f left) */
 .al-head { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 2px; }
