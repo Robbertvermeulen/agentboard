@@ -275,6 +275,8 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .detail { flex: 1; min-height: 0; display: flex; }
 .detail-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .detail-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 40px 0; }
+/* shared scroll wrapper for simpler views (sessions overview, session detail) — same pattern as .detail-scroll */
+.page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 40px 0; }
 .detail-inner { max-width: 880px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
 .detail h1 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; text-wrap: pretty; }
 .detail-body { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--ink-3); }
@@ -522,10 +524,12 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .al-tile .n { display: block; font-size: 20px; font-weight: 700; }
 .al-tile .lbl { font-size: 11px; color: var(--mut); }
 .al-list { display: flex; flex-direction: column; gap: 6px; }
-.al-row { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; color: inherit; text-decoration: none; }
+.al-row { position: relative; display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; color: inherit; text-decoration: none; }
 .al-row:hover { border-color: var(--mut-2); }
+.al-row-link { position: absolute; inset: 0; z-index: 1; } /* stretched-link: row's base click target, below the card-id chips */
 .al-id { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; }
 .al-cards { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mut); }
+.al-cards .cardref-chip { position: relative; z-index: 2; } /* above .al-row-link so a card id stays independently clickable */
 .al-handed { font-size: 11px; color: oklch(0.44 0.13 45); }
 .al-outcome.ok { color: oklch(0.5 0.11 155); }
 .al-outcome.crash { color: oklch(0.5 0.16 25); }
@@ -772,7 +776,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
   /* card detail */
   .detail { flex-direction: column; }
   .props { display: none; }
-  .detail-scroll { padding: 16px 16px 0; overflow: visible; }
+  .detail-scroll, .page-scroll { padding: 16px 16px 0; overflow: visible; }
   .detail h1 { font-size: 19px; line-height: 1.3; }
   .detail-body { font-size: 14px; }
   .composer-wrap { padding: 16px; }

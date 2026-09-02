@@ -32,12 +32,10 @@ export async function renderSession(root, { id }) {
   stopSessionPolling();
   const { session, steps, observation, tail } = await api.session(id);
   const live = session.live === true; // annotated by the API: open row + confirmed lock
-  const dur =
-    session.ended_at !== null
-      ? `${Math.max(1, Math.round((new Date(session.ended_at) - new Date(session.started_at)) / 1000))}s`
-      : live
-        ? 'running'
-        : '—';
+  // Duration and outcome would otherwise both say "running" while live, or
+  // pair an empty "—" placeholder with "ended early (crash)" — in both cases
+  // the state is fully carried by `outcome` alone, so `dur` is omitted then.
+  const dur = session.ended_at !== null ? `${Math.max(1, Math.round((new Date(session.ended_at) - new Date(session.started_at)) / 1000))}s` : null;
   const outcome =
     session.ended_at === null
       ? live
@@ -48,9 +46,10 @@ export async function renderSession(root, { id }) {
         : `ended early (${session.exit_status ?? 'crash'})`;
   root.innerHTML = `
     ${crumb([{ text: 'Agentboard', href: '#/' }, { text: `session #${session.id}`, strong: true }])}
+    <div class="page-scroll">
     <div class="session-head">
       <span class="rt-sched">${esc(triggerLabel(session.trigger))}</span>
-      <span class="mut-sm" title="${esc(absTime(session.started_at))}">${esc(relTime(session.started_at))} · ${esc(dur)} · <span id="s-outcome">${esc(outcome)}</span></span>
+      <span class="mut-sm" title="${esc(absTime(session.started_at))}">${esc(relTime(session.started_at))}${dur ? ` · ${esc(dur)}` : ''} · <span id="s-outcome">${esc(outcome)}</span></span>
       ${session.cards.map((c) => `<a class="cardref-chip" href="#/card/${esc(c)}">${esc(c)}</a>`).join('')}
       ${live ? `<span class="al-live" id="s-live"><span class="live-dot"></span><span id="s-beat">live</span></span>
       <button type="button" class="follow-btn on" id="s-follow">follow</button>` : ''}
@@ -58,7 +57,8 @@ export async function renderSession(root, { id }) {
     <div class="session-steps" id="s-steps">
       ${steps.map(stepHtml).join('') || '<p class="mut-sm">Empty transcript.</p>'}
     </div>
-    ${observation ? `<div class="observation"><h3>Observation</h3><pre>${esc(observation)}</pre></div>` : ''}`;
+    ${observation ? `<div class="observation"><h3>Observation</h3><pre>${esc(observation)}</pre></div>` : ''}
+    </div>`;
   if (!live) return;
 
   let cursor = { offset: tail.offset, n: tail.n };
@@ -72,11 +72,11 @@ export async function renderSession(root, { id }) {
     if (follow) list.lastElementChild?.scrollIntoView({ block: 'end' });
   };
   // Scrolling up is an implicit "stop following"; the button turns it back on.
-  // #view is the real scroll container (design's per-view scroll pattern,
-  // same as card.js's .detail-scroll) — an at-bottom check means the
-  // programmatic scrollIntoView above never disables follow (it lands at the
-  // bottom, so this is a no-op) while a user scrolling up does.
-  const scroller = document.getElementById('view');
+  // .page-scroll is the real scroll container (this view's own scroll
+  // wrapper, same pattern as card.js's .detail-scroll) — an at-bottom check
+  // means the programmatic scrollIntoView above never disables follow (it
+  // lands at the bottom, so this is a no-op) while a user scrolling up does.
+  const scroller = root.querySelector('.page-scroll');
   const onScroll = () => {
     if (follow && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 40) {
       follow = false;

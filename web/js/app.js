@@ -95,7 +95,11 @@ async function route() {
   try {
     if (!boards.length) boards = (await api.boards()).boards;
     renderSidebar(r);
-    view.innerHTML = '';
+    // The sessions overview preserves its own scroll position across the
+    // blind rerenders route() does on every changed tick — it needs the OLD
+    // .page-scroll still in the DOM to read scrollTop from before it
+    // overwrites it, so it alone is exempted from the blank-first below.
+    if (r.name !== 'sessions') view.innerHTML = '';
     if (r.name === 'all') await renderAllBoards(view, { boards });
     else if (r.name === 'board') await renderBoard(view, { boards, boardId: r.boardId });
     else if (r.name === 'archive') await renderArchive(view, { boards, boardId: r.boardId });
