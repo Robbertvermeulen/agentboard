@@ -69,6 +69,10 @@ A re-request after a failed value (a new comment with a `secret_ref:`
 line) renders the intake under that comment and marks the earlier chips
 "needed again".
 
+The web UI also has an Agent log page (sidebar, next to Routines): the
+session list with derived outcomes, and a running session's detail page
+that follows along live via the same realtime channel.
+
 ## Files: uploads, workdir, artifacts, context
 
 Four homes, one decision rule — input from you? → uploads. Needed today?
@@ -107,6 +111,11 @@ artifacts/, uploads/ and the context repo with its git history.
 Schedule it daily (cron/launchd) with `--out` on a second disk or
 synced folder, and give the context repo a git remote — the tool does
 neither for you.
+
+Session logs (`sessions/*.jsonl`, `.stderr.log`, `*-observation.md`)
+are deliberately excluded — they're working logs, not source data.
+`sessions prune --older-than 30d|12h|45m` is the cleanup channel for
+them.
 
 ## Routines
 
@@ -200,9 +209,9 @@ allowing the next session to pick up where you left off.
 
 Transcripts live in `sessions/` (JSONL + stderr). Each session gets a
 numeric id; the runner stamps `started_at`, `ended_at` (null if running),
-`trigger` (cron|serve|manual), `exit_status`, and `handed_back` (cards
-returned to the user). The session is the working log; the timeline
-(event history on cards) stays the durable truth.
+`trigger` (cron|serve|manual|observe), `exit_status`, and `handed_back`
+(cards returned to the user). The session is the working log; the
+timeline (event history on cards) stays the durable truth.
 
 Commands: `agentboard sessions list` (all, newest first), `sessions
 show <nr>` (meta + parsed steps, secrets redacted), `sessions prune
@@ -219,6 +228,23 @@ The runner records a heartbeat: `session.started_at` is when the session
 began. If a session never ends (`ended_at` is null), the runner crashed
 or hung; the lock timeout (default 120 minutes) will unblock the next
 cron tick.
+
+### Observer
+
+`agentboard observe <nr>` re-reads a finished session and judges it
+against AGENT.md (and, if given, a vision document): a short markdown
+report lands at `sessions/<nr>-observation.md` — verdict (pass or
+violation), findings, concrete improvements — and, only on a real
+violation, one ops card on the board of the card involved. It refuses
+a still-running session (`ended_at` is null — the transcript is
+incomplete) and a session whose own trigger is `observe` (no observing
+the observer).
+
+`--vision <path>` or `AGENTBOARD_VISION` points at the vision document
+the rulebook serves; without either, the observer judges against
+AGENT.md alone. The observation runs through `runSession` itself
+(trigger `observe`), so it is a session like any other — same lock,
+same capture, same crash net — and shows up in `sessions list`.
 
 ## External refs
 

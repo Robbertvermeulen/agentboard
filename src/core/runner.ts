@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dataDir, now, openDb } from './db.js';
 import { gateWork } from './cards.js';
-import { RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
-import { finishSessionRecord, scanSessionCards, startSessionRecord } from './sessions.js';
+import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
+import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
 
 const lockPath = () => path.join(dataDir(), 'session.lock');
 
@@ -162,7 +162,8 @@ function notify(handbacks: { id: string; to: string }[]): void {
 
 export function runSession(
   dryRun = false,
-  trigger = 'manual'
+  trigger = 'manual',
+  promptOverride?: string
 ): {
   started: boolean;
   reason: string;
@@ -188,10 +189,10 @@ export function runSession(
   }
   console.error('runner: lock acquired');
   try {
-    const cards = gateWork();
-    const due = dueRoutines();
+    const cards = promptOverride ? [] : gateWork();
+    const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
     console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
-    if (cards.length === 0 && due.routines.length === 0) {
+    if (!promptOverride && cards.length === 0 && due.routines.length === 0) {
       return { started: false, reason: 'gate empty' };
     }
     const sessionStart = now();
@@ -210,7 +211,7 @@ export function runSession(
       try {
         // stdout is the JSONL transcript; stderr goes to its own file so a
         // stray warning can never corrupt a transcript line.
-        status = spawnSync(parts[0], [...parts.slice(1), buildPrompt(due.routines)], {
+        status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(due.routines)], {
           stdio: ['ignore', out, err],
         }).status;
       } finally {
@@ -233,4 +234,38 @@ export function runSession(
   } finally {
     releaseLock();
   }
+}
+
+// Observer (vision besluit J): re-read a finished session and judge it
+// against the rulebook. The prompt does the work — report to a fixed path,
+// an ops card only on a real violation. Runs through runSession, so the
+// single-flight lock and session capture apply to the observer itself.
+export function observeSession(
+  nr: number,
+  visionPath?: string
+): ReturnType<typeof runSession> & { report: string } {
+  const db = openDb();
+  try {
+    const row = db.prepare('SELECT ended_at, "trigger" FROM session WHERE id = ?').get(nr) as
+      | { ended_at: string | null; trigger: string }
+      | undefined;
+    if (!row) throw new Error(`Session not found: ${nr}`);
+    if (row.ended_at === null) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
+    if (row.trigger === 'observe') throw new Error(`Session #${nr} is itself an observation — nothing to observe`);
+  } finally {
+    db.close();
+  }
+  if (visionPath && !fs.existsSync(visionPath)) throw new Error(`Vision document not found: ${visionPath}`);
+  const report = observationPath(nr);
+  const prompt =
+    `You are the agentboard observer. Review finished session #${nr}.\n\n` +
+    `1. Read the redacted transcript: run \`agentboard sessions show ${nr}\`. Never read the raw JSONL.\n` +
+    `2. Read the agent rulebook at ${agentMdPath()}.\n` +
+    (visionPath ? `3. Read the vision document at ${visionPath} — the standard the rulebook serves.\n` : '') +
+    `\nJudge the session against those rules: claiming, status moves, hand-backs, secret hygiene, routine dedup, scope.\n` +
+    `Write a short markdown report to ${report}: first line \`verdict: pass\` or \`verdict: violation\`, then findings and concrete improvements.\n` +
+    `Only if a rule was violated: also create one ops card describing it, owner human, on the board of the card involved ` +
+    `(check \`agentboard card new --help\` for syntax). No violation, no card.\n` +
+    `The report file is your only required output.`;
+  return { ...runSession(false, 'observe', prompt), report };
 }

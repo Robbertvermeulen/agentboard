@@ -29,7 +29,7 @@ import {
   writeContext,
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
-import { runSession } from '../core/runner.js';
+import { observeSession, runSession } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 
 interface OutputOpts {
@@ -275,6 +275,21 @@ program
       const text = result.started
         ? `Session done (${result.reason}), log: ${result.log}${result.notified?.length ? `, handed back: ${result.notified.map((n) => n.id).join(', ')}` : ''}`
         : `No session: ${result.reason}${result.gate ? ` (gate: ${result.gate.cards} cards, ${result.gate.routines} routines)` : ''}`;
+      output(opts, text, result);
+    })
+  );
+
+program
+  .command('observe <nr>')
+  .description('review a finished session against AGENT.md (and the vision doc if provided): report + ops card on violation')
+  .option('--vision <path>', 'vision document to judge against (default: $AGENTBOARD_VISION)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, nr: string) => {
+      const result = observeSession(Number(nr), opts.vision ?? process.env.AGENTBOARD_VISION);
+      const text = result.started
+        ? `Observation done (${result.reason}), report: ${result.report}`
+        : `No observation: ${result.reason}`;
       output(opts, text, result);
     })
   );
