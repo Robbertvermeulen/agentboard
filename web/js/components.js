@@ -189,6 +189,40 @@ export async function moveWithReason(card, toStatus, onDone) {
   }
 }
 
+// Design 3b: doing stays reachable, but only through a confirmation that
+// says what will really happen. Fixed reason, no free-text — the dialog is
+// the reason. The liveness line only states what the system can derive.
+async function confirmDoingMove(card, onDone) {
+  let liveLine = '';
+  try {
+    const s = await api.sessionStatus();
+    liveLine = s.running ? 'A session is running right now.' : 'No live session right now — the scheduler picks it up at its own next run.';
+  } catch {
+    /* status unavailable: no claim */
+  }
+  const el = openOverlay(`<div class="dialog doing-confirm" role="dialog" aria-label="Move to doing">
+    <span class="exception-tag">${icons.bot(11)}exception path</span>
+    <span class="dialog-title">Move this card into doing?</span>
+    <p class="dialog-sub">doing is the agent's column. Put a card there yourself and the agent will start where the card is, not where you are.</p>
+    <p class="dialog-sub">If you want it worked on soon, <strong>ready</strong> is the normal route — the agent claims it and moves it to doing itself.</p>
+    ${liveLine ? `<p class="dialog-sub mut-sm">${esc(liveLine)}</p>` : ''}
+    <div class="dialog-actions">
+      <button type="button" id="doing-cancel" class="btn-ghost">Cancel</button>
+      <button type="button" id="doing-ok" class="btn-dark">Move to doing anyway</button>
+    </div>
+  </div>`);
+  el.querySelector('#doing-cancel').onclick = closeOverlay;
+  el.querySelector('#doing-ok').onclick = async () => {
+    closeOverlay();
+    try {
+      await api.move(card.id, 'doing', 'moved to doing by user (confirmed)');
+      onDone();
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
+}
+
 function alertError(message) {
   const el = openOverlay(`<div class="dialog"><span class="dialog-title">That did not work</span>
     <p class="dialog-sub">${esc(message)}</p>
@@ -201,9 +235,11 @@ function alertError(message) {
 function statusMenuItems(current) {
   return ALL_STATUSES.map((s) => {
     const active = s === current;
-    return `<button type="button" class="status-item${active ? ' active' : ''}" data-status="${s}">
+    const exception = s === 'doing' && !active;
+    return `<button type="button" class="status-item${active ? ' active' : ''}${exception ? ' exception' : ''}" data-status="${s}">
       ${statusIcon(s, isMobile() ? 16 : 13)}
       <span class="${s === 'archived' ? 'mut' : ''}">${s}</span>
+      ${exception ? '<span class="agent-tag">agent</span>' : ''}
       ${active ? `<span class="item-check">${icons.check(isMobile() ? 18 : 13, 'var(--dark)')}</span>` : ''}
     </button>`;
   }).join('');
@@ -213,6 +249,7 @@ export function openStatusMenu(card, onDone, anchor) {
   const pick = async (status) => {
     closeOverlay();
     if (status === card.status) return;
+    if (status === 'doing') return confirmDoingMove(card, onDone);
     await moveWithReason(card, status, onDone);
   };
   if (isMobile()) {
@@ -228,6 +265,7 @@ export function openStatusMenu(card, onDone, anchor) {
   } else {
     const el = openOverlay(`<div class="dialog status-menu">
       ${statusMenuItems(card.status)}
+      <p class="doing-note">doing is the agent's column — asks first.</p>
       <p class="menu-hint">Any status is reachable — the next step asks for a reason.</p>
     </div>`);
     // Anchored under the status pill, no dim — like the design's open menu.

@@ -617,6 +617,10 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .status-item.active { background: var(--chip-bg); font-weight: 600; }
 .status-item .item-check { margin-left: auto; display: inline-flex; }
 .menu-hint { margin: 6px 8px 4px; font-size: 11px; line-height: 1.4; color: var(--mut-2); }
+.status-item.exception { border: 1px dashed var(--mut-2); border-radius: 8px; }
+.status-item .agent-tag { margin-left: auto; font-size: 9.5px; font-weight: 600; color: var(--mut); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
+.doing-note { margin: 2px 8px 6px; font-size: 11px; color: var(--mut); }
+.exception-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: oklch(0.44 0.13 45); margin-bottom: 2px; }
 
 .sheet { width: 100%; background: #fff; border-radius: 20px 20px 0 0; padding: 10px 0 26px; box-shadow: 0 -12px 40px rgb(15 23 42 / 0.2); }
 .sheet-handle { width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 0 auto 10px; }
