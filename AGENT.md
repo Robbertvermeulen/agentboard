@@ -107,11 +107,21 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     machine: it lives in the vault as secrets (named in the connection
     file's `secret_ref`) and is materialized at use, the way
     `secret get --out` rebuilds a key file. One-time interactive auth
-    (an OAuth consent) is the user's step: park exact instructions on
-    the card (needs_input) and have the durable token stored in the
-    vault, not in the tool's config dir. A tool that cannot externalize
-    its state this way is a blocker to raise on the card — not a
-    licence for machine-local state.
+    (an OAuth consent) splits in two: you run the tool side, and the
+    user only ever needs the board and a browser — never a terminal.
+    Start the auth command yourself, capture the consent URL from its
+    output, and park just that URL on the card (needs_input) as a
+    markdown link (`[Authorize X](https://...)`) with one line saying
+    what to expect. Anything that comes back — a code, a token — enters
+    through the secrets intake: give the same comment its own
+    `secret_ref:` line (rule 3) so the value goes into the vault, never
+    into a comment. Prefer a code/device flow when the tool offers one
+    (the agent and the user's browser may be different machines); the
+    durable token is stored in the vault, not in the tool's config dir.
+    A tool that cannot externalize its state this way — no headless
+    path, no code flow — is a blocker to raise on the card, not a
+    licence for machine-local state or for sending the user to a
+    terminal.
 15. Blocked on missing foundation? One ops card per missing entity, the
     moment you discover it: `card new --type ops --blocks <task-id>
     --as agent ...` — this links it as a blocker on the task. Then move

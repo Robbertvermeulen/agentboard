@@ -332,6 +332,14 @@ transcript at session end. Used to link sessions to cards they touched.
 4. Delete does not exist. Cards get `status: archived`; context files go via
    `git rm` (they stay in history).
 
+A fifth rule is behavioral (AGENT.md rule 14, not enforced in core): the
+user's contract with the system is **board + browser** — a parked
+instruction may never require a terminal. For interactive auth flows the
+agent runs the tool side itself and parks only the consent URL on the card
+as a clickable link; codes and tokens come back through the secrets
+intake. A tool with no headless or code-flow path is a blocker to report,
+not a reason to send the user to a terminal.
+
 ## Context files
 
 Markdown with YAML frontmatter. Directory name = client, `_global/` for
