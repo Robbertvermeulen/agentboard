@@ -505,6 +505,8 @@ export async function renderCard(root, { boards, cardId }) {
     };
   });
   const jumpToRequest = () => {
+    const tlTab = root.querySelector('.tl-tab[data-tab="timeline"]');
+    if (tlTab && !tlTab.classList.contains('active')) tlTab.click();
     const allBtn = root.querySelector('.tl-filter[data-filter="all"]');
     if (allBtn && !allBtn.classList.contains('active')) allBtn.click();
     const box = root.querySelector('.secret-box');
