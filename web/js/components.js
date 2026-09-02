@@ -15,7 +15,8 @@ export const agentChip = () => `<span class="agent-chip">${icons.bot()}@agent</s
 
 export function ageChip(card) {
   if (card.status !== 'needs_input' && card.status !== 'review') return '';
-  const cls = card.status === 'needs_input' ? 'age-chip amber' : 'age-chip green';
+  const old = Date.now() - new Date(card.status_since).getTime() > 3 * 24 * 60 * 60 * 1000;
+  const cls = `age-chip ${card.status === 'needs_input' ? 'amber' : 'green'}${old ? ' old' : ''}`;
   return `<span class="${cls}" title="in ${esc(card.status)} since ${esc(absTime(card.status_since))}">${ageShort(card.status_since)}</span>`;
 }
 

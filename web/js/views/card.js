@@ -1,7 +1,7 @@
 // Card detail: body, chips, artifacts, timeline, composer, properties panel.
 import { api } from '../api.js';
 import { icons, statusIcon } from '../icons.js';
-import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, CARD_ID_RE } from '../util.js';
+import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, CARD_ID_RE, ageShort } from '../util.js';
 import {
   idChip,
   statusPill,
@@ -13,6 +13,7 @@ import {
   openStatusMenu,
   crumb,
 } from '../components.js';
+import { triggerLabel } from './sessions.js';
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
 
@@ -195,6 +196,9 @@ export async function renderCard(root, { boards, cardId }) {
     return !!req && !!st && req > st;
   };
 
+  const openNames = requestedSecrets.filter((n) => !storedAt.has(n) || neededAgain(n));
+  const showAnchor = showSecretIntake && openNames.length > 0;
+
   // One box builder, two placements: nested under the newest comment that
   // re-asked, or standalone (body-only requests, unchanged position).
   function secretBoxHtml(names, { nested = false } = {}) {
@@ -262,6 +266,12 @@ export async function renderCard(root, { boards, cardId }) {
   if (card.status === 'review') quick.push({ label: 'Approve → Done', cls: 'btn-green', to: 'done', icon: icons.check(14) });
   const canArchive = card.status !== 'archived';
 
+  const blockedSince = new Map();
+  for (const e of events) {
+    if (e.kind !== 'blocker_added') continue;
+    blockedSince.set(String(e.payload.blocker ?? ''), e.created_at);
+  }
+
   root.innerHTML = `
     ${crumb([
       { text: board?.name ?? card.board_id, href: `#/board/${esc(card.board_id)}` },
@@ -276,6 +286,11 @@ export async function renderCard(root, { boards, cardId }) {
     <div class="detail">
       <div class="detail-main">
         <div class="detail-scroll detail-page-with-bar"><div class="detail-inner">
+          ${
+            showAnchor
+              ? `<div class="openreq-bar"><button type="button" class="openreq-chip" id="openreq-jump">${icons.lock(11)}${openNames.length} open request${openNames.length === 1 ? '' : 's'} · secret</button><span class="mut-sm">Go to request</span></div>`
+              : ''
+          }
           ${
             card.type === 'ops'
               ? `<div class="ops-line"><span class="ops-badge">${icons.sliders(12)}ops card</span><span class="mut-sm" style="font-size:12px">the system asking for something it needs</span></div>`
@@ -292,7 +307,7 @@ export async function renderCard(root, { boards, cardId }) {
                       const open = b.status !== 'done' && b.status !== 'archived';
                       return `<a class="blocker-chip${open ? '' : ' resolved'}" href="#/card/${esc(b.id)}">${
                         open ? icons.block(11) : icons.check(11, 'var(--green-icon)')
-                      }${esc(b.id)}</a>`;
+                      }${esc(b.id)}${open && blockedSince.has(b.id) ? `<span class="blocked-age">blocked ${esc(ageShort(blockedSince.get(b.id)))}</span>` : ''}</a>`;
                     })
                     .join('')}
                   ${(card.context_refs ?? []).map((p) => `<a class="ctx-chip" href="#/ctx/${esc(p)}">${icons.file()}${esc(p)}</a>`).join('')}
@@ -462,12 +477,41 @@ export async function renderCard(root, { boards, cardId }) {
   root.querySelectorAll('.tl-filter').forEach((b) => {
     b.onclick = () => {
       root.querySelectorAll('.tl-filter').forEach((x) => x.classList.toggle('active', x === b));
+      // Half-typed intake input survives the rebuild: the nested secret box
+      // lives inside #timeline-list, which is replaced wholesale below.
+      const prevName = root.querySelector('#sec-name')?.value ?? '';
+      const prevValue = root.querySelector('#sec-value');
+      const saved = prevValue ? { value: prevValue.value, disabled: prevValue.disabled, placeholder: prevValue.placeholder } : null;
       const items = b.dataset.filter === 'all' ? timeline : timeline.filter((t) => t.kind === b.dataset.filter);
-      tlList.innerHTML = items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>';
-      // Rebuilt box shows no file indication, so stale file must not win
-      keyFile = null;
+      const hidesRequest = nestedRequest && openNames.length > 0 && b.dataset.filter === 'event';
+      tlList.innerHTML =
+        (items.map((t) => t.html).join('') || '<p class="mut-sm">Nothing here.</p>') +
+        (hidesRequest
+          ? `<div class="filter-hint">${icons.lock(11)}This filter hides an open request. <button type="button" class="show-all-link">Show all</button></div>`
+          : '');
+      const name = root.querySelector('#sec-name');
+      if (name) name.value = prevName;
+      const value = root.querySelector('#sec-value');
+      if (value && saved) {
+        value.value = saved.value;
+        value.disabled = saved.disabled;
+        value.placeholder = saved.placeholder;
+      }
+      // keyFile intentionally survives now: the rebuilt box's disabled state
+      // and placeholder are restored above, so the indication is back too.
     };
   });
+  const jumpToRequest = () => {
+    const allBtn = root.querySelector('.tl-filter[data-filter="all"]');
+    if (allBtn && !allBtn.classList.contains('active')) allBtn.click();
+    const box = root.querySelector('.secret-box');
+    if (box) {
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      box.classList.add('flash');
+    }
+  };
+  const jump = root.querySelector('#openreq-jump');
+  if (jump) jump.onclick = jumpToRequest;
   // --- card tab (design 2g): Timeline vs Agent activity, lazy-loaded once ---
   const activityPane = root.querySelector('#activity-pane');
   const tlFilters = root.querySelector('.tl-filters');
@@ -488,7 +532,7 @@ export async function renderCard(root, { boards, cardId }) {
           .map(
             ({ session, steps }) => `
           <div class="act-session">
-            <div class="act-head">#${session.id} <span class="rt-sched">${esc(session.trigger)}</span>
+            <div class="act-head">#${session.id} <span class="rt-sched">${esc(triggerLabel(session.trigger))}</span>
               <span class="mut-sm">${esc(relTime(session.started_at))}</span>
               <a href="#/session/${session.id}">open full session →</a></div>
             ${steps.map((s) => `<p class="act-step ${s.type}">[${esc(s.type)}] ${esc(s.label)}</p>`).join('') || '<p class="mut-sm">No steps touched this card.</p>'}
@@ -505,6 +549,10 @@ export async function renderCard(root, { boards, cardId }) {
   // --- comment editing: bare edit, no history — the old text is gone ---
   // Delegated on the list, so the handlers survive the filter re-renders.
   tlList.onclick = async (e) => {
+    if (e.target.closest('.show-all-link')) {
+      jumpToRequest();
+      return;
+    }
     const cardEl = e.target.closest('.comment-card');
     if (!cardEl) return;
     if (e.target.closest('.cc-edit') && !cardEl.querySelector('.cc-editor')) {
@@ -749,7 +797,7 @@ export async function renderCard(root, { boards, cardId }) {
   const fingerprint = (d) =>
     `${d.card.updated_at}|${d.comments.length}|${d.events.length}|${
       [...d.comments, ...d.events].map((x) => x.created_at).sort().at(-1) ?? ''
-    }`;
+    }|${d.comments.map((x) => x.updated_at ?? '').sort().at(-1) ?? ''}`;
   const shownFp = fingerprint({ card, comments, events });
   let changePending = false;
   // Half-typed secrets, staged files and an open comment editor block a

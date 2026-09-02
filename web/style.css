@@ -310,6 +310,12 @@ input, textarea, select { font: inherit; color: var(--ink); }
   background: color-mix(in oklch, var(--brand) 7%, #fff); border: 1px solid color-mix(in oklch, var(--brand) 28%, #fff);
 }
 .blocker-chip.resolved { color: var(--mut); background: transparent; border-color: var(--line); text-decoration: line-through; }
+.openreq-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 8px 0; background: var(--surface); }
+.openreq-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: oklch(0.44 0.13 45); background: color-mix(in oklch, oklch(0.44 0.13 45) 9%, transparent); border: 1px solid color-mix(in oklch, oklch(0.44 0.13 45) 30%, transparent); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.filter-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mut); padding: 10px 2px; }
+.filter-hint .show-all-link { color: oklch(0.55 0.16 255); background: none; border: none; padding: 0; font-size: 12px; cursor: pointer; }
+.blocked-age { font-size: 10px; color: oklch(0.5 0.16 25); margin-left: 4px; }
+.age-chip.old { font-weight: 700; background: color-mix(in oklch, oklch(0.44 0.13 45) 18%, transparent); }
 .refs-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .refs-label { font-size: 11px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mut-2); margin-right: 2px; }
 .ext-chip {
