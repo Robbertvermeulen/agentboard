@@ -22,7 +22,11 @@ function column(status, cards, { boardId, archivedCount, showAllDone, sessionSta
   const meta = STATUS_META[status];
   const head = `<div class="col-head">
     <div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div>
-    <button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>
+    ${
+      // No create-into-doing shortcut (vision besluit I): the status menu's
+      // confirmed move is the one deliberate escape hatch into doing.
+      status === 'doing' ? '' : `<button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>`
+    }
   </div>`;
   if (status !== 'done') {
     const tile = (c) =>
