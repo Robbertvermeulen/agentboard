@@ -257,7 +257,7 @@ export function openStatusMenu(card, onDone, anchor) {
       `<div class="sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-head"><span>Move to</span><span class="mut-sm">a reason is asked next</span></div>
-        ${statusMenuItems(card.status).replace('class="status-item', 'class="status-item sheet-item')}
+        ${statusMenuItems(card.status).replaceAll('class="status-item', 'class="status-item sheet-item')}
       </div>`,
       { sheet: true }
     );
