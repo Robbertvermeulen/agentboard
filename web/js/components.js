@@ -71,7 +71,7 @@ export function cardTile(card, { compact = false, presence } = {}) {
     <div class="tile-top">
       <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}${
         openBlockers ? `<span class="blocked-chip" title="${openBlockers} open blocker${openBlockers === 1 ? '' : 's'}">${icons.block(10)}${openBlockers}</span>` : ''
-      }${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}${
+      }${card.open_requests ? `<span class="req-chip" title="${card.open_requests} open secret request${card.open_requests === 1 ? '' : 's'}">${icons.lock(10)}${card.open_requests} request${card.open_requests === 1 ? '' : 's'}</span>` : ''}${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}${
         isWaitingExternal(card) ? `<span class="wait-chip" title="waiting on external — not in 'needs me'${card.wait_check ? ` · check ${esc(card.wait_check)}` : ''}">${icons.clock(10, 'var(--mut)')}waiting</span>` : ''
       }</span>
       ${card.owner === 'agent' && !compact ? agentChip() : ''}

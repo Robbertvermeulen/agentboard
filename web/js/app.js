@@ -93,7 +93,7 @@ async function route() {
   const r = parseRoute();
   renderTabbar(r);
   try {
-    if (!boards.length) boards = (await api.boards()).boards;
+    boards = (await api.boards()).boards;
     renderSidebar(r);
     // The sessions overview preserves its own scroll position across the
     // blind rerenders route() does on every changed tick — it needs the OLD

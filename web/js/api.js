@@ -13,6 +13,9 @@ const json = (method, body) => ({
   body: JSON.stringify(body),
 });
 
+// Board flash damping: the board must not celebrate the user's own action.
+export const localActivity = { lastMoveAt: 0 };
+
 export const api = {
   boards: () => req('/api/boards'),
   createBoard: (id, name) => req('/api/boards', json('POST', { id, name })),
@@ -20,7 +23,10 @@ export const api = {
   archived: (id) => req(`/api/boards/${encodeURIComponent(id)}/archived`),
   createCard: (board, data) => req(`/api/boards/${encodeURIComponent(board)}/cards`, json('POST', data)),
   card: (id) => req(`/api/cards/${encodeURIComponent(id)}`),
-  move: (id, status, reason) => req(`/api/cards/${encodeURIComponent(id)}/move`, json('POST', { status, reason })),
+  move: (id, status, reason) => {
+    localActivity.lastMoveAt = Date.now();
+    return req(`/api/cards/${encodeURIComponent(id)}/move`, json('POST', { status, reason }));
+  },
   comment: (id, text) => req(`/api/cards/${encodeURIComponent(id)}/comments`, json('POST', { text })),
   editComment: (id, body) => req(`/api/comments/${encodeURIComponent(id)}`, json('POST', { body })),
   edit: (id, fields) => req(`/api/cards/${encodeURIComponent(id)}`, json('PATCH', fields)),

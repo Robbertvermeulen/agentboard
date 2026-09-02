@@ -1,5 +1,5 @@
 // Single board: six columns on desktop, attention-first sections on mobile.
-import { api } from '../api.js';
+import { api, localActivity } from '../api.js';
 import { icons, statusIcon, STATUS_META, STATUSES } from '../icons.js';
 import { esc, relTime } from '../util.js';
 import { cardTile, statusPill, openCreateDialog, crumb, isWaitingExternal } from '../components.js';
@@ -117,7 +117,8 @@ export async function renderBoard(root, { boards, boardId }) {
     }
     const seenNow = new Map();
     for (const cards of Object.values(columns)) for (const c of cards) seenNow.set(c.id, c.status);
-    if (lastSeen.size) {
+    const ownRecent = Date.now() - localActivity.lastMoveAt < 4000;
+    if (lastSeen.size && !ownRecent) {
       root.querySelectorAll('.card-tile[data-id]').forEach((el) => {
         const prev = lastSeen.get(el.dataset.id);
         if (prev !== seenNow.get(el.dataset.id)) el.classList.add('tile-flash');
