@@ -72,18 +72,19 @@ export async function renderSession(root, { id }) {
     if (follow) list.lastElementChild?.scrollIntoView({ block: 'end' });
   };
   // Scrolling up is an implicit "stop following"; the button turns it back on.
-  const offFollow = () => {
-    if (window.scrollY + window.innerHeight < document.body.scrollHeight - 40 && follow) {
+  // #view is the real scroll container (design's per-view scroll pattern,
+  // same as card.js's .detail-scroll) — an at-bottom check means the
+  // programmatic scrollIntoView above never disables follow (it lands at the
+  // bottom, so this is a no-op) while a user scrolling up does.
+  const scroller = document.getElementById('view');
+  const onScroll = () => {
+    if (follow && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 40) {
       follow = false;
       followBtn.classList.remove('on');
     }
   };
-  window.addEventListener('wheel', offFollow, { passive: true });
-  window.addEventListener('touchmove', offFollow, { passive: true });
-  cleanup = () => {
-    window.removeEventListener('wheel', offFollow);
-    window.removeEventListener('touchmove', offFollow);
-  };
+  scroller.addEventListener('scroll', onScroll, { passive: true });
+  cleanup = () => scroller.removeEventListener('scroll', onScroll);
 
   refreshHook = async () => {
     const r = await api.sessionSteps(id, cursor.offset, cursor.n);

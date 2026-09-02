@@ -69,6 +69,15 @@ afgeronde sessie natoetst en bevindingen terugvoert als ops card.
   eerlijkheidsregel als de heartbeat op het board.
 - Een afgeronde sessie rendert zoals nu (één keer, statisch); de hook
   doet dan niets meer.
+- *Amendement 2026-09-02 (task 3, fix round 1): de poke is niet beperkt
+  tot `changed` — de sessieroute haalt haar increment elke tick op
+  zolang de hook staat, ook op een stille tick. De samengestelde cursor
+  (`2026-08-28-realtime-design.md` §1) draagt bewust geen
+  transcript-component, dus zonder deze aanvulling stokt de tail zodra
+  een sessie alleen stappen schrijft zonder kaart-, event- of
+  commentwijziging. De increment-call met een ongewijzigde offset is
+  vrijwel gratis server-side (`size <= offset` retourneert meteen), en
+  de hook bestaat alleen op een lopende sessie.*
 
 ## 3. Observer (besluit J)
 

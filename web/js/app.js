@@ -127,6 +127,7 @@ async function tick() {
     if (!changed) {
       cursor = res.cursor;
       if (name === 'card') await retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no extra fetch; awaited so the busy flag covers it)
+      else if (name === 'session') await pokeSessionRefresh(); // live tail pulls its increment even on quiet ticks — new steps advance no cursor component
       return;
     }
     const overlay = document.getElementById('overlay');
