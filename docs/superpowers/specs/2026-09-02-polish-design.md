@@ -98,7 +98,7 @@ een nettere aankomst-animatie, en de geparkeerde kleintjes.
 - CLI `sessions list/show`: een open rij zonder lock-bevestiging heet
   ook daar "ended early (crash)" (CLI mag `sessionStatus` gebruiken;
   cli importeert runner al).
-- Realtime: comment-edits propageren — vierde cursorcomponent
+- Realtime: comment-edits propageren — extra cursorcomponent
   `MAX(comment.updated_at)` in `changesSince` én dezelfde term in de
   kaart-fingerprint. Cursor blijft opaque; formaatwijziging is gratis.
 - Sidebar-boardlijst ververst mee bij een poll-rerender (cache-bust in
