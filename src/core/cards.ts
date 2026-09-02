@@ -666,8 +666,9 @@ export function gateWork(): Card[] {
 // rides along too (amendement 2026-08-28): a session start/end/crash moves
 // neither an event, comment nor card, so without it a crashed session could
 // leave presence showing "live" forever on an otherwise quiet board. A
-// comment edit is narrower still — it only bumps comment.updated_at, never
-// card.updated_at or a new comment id — so it needs its own component too.
+// comment edit bumps comment.updated_at (today editComment also logs an
+// action_taken event, so `e` moves too — the `m` component keeps edits
+// visible even if that side effect ever goes away).
 // The cursor is opaque to clients; any advance changes the string.
 export function changesSince(since?: string, running = false): { cursor: string; changed: boolean } {
   const db = openDb();
