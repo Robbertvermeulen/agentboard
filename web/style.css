@@ -509,6 +509,23 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .session-steps pre { white-space: pre-wrap; font-size: 12px; background: var(--chip-bg); border-radius: 8px; padding: 8px; margin: 6px 0 4px; overflow-x: auto; }
 .session-steps .reasoning summary em { color: var(--mut); font-style: italic; }
 
+/* agent log overview (design 2f left) */
+.al-head { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 2px; }
+.al-summary { margin: 2px 0 12px; font-size: 13px; color: var(--mut); max-width: 60ch; }
+.al-tiles { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.al-tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-width: 92px; }
+.al-tile .n { display: block; font-size: 20px; font-weight: 700; }
+.al-tile .lbl { font-size: 11px; color: var(--mut); }
+.al-list { display: flex; flex-direction: column; gap: 6px; }
+.al-row { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; color: inherit; text-decoration: none; }
+.al-row:hover { border-color: var(--mut-2); }
+.al-id { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; }
+.al-cards { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mut); }
+.al-handed { font-size: 11px; color: oklch(0.44 0.13 45); }
+.al-outcome.ok { color: oklch(0.5 0.11 155); }
+.al-outcome.crash { color: oklch(0.5 0.16 25); }
+.al-outcome.live, .al-live { color: oklch(0.5 0.11 155); font-weight: 600; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; }
+
 /* comment input + quick actions */
 /* 40px padding each side + 880px content = flush with the timeline column */
 .composer-wrap { flex: none; padding: 20px 0; max-width: 880px; width: 100%; margin: 0 auto; }
