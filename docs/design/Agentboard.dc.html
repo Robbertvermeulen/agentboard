@@ -29,6 +29,562 @@
 
   <div style="display:flex; align-items:baseline; gap:12px;">
     <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Agentboard</span>
+    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">turn 3 · mobiele navigatie voor vijf bestemmingen, doing-bevestiging, blijvend intake-anker</span>
+  </div>
+
+  <!-- ═══════════════ 3a — MOBILE NAVIGATION ═══════════════ -->
+  <div id="3a" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">3a</span>
+      <span style="font-size:13px; font-weight:500;">Mobiel — 3 tabs + More-sheet: Board blijft dominant, Routines opent als modal over Board, Archive is een bestemming</span>
+    </div>
+    <p style="margin:0 0 4px; max-width:1100px; font-size:13px; line-height:1.6; color:oklch(0.35 0.01 285.9); text-wrap:pretty;">Vijf bestemmingen, drie tabs. Board, Context en Agent log zijn de dingen die je meerdere keren per dag opent en die op mobiel een eigen pagina verdienen; Routines (een modal, lees-only) en Archive (zoeken in het verleden) zitten achter <strong>More</strong>. De More-tab draagt de badge wanneer een routine gepauzeerd staat, zodat de verstopte laag niet stil kan falen. Routines opent vanaf More als dezelfde modal die de desktop kent — hij legt zich over Board, niet over de sheet, en sluit terug naar Board.</p>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+
+      <!-- A: board + new tabbar -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Board — 3 tabs, More met badge</span>
+        <div style="width:390px; height:600px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
+          <div style="height:44px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 6px; font-size:13px; font-weight:600;">
+            <span>9:41</span>
+            <span style="display:flex; gap:5px; align-items:center;">
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="oklch(0.21 0.006 285.885)"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="12.9" y="0" width="3" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="3" stroke="oklch(0.505 0.016 285.938)"/><rect x="2" y="2" width="13" height="7" rx="2" fill="oklch(0.21 0.006 285.885)"/><path d="M20 4v3a2 2 0 0 0 0-3z" fill="oklch(0.505 0.016 285.938)"/></svg>
+            </span>
+          </div>
+          <div style="flex:none; padding:6px 16px 12px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Client Work</span>
+              <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:oklch(0.40 0.10 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 14%, #fff); border-radius:999px; padding:4px 10px;">
+                <span style="width:6px; height:6px; border-radius:999px; background:oklch(0.66 0.16 62);"></span>
+                2 need you
+              </span>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:12px; overflow:hidden;">
+              <span style="font-size:13px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:6px 12px; white-space:nowrap;">needs_input 2</span>
+              <span style="font-size:13px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:6px 12px; white-space:nowrap;">review 2</span>
+              <span style="font-size:13px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:6px 12px; white-space:nowrap;">doing 1</span>
+            </div>
+          </div>
+          <div style="flex:1; min-height:0; overflow:hidden; padding:14px 16px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                needs_input
+              </span>
+              <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2</span>
+            </div>
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">ops_2ae1</span>
+                <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  1 request
+                </span>
+              </div>
+              <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35;">Access needed: happyshopper SSH</p>
+              <p style="margin:6px 0 0; font-size:13px; line-height:1.45; color:oklch(0.40 0.09 62);">waiting: paste the sudo password</p>
+            </div>
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+              <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35;">Cookie consent banner missing</p>
+              <p style="margin:6px 0 0; font-size:13px; line-height:1.45; color:oklch(0.40 0.09 62);">waiting: your call</p>
+            </div>
+          </div>
+          <div style="flex:none; display:flex; align-items:stretch; padding:8px 8px 22px; border-top:1px solid oklch(0.92 0.004 286.32); background:#fff;">
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px; border-radius:12px; background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.42 0.14 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+              <span style="font-size:11px; font-weight:600; color:oklch(0.42 0.14 255);">Board</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Context</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px; position:relative;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Agent log</span>
+              <span title="live session running" style="position:absolute; top:4px; right:26px; width:7px; height:7px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px; position:relative;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">More</span>
+              <span title="1 routine paused" style="position:absolute; top:4px; right:30px; min-width:15px; height:15px; padding:0 4px; border-radius:999px; background:oklch(0.66 0.16 62); color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B: more sheet -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">More — twee bestemmingen, geen menu-doolhof</span>
+        <div style="width:390px; height:600px; flex:none; position:relative; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
+          <div style="height:44px; flex:none; display:flex; align-items:flex-end; padding:0 22px 6px; font-size:13px; font-weight:600;"><span>9:42</span></div>
+          <div style="flex:1; min-height:0; padding:16px; opacity:0.35;">
+            <span style="font-size:20px; font-weight:600;">Client Work</span>
+            <div style="margin-top:16px; height:74px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px;"></div>
+            <div style="margin-top:10px; height:74px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px;"></div>
+          </div>
+          <div style="position:absolute; inset:0; background:color-mix(in oklch, oklch(0.141 0.005 285.823) 34%, transparent);"></div>
+          <div style="position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:20px 20px 0 0; padding:10px 0 22px; box-shadow:0 -12px 40px rgb(15 23 42 / 0.2);">
+            <div style="width:40px; height:4px; border-radius:999px; background:oklch(0.92 0.004 286.32); margin:0 auto 12px;"></div>
+            <div style="display:flex; align-items:center; gap:14px; min-height:56px; padding:0 18px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+              <span style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span style="font-size:16px; font-weight:500;">Routines</span>
+                <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">4 · 1 paused</span>
+              </span>
+              <span style="margin-left:auto; display:inline-flex; align-items:center; gap:8px; flex:none;">
+                <span style="min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:oklch(0.66 0.16 62); color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center;">1</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              </span>
+            </div>
+            <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:0 18px;"></div>
+            <div style="display:flex; align-items:center; gap:14px; min-height:56px; padding:0 18px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+              <span style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span style="font-size:16px; font-weight:500;">Archive</span>
+                <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">128 cards · searchable</span>
+              </span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-left:auto; flex:none;"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+            <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:0 18px;"></div>
+            <div style="display:flex; align-items:center; gap:14px; min-height:56px; padding:0 18px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+              <span style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                <span style="font-size:16px; font-weight:500; color:oklch(0.35 0.01 285.9);">Switch board</span>
+                <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Client Work · 3 others</span>
+              </span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-left:auto; flex:none;"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+            <p style="margin:12px 18px 0; font-size:12px; line-height:1.5; color:oklch(0.606 0.016 285.938);">Routines opens over the board — same read-only modal as on desktop.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- C: routines modal on mobile -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Routines-modal op mobiel — lees-only, alleen pauzeren</span>
+        <div style="width:390px; height:600px; flex:none; position:relative; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
+          <div style="height:44px; flex:none; display:flex; align-items:flex-end; padding:0 22px 6px; font-size:13px; font-weight:600;"><span>9:42</span></div>
+          <div style="flex:1; min-height:0; padding:16px; opacity:0.3;">
+            <span style="font-size:20px; font-weight:600;">Client Work</span>
+            <div style="margin-top:16px; height:74px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px;"></div>
+          </div>
+          <div style="position:absolute; inset:0; background:color-mix(in oklch, oklch(0.141 0.005 285.823) 40%, transparent);"></div>
+          <div style="position:absolute; left:0; right:0; top:64px; bottom:0; background:#fff; border-radius:20px 20px 0 0; display:flex; flex-direction:column; box-shadow:0 -12px 40px rgb(15 23 42 / 0.2); overflow:hidden;">
+            <div style="flex:none; display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+              <span style="font-size:16px; font-weight:600;">Routines</span>
+              <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">4</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.35 0.01 285.9)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </div>
+            <div style="flex:1; min-height:0; overflow:hidden; padding:12px 16px; display:flex; flex-direction:column; gap:10px;">
+              <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938);">Client Work</span>
+              <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:12px;">
+                <span style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                  <span style="font-size:14px; font-weight:500;">Monday client sweep</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.505 0.016 285.938);">mon 09:00 · last run 6h ago</span>
+                </span>
+                <span style="margin-left:auto; flex:none; width:44px; height:26px; border-radius:999px; background:oklch(0.55 0.16 255); display:flex; align-items:center; justify-content:flex-end; padding:3px;"><span style="width:20px; height:20px; border-radius:999px; background:#fff;"></span></span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; background:color-mix(in oklch, oklch(0.75 0.16 85) 7%, #fff); border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 26%, #fff); border-radius:12px; padding:12px;">
+                <span style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                  <span style="font-size:14px; font-weight:500;">Invoice import</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.44 0.11 62);">paused by you · 21 Aug</span>
+                </span>
+                <span style="margin-left:auto; flex:none; width:44px; height:26px; border-radius:999px; background:oklch(0.90 0.004 286.32); display:flex; align-items:center; padding:3px;"><span style="width:20px; height:20px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgb(15 23 42 / 0.2);"></span></span>
+              </div>
+              <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); margin-top:4px;">Personal</span>
+              <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:12px;">
+                <span style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                  <span style="font-size:14px; font-weight:500;">Daily inbox triage</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.505 0.016 285.938);">daily 06:30 · last run 3h ago</span>
+                </span>
+                <span style="margin-left:auto; flex:none; width:44px; height:26px; border-radius:999px; background:oklch(0.55 0.16 255); display:flex; align-items:center; justify-content:flex-end; padding:3px;"><span style="width:20px; height:20px; border-radius:999px; background:#fff;"></span></span>
+              </div>
+              <p style="margin:6px 0 0; font-size:12px; line-height:1.5; color:oklch(0.505 0.016 285.938);">Editing a routine happens through an ops card, not here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D: agent log mobile -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Agent log op mobiel — samenvatting, tegels, sessielijst gestapeld</span>
+        <div style="width:390px; height:844px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
+          <div style="height:44px; flex:none; display:flex; align-items:flex-end; padding:0 22px 6px; font-size:13px; font-weight:600;"><span>9:43</span></div>
+          <div style="flex:none; display:flex; align-items:center; gap:8px; padding:4px 16px 12px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+            <span style="font-size:19px; font-weight:600; letter-spacing:-0.01em;">Agent log</span>
+            <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">last 7 days</span>
+          </div>
+          <div style="flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;">
+            <div style="flex:none; padding:14px 16px; display:flex; flex-direction:column; gap:12px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+              <p style="margin:0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9); text-wrap:pretty;">Ran <strong>19 sessions</strong> and touched <strong>23 cards</strong>. Finished 11, handed 6 back, 2 ended early — both on the same missing SSH key.</p>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:19px; font-weight:600; letter-spacing:-0.01em;">19</div>
+                  <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">sessions</div>
+                </div>
+                <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:19px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.40 0.10 145);">11</div>
+                  <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">completed</div>
+                </div>
+                <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:19px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.44 0.11 62);">6</div>
+                  <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">handed back</div>
+                </div>
+                <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:19px; font-weight:600; letter-spacing:-0.01em; color:oklch(0.44 0.13 45);">2</div>
+                  <div style="font-size:11px; color:oklch(0.606 0.016 285.938);">ended early</div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:none; display:flex; align-items:center; gap:8px; padding:12px 16px 8px;">
+              <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938);">Sessions</span>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+              <div style="display:flex; flex-direction:column; gap:5px; padding:12px 16px; border-top:1px solid oklch(0.945 0.003 286.32); background:color-mix(in oklch, oklch(0.55 0.16 255) 5%, #fff);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; font-weight:600;">#482</span>
+                  <span style="font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 10%, #fff); border-radius:999px; padding:2px 7px;">status-change</span>
+                  <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; color:oklch(0.42 0.14 255);">
+                    <span style="width:5px; height:5px; border-radius:999px; background:oklch(0.55 0.16 255); animation:ab-pulse 1.4s ease-in-out infinite;"></span>
+                    live
+                  </span>
+                </div>
+                <span style="font-size:13px; color:oklch(0.35 0.01 285.9);">task_1b8e — drafting the pricing copy</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:5px; padding:12px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;">#481</span>
+                  <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">cron 09:00</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">4m 12s</span>
+                  <span style="margin-left:auto; font-size:12px; font-weight:500; color:oklch(0.44 0.11 62);">1 handed back</span>
+                </div>
+                <span style="font-size:13px; color:oklch(0.35 0.01 285.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">3 cards — task_5b34, ops_2ae1, task_77b0</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:5px; padding:12px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;">#480</span>
+                  <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">cron 06:30</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">0m 51s</span>
+                  <span style="margin-left:auto; font-size:12px; font-weight:500; color:oklch(0.44 0.13 45);">ended early</span>
+                </div>
+                <span style="font-size:13px; color:oklch(0.35 0.01 285.9);">1 card — task_2fd7 (import invoices)</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:5px; padding:12px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;">#479</span>
+                  <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+                    routine
+                  </span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">2m 04s</span>
+                  <span style="margin-left:auto; font-size:12px; color:oklch(0.40 0.10 145);">completed</span>
+                </div>
+                <span style="font-size:13px; color:oklch(0.35 0.01 285.9);">Monday client sweep — 1 card created</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:5px; padding:12px 16px; border-top:1px solid oklch(0.945 0.003 286.32);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;">#478</span>
+                  <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 7px;">cron 14:00</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">6m 33s</span>
+                  <span style="margin-left:auto; font-size:12px; color:oklch(0.40 0.10 145);">completed</span>
+                </div>
+                <span style="font-size:13px; color:oklch(0.35 0.01 285.9);">4 cards — GA4 migration finished</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none; display:flex; align-items:stretch; padding:8px 8px 22px; border-top:1px solid oklch(0.92 0.004 286.32); background:#fff;">
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Board</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Context</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px; border-radius:12px; background:color-mix(in oklch, oklch(0.55 0.16 255) 7%, #fff);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.42 0.14 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+              <span style="font-size:11px; font-weight:600; color:oklch(0.42 0.14 255);">Agent log</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:48px; position:relative;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">More</span>
+              <span style="position:absolute; top:4px; right:30px; min-width:15px; height:15px; padding:0 4px; border-radius:999px; background:oklch(0.66 0.16 62); color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center;">1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ 3b — CONFIRM: move to doing ═══════════════ -->
+  <div id="3b" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">3b</span>
+      <span style="font-size:13px; font-weight:500;">Naar doing — het menu-item markeert de uitzondering, de dialog signaleert en houdt beide uitwegen open</span>
+    </div>
+    <p style="margin:0 0 4px; max-width:1100px; font-size:13px; line-height:1.6; color:oklch(0.35 0.01 285.9); text-wrap:pretty;">In het statusmenu blijft <em>doing</em> gewoon staan, maar met een gestippelde rand, het label <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">agent</span> ernaast en een subtiele voetnoot — dezelfde markering die de board-kolom al draagt. Bij klik één dialog, drie regels, geen reden-veld: wat er gebeurt, wat waarschijnlijk je bedoeling was, en twee uitwegen die beide vooruit gaan.</p>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+
+      <!-- status menu, doing marked -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Statusmenu op kaartdetail</span>
+        <div style="width:560px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+          <div style="height:44px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+            <span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.66 0.16 62)" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="oklch(0.66 0.16 62)" stroke-width="1.5" stroke-linecap="round"/></svg>
+              needs_input
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </div>
+          <div style="position:relative; padding:16px 16px 370px;">
+            <h2 style="margin:0; font-size:18px; font-weight:600; line-height:1.3;">Cookie consent banner missing on client site</h2>
+            <p style="margin:8px 0 0; font-size:14px; line-height:1.5; color:oklch(0.35 0.01 285.9);">The client reports the consent banner is not showing on acme.com.</p>
+
+            <div style="position:absolute; right:16px; top:8px; width:264px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:6px; box-shadow:0 14px 36px rgb(15 23 42 / 0.18);">
+              <div style="padding:6px 10px 8px; font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938);">Move to</div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5" stroke-dasharray="1.1 1.7"/></svg>
+                <span style="font-size:14px;">inbox</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px; background:oklch(0.967 0.001 286.375);">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5"/></svg>
+                <span style="font-size:14px; font-weight:500;">ready</span>
+                <span style="margin-left:auto; font-size:11px; color:oklch(0.505 0.016 285.938);">agent picks up</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.66 0.16 62)" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="oklch(0.66 0.16 62)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span style="font-size:14px;">needs_input</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2.4" stroke-linecap="round" style="margin-left:auto;"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 145)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="oklch(0.55 0.16 145)"/></svg>
+                <span style="font-size:14px;">review</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="oklch(0.55 0.18 250)"/><path d="M10.951 4.249c.332.332.332.87 0 1.202l-5 5a.85.85 0 0 1-1.202 0l-2-2a.85.85 0 0 1 1.202-1.202L5.35 8.648l4.399-4.399a.85.85 0 0 1 1.202 0Z" fill="#fff"/></svg>
+                <span style="font-size:14px;">done</span>
+              </div>
+              <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:5px 8px;"></div>
+              <!-- the exception path -->
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 9px; border:1px dashed color-mix(in oklch, oklch(0.55 0.16 255) 40%, #fff); border-radius:8px; background:color-mix(in oklch, oklch(0.55 0.16 255) 4%, #fff);">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 255)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 0,1 7,10.5 Z" fill="oklch(0.55 0.16 255)"/></svg>
+                <span style="font-size:14px; color:oklch(0.35 0.01 285.9);">doing</span>
+                <span style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.42 0.14 255);">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+                  agent
+                </span>
+              </div>
+              <p style="margin:6px 10px 4px; font-size:11px; line-height:1.5; color:oklch(0.606 0.016 285.938);">doing is the agent's column — asks first.</p>
+              <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:5px 8px;"></div>
+              <div style="display:flex; align-items:center; gap:10px; height:34px; padding:0 10px; border-radius:8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                <span style="font-size:14px; color:oklch(0.505 0.016 285.938);">archived</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- the dialog -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Bevestiging — signaleren, niet betuttelen</span>
+        <div style="width:560px; height:398px; flex:none; position:relative; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+          <div style="padding:16px; opacity:0.3;">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
+            <h2 style="margin:10px 0 0; font-size:18px; font-weight:600;">Cookie consent banner missing on client site</h2>
+          </div>
+          <div style="position:absolute; inset:0; background:color-mix(in oklch, oklch(0.141 0.005 285.823) 28%, transparent);"></div>
+          <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:452px; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:14px; box-shadow:0 24px 60px rgb(15 23 42 / 0.26); overflow:hidden; animation:ab-slidein 240ms ease-out;">
+            <div style="padding:18px 18px 14px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border:1px dashed color-mix(in oklch, oklch(0.55 0.16 255) 40%, #fff); border-radius:999px; padding:2px 8px;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+                  exception path
+                </span>
+              </div>
+              <h3 style="margin:12px 0 0; font-size:17px; font-weight:600; line-height:1.35; letter-spacing:-0.01em;">Move this card into doing?</h3>
+              <p style="margin:10px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9); text-wrap:pretty;">doing is the agent's column. Put a card there yourself and the scheduler will pick it up in its own next session — which may be minutes or hours from now, and it will start where the card is, not where you are.</p>
+              <p style="margin:10px 0 0; font-size:14px; line-height:1.55; color:oklch(0.35 0.01 285.9); text-wrap:pretty;">If you want it worked on soon, <strong>ready</strong> is the normal route — the agent claims it and moves it to doing itself.</p>
+              <div style="margin-top:14px; display:flex; align-items:flex-start; gap:8px; padding:10px 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; background:oklch(0.978 0.001 286.3);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="flex:none; margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <p style="margin:0; font-size:12.5px; line-height:1.5; color:oklch(0.35 0.01 285.9);">Next scheduled session: <strong>09:00 tomorrow</strong> · no live session right now.</p>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:12px 18px 16px; border-top:1px solid oklch(0.945 0.003 286.32); background:oklch(0.988087 0 0);">
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border:1px solid oklch(0.92 0.004 286.32); border-radius:9px; background:#fff; font-size:14px; font-weight:500; color:oklch(0.35 0.01 285.9);">Move to doing anyway</span>
+              <span style="margin-left:auto; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 14px; border-radius:9px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:14px; font-weight:600;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/></svg>
+                Move to ready instead
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ 3c — OPEN REQUEST ANCHOR ═══════════════ -->
+  <div id="3c" style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">3c</span>
+      <span style="font-size:13px; font-weight:500;">Open request — blijvende chip in de kaartkop, buiten de timeline, springt naar de intake</span>
+    </div>
+    <p style="margin:0 0 4px; max-width:1100px; font-size:13px; line-height:1.6; color:oklch(0.35 0.01 285.9); text-wrap:pretty;">De intake blijft staan waar hij hoort — onder het agent-comment dat hem vroeg. Wat erbij komt is een <strong>anker</strong> in de vaste kaartkop, in de bestaande chip-vormtaal: <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">1 open request · secret</span>. Hij verschijnt zodra er een onbeantwoord secret_ref is en verdwijnt bij storing. Klikken springt naar de intake en zet het timeline-filter terug op <em>All</em> als dat nodig is — het filter kan het verzoek dus niet meer verbergen. Op het board draagt de kaart dezelfde chip in mini-vorm.</p>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+
+      <!-- detail with filter on Events -->
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Kaartdetail, filter op Events — de intake is weg, het anker niet</span>
+        <div style="width:700px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+          <div style="height:44px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+            <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:6px; padding:2px 7px;">ops_2ae1</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">needs_input</span>
+            <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">waiting on you · 4m</span>
+          </div>
+
+          <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <h2 style="margin:0; font-size:19px; font-weight:600; line-height:1.3;">Access needed: happyshopper SSH</h2>
+              <p style="margin:8px 0 0; font-size:14px; line-height:1.5; color:oklch(0.35 0.01 285.9);">Deploy key and sudo password. Values go straight into the vault.</p>
+            </div>
+
+            <!-- the anchor row: persistent, outside the timeline -->
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 4px 0 10px; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 40%, #fff); border-radius:999px; background:color-mix(in oklch, oklch(0.75 0.16 85) 12%, #fff); font-size:12.5px; font-weight:600; color:oklch(0.40 0.09 62);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                1 open request · secret
+                <span style="display:inline-flex; align-items:center; gap:3px; height:20px; padding:0 8px; border-radius:999px; background:#fff; font-size:11px; font-weight:600; color:oklch(0.44 0.11 62);">
+                  Go to request
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.44 0.11 62)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                </span>
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; background:#fff; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11.5px; color:oklch(0.25 0.008 285.9);">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                ssh_happyshopper_key
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; background:#fff; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11.5px; color:oklch(0.505 0.016 285.938);">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 2.4"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                ssh_happyshopper_sudo — missing
+              </span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:15px; font-weight:600;">Timeline</span>
+              <span style="display:inline-flex; align-items:center; gap:2px; margin-left:4px; padding:2px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff;">
+                <span style="height:22px; display:inline-flex; align-items:center; padding:0 9px; border-radius:6px; font-size:12px; color:oklch(0.505 0.016 285.938);">All</span>
+                <span style="height:22px; display:inline-flex; align-items:center; padding:0 9px; border-radius:6px; font-size:12px; font-weight:600; background:oklch(0.967 0.001 286.375);">Events</span>
+                <span style="height:22px; display:inline-flex; align-items:center; padding:0 9px; border-radius:6px; font-size:12px; color:oklch(0.505 0.016 285.938);">Comments</span>
+              </span>
+              <span style="flex:1; height:1px; background:oklch(0.92 0.004 286.32);"></span>
+              <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">newest last</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:11px; border-left:2px solid oklch(0.92 0.004 286.32); padding-left:14px; margin-left:3px;">
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">status_changed by agent: doing → needs_input · 4m ago</p>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">secret_requested by agent: ssh_happyshopper_key, ssh_happyshopper_sudo · 4m ago</p>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">secret_stored by Robbert: ssh_happyshopper_key — value write-only · 2m ago</p>
+              </div>
+              <!-- filter tells the truth about what it hides -->
+              <div style="display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px dashed color-mix(in oklch, oklch(0.66 0.16 62) 34%, #fff); border-radius:10px; background:color-mix(in oklch, oklch(0.75 0.16 85) 7%, #fff);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round" style="flex:none;"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></svg>
+                <span style="font-size:12.5px; color:oklch(0.40 0.09 62);">Events filter hides 1 open request and 2 comments.</span>
+                <span style="margin-left:auto; flex:none; display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 30%, #fff); font-size:11.5px; font-weight:600; color:oklch(0.44 0.11 62);">Show all</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- after the jump + board mini chip -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Na de sprong — filter terug op All, intake kort gemarkeerd</span>
+          <div style="width:560px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
+            <div style="height:40px; display:flex; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
+              <span style="display:inline-flex; align-items:center; gap:7px; height:26px; padding:0 10px; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 40%, #fff); border-radius:999px; background:color-mix(in oklch, oklch(0.75 0.16 85) 12%, #fff); font-size:12px; font-weight:600; color:oklch(0.40 0.09 62);">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                1 open request · secret
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:2px; margin-left:auto; padding:2px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff;">
+                <span style="height:20px; display:inline-flex; align-items:center; padding:0 8px; border-radius:6px; font-size:11.5px; font-weight:600; background:oklch(0.967 0.001 286.375);">All</span>
+                <span style="height:20px; display:inline-flex; align-items:center; padding:0 8px; border-radius:6px; font-size:11.5px; color:oklch(0.505 0.016 285.938);">Events</span>
+                <span style="height:20px; display:inline-flex; align-items:center; padding:0 8px; border-radius:6px; font-size:11.5px; color:oklch(0.505 0.016 285.938);">Comments</span>
+              </span>
+            </div>
+            <div style="padding:14px; display:flex; flex-direction:column; gap:11px;">
+              <div style="display:flex; align-items:flex-start; gap:8px; opacity:0.5;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">secret_stored by Robbert: ssh_happyshopper_key · 2m ago</p>
+              </div>
+              <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 34%, #fff); border-radius:12px; overflow:hidden; box-shadow:0 0 0 3px color-mix(in oklch, oklch(0.75 0.16 85) 22%, transparent);">
+                <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:color-mix(in oklch, oklch(0.75 0.16 85) 9%, #fff); border-bottom:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 20%, #fff);">
+                  <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center; flex:none;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
+                  </span>
+                  <span style="font-size:13px; font-weight:600;">agent asks for 1 secret</span>
+                  <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">4m ago</span>
+                  <span style="margin-left:auto; font-size:11px; font-weight:600; color:oklch(0.44 0.11 62);">jumped here</span>
+                </div>
+                <div style="padding:12px;">
+                  <div style="display:flex; align-items:center; min-height:36px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:6px 10px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; background:oklch(0.988087 0 0);">ssh_happyshopper_sudo</div>
+                  <div style="margin-top:6px; display:flex; align-items:center; min-height:40px; border:1px solid oklch(0.55 0.16 255); border-radius:10px; padding:6px 10px; background:#fff; font-size:13px; color:oklch(0.606 0.016 285.938);">
+                    Paste the value
+                    <span style="margin-left:auto; font-size:12px; font-weight:500; color:oklch(0.42 0.14 255);">Paste</span>
+                  </div>
+                  <p style="margin:8px 0 0; font-size:11px; color:oklch(0.505 0.016 285.938);">Write-only — never shown again.</p>
+                  <div style="margin-top:10px; display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border-radius:9px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:14px; font-weight:600;">Store secret</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Op het board — mini-chip, telt mee in “Needs me”</span>
+          <div style="width:296px; background:color-mix(in oklch, oklch(0.967 0.001 286.375) 60%, #fff); border-radius:14px; padding:8px;">
+            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:10px; padding:12px 10px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">ops_2ae1</span>
+                <span title="in needs_input since 21 Aug 2026 · 09:38 CEST" style="font-size:11px; font-weight:500; color:oklch(0.44 0.11 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 16%, #fff); border-radius:999px; padding:1px 6px;">4m</span>
+                <span title="1 open secret request — click to jump to the intake" style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:1px 7px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  1 request
+                </span>
+              </div>
+              <p style="margin:6px 0 0; font-size:14px; font-weight:500; line-height:1.35;">Access needed: happyshopper SSH</p>
+              <p style="margin:5px 0 0; font-size:12px; color:oklch(0.40 0.09 62); line-height:1.4;">waiting: paste the sudo password</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<section style="display:flex; flex-direction:column; gap:40px; padding:0 48px 40px;">
+
+  <div style="display:flex; align-items:baseline; gap:12px;">
+    <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Agentboard</span>
     <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">turn 2 · beurtwissel, twee soorten wachten, blockers, routines, agent-logs, realtime, secrets-intake</span>
   </div>
 
@@ -1921,945 +2477,4 @@
               </div>
               <div style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px;">
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 255)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 0,1 7,10.5 Z" fill="oklch(0.55 0.16 255)"/></svg>
-                <span style="font-size:13px;">doing</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; background:oklch(0.967 0.001 286.375);">
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.66 0.16 62)" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="oklch(0.66 0.16 62)" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <span style="font-size:13px; font-weight:600;">needs_input</span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2.4" stroke-linecap="round" style="margin-left:auto;"><path d="M20 6 9 17l-5-5"/></svg>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px;">
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 145)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="oklch(0.55 0.16 145)"/></svg>
-                <span style="font-size:13px;">review</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px;">
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="oklch(0.55 0.18 250)"/><path d="M10.951 4.249c.332.332.332.87 0 1.202l-5 5a.85.85 0 0 1-1.202 0l-2-2a.85.85 0 0 1 1.202-1.202L5.35 8.648l4.399-4.399a.85.85 0 0 1 1.202 0Z" fill="#fff"/></svg>
-                <span style="font-size:13px;">done</span>
-              </div>
-              <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:4px 0;"></div>
-              <div style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-                <span style="font-size:13px; color:oklch(0.505 0.016 285.938);">archived</span>
-              </div>
-              <p style="margin:6px 8px 4px; font-size:11px; line-height:1.4; color:oklch(0.606 0.016 285.938);">Any status is reachable — the next step asks for a reason.</p>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Owner</span>
-          <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-            agent
-          </span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Board</span>
-          <span style="font-size:13px; font-weight:500;">Client Work</span>
-        </div>
-        <div style="display:flex; align-items:flex-start; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938); padding-top:2px;">Labels</span>
-          <span style="display:flex; flex-wrap:wrap; gap:4px;">
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">privacy</span>
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">wp</span>
-          </span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Updated</span>
-          <span style="font-size:13px; color:oklch(0.35 0.01 285.9);">12 min ago</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Secrets</span>
-          <span style="font-size:13px; color:oklch(0.606 0.016 285.938);">none asked for</span>
-        </div>
-
-        <div style="height:1px; background:oklch(0.92 0.004 286.32);"></div>
-
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <span style="font-size:12px; font-weight:600; color:oklch(0.505 0.016 285.938); letter-spacing:0.02em;">BLOCKED BY</span>
-          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 24%, #fff); border-radius:10px; padding:10px;">
-            <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:6px; padding:1px 6px;">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
-              ops_2ae1
-            </span>
-            <p style="margin:6px 0 0; font-size:13px; font-weight:500; line-height:1.35;">Access needed: acme.com SSH</p>
-            <p style="margin:4px 0 0; font-size:12px; color:oklch(0.40 0.10 145);">in review — ready for your approval</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════ 1c — CARD DETAIL (ops, review) ═══════════════ -->
-  <div id="1c" style="display:flex; flex-direction:column; gap:10px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">1c</span>
-      <span style="font-size:13px; font-weight:500;">Ops card detail — ops_2ae1, review (approve the written context)</span>
-    </div>
-
-    <div style="width:1440px; height:1500px; display:flex; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
-      <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
-        <div style="height:44px; flex:none; display:flex; align-items:center; gap:8px; padding:0 20px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <span style="font-size:13px; color:oklch(0.505 0.016 285.938);">Client Work</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">ops_2ae1</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
-          <span style="font-size:13px; font-weight:500;">Access needed: acme.com SSH</span>
-        </div>
-
-        <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
-          <div style="flex:1; min-height:0; overflow:hidden; padding:28px 40px 0; max-width:880px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 22%, #fff); border-radius:6px; padding:2px 8px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
-                ops card
-              </span>
-              <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">the system asking for something it needs</span>
-            </div>
-            <h1 style="margin:12px 0 0; font-size:24px; font-weight:600; line-height:1.25; letter-spacing:-0.01em;">Access needed: acme.com SSH</h1>
-            <p style="margin:10px 0 0; font-size:15px; line-height:1.55; color:oklch(0.35 0.01 285.9);">To work on the client's site I need SSH access: host, user, port, and a key reference. Secret values go into the local vault, never into files.</p>
-
-            <!-- written files — prominent for an ops review -->
-            <div style="margin-top:20px; background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 145) 30%, #fff); border-radius:12px; padding:14px 16px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                <span style="font-size:14px; font-weight:600;">Written to the context layer — approve this file to finish the card</span>
-              </div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">
-                <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 10px;">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
-                  client-work/acme/acme.ssh.md
-                  <span style="font-size:11px; color:oklch(0.45 0.13 145); font-weight:500;">new</span>
-                </span>
-                <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938); border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 10px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  secret_ref: ssh_acme_web, ssh_acme_pass
-                </span>
-              </div>
-            </div>
-
-            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:14px;">
-              <a href="#1c" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:oklch(0.42 0.14 255); background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 30%, #fff); border-radius:6px; padding:3px 9px; text-decoration:none;">
-                Runbook · SSH conventions
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
-              </a>
-              <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 8%, #fff); border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 24%, #fff); border-radius:999px; padding:3px 10px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                unblocks task_5b34
-              </span>
-            </div>
-
-            <!-- uploads + artifacts (ops) -->
-            <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
-              <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-                <div style="padding:9px 12px 8px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-                    <span style="font-size:13px; font-weight:600;">Uploads</span>
-                    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">uploads/ops_2ae1/</span>
-                    <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">1 file</span>
-                  </div>
-                  <p style="margin:3px 0 0 22px; font-size:11px; color:oklch(0.606 0.016 285.938);">what went in — you → agent</p>
-                </div>
-                <div style="margin:10px 12px; border:1.5px dashed color-mix(in oklch, oklch(0.55 0.16 255) 35%, oklch(0.92 0.004 286.32)); border-radius:10px; background:color-mix(in oklch, oklch(0.55 0.16 255) 3%, #fff); padding:12px; display:flex; align-items:center; gap:10px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 16V6"/><path d="m8 10 4-4 4 4"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
-                  <div style="display:flex; flex-direction:column;">
-                    <span style="font-size:12px; font-weight:500;">Drop files, folders or a .zip</span>
-                    <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">never for secrets — use the form above</span>
-                  </div>
-                  <span style="margin-left:auto; display:inline-flex; align-items:center; height:26px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:12px; font-weight:500;">Browse…</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; border-top:1px solid oklch(0.945 0.003 286.32);">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                  <a href="#1c" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; text-decoration:none;">hosting-panel-notes.md</a>
-                  <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">3 KB</span>
-                  <span title="20 Aug 2026 · 07:56 CEST" style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">3h ago</span>
-                </div>
-              </div>
-
-              <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-                <div style="padding:9px 12px 8px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
-                    <span style="font-size:13px; font-weight:600;">Artifacts</span>
-                    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">artifacts/ops_2ae1/</span>
-                    <span style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">1 file</span>
-                  </div>
-                  <p style="margin:3px 0 0 22px; font-size:11px; color:oklch(0.606 0.016 285.938);">what came out — agent → you · read-only</p>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px; padding:9px 12px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                  <a href="#1c" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; text-decoration:none;">ssh-handshake.log</a>
-                  <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">12 KB</span>
-                  <span title="20 Aug 2026 · 08:03 CEST" style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">3h ago</span>
-                </div>
-              </div>
-            </div>
-
-            <div style="height:1px; background:oklch(0.92 0.004 286.32); margin:24px 0 0;"></div>
-
-            <div style="margin:20px 0 14px; font-size:16px; font-weight:600;">Timeline</div>
-
-            <div style="display:flex; flex-direction:column; gap:12px;">
-              <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="width:20px; height:20px; border-radius:999px; background:oklch(0.55 0.16 255); color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center;">RV</span>
-                  <span style="font-size:13px; font-weight:600;">Robbert</span>
-                  <span title="20 Aug 2026 · 07:58 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">3h ago</span>
-                </div>
-                <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">host 35.204.x.x, user acme, port 27375, key is on this machine</p>
-              </div>
-
-              <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
-                  <span style="color:oklch(0.35 0.01 285.9);">action_taken</span> by agent: Connection tested end-to-end: logged in, found the site root.
-                  <span title="20 Aug 2026 · 08:03 CEST" style="color:oklch(0.606 0.016 285.938);">· 3h ago</span>
-                </p>
-              </div>
-
-              <!-- secret request: agent asks, human must act -->
-              <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 34%, #fff); border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-                <div style="display:flex; align-items:center; gap:8px; padding:11px 14px; background:color-mix(in oklch, oklch(0.75 0.16 85) 9%, #fff); border-bottom:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 20%, #fff);">
-                  <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center; flex:none;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-                  </span>
-                  <span style="font-size:13px; font-weight:600;">agent asks for 2 secrets</span>
-                  <span title="20 Aug 2026 · 08:00 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">3h ago</span>
-                  <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:2px 8px;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                    action required
-                  </span>
-                </div>
-
-                <p style="margin:0; padding:12px 14px 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">I need the deploy key and the sudo password to finish the connection. Values go straight into the local vault — never into a file, a comment or the log.</p>
-
-                <div style="padding:12px 14px 4px; display:flex; flex-direction:column; gap:12px;">
-                  <div style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
-                    <div style="display:flex; flex-direction:column; gap:5px; min-width:240px;">
-                      <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">1 · name</span>
-                      <div style="display:flex; align-items:center; min-height:32px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 10px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; background:oklch(0.988087 0 0);">ssh_happyshopper_key</div>
-                    </div>
-                    <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:5px;">
-                      <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">value</span>
-                      <div style="display:flex; align-items:center; gap:8px; min-height:32px; border:1px solid oklch(0.55 0.16 255); border-radius:8px; padding:5px 10px; background:#fff; box-shadow:0 0 0 3px color-mix(in oklch, oklch(0.55 0.16 255) 12%, transparent);">
-                        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:14px; letter-spacing:0.12em; color:oklch(0.35 0.01 285.9);">••••••••••••••••••••••</span>
-                        <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; color:oklch(0.505 0.016 285.938);">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
-                          pasted
-                        </span>
-                      </div>
-                    </div>
-                    <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:1px dashed oklch(0.92 0.004 286.32); border-radius:8px; font-size:12px; color:oklch(0.505 0.016 285.938);">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                      or a key file
-                    </span>
-                  </div>
-
-                  <div style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
-                    <div style="display:flex; flex-direction:column; gap:5px; min-width:240px;">
-                      <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2 · name</span>
-                      <div style="display:flex; align-items:center; min-height:32px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 10px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; background:oklch(0.988087 0 0);">ssh_happyshopper_sudo</div>
-                    </div>
-                    <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:5px;">
-                      <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">value</span>
-                      <div style="display:flex; align-items:center; min-height:32px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 10px; background:#fff; font-size:13px; color:oklch(0.606 0.016 285.938);">Paste or type the value</div>
-                    </div>
-                    <span style="display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:1px dashed oklch(0.92 0.004 286.32); border-radius:8px; font-size:12px; color:oklch(0.505 0.016 285.938);">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                      or a key file
-                    </span>
-                  </div>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:8px; padding:12px 14px 14px;">
-                  <span style="display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:8px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:13px; font-weight:600;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Store both secrets
-                  </span>
-                  <span style="display:inline-flex; align-items:center; height:30px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; font-size:13px; font-weight:500;">I cannot provide these</span>
-                  <span style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; color:oklch(0.505 0.016 285.938);">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    write-only · same name overwrites
-                  </span>
-                </div>
-              </div>
-
-              <!-- an earlier, resolved request: collapsed to its outcome -->
-              <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; background:oklch(0.988087 0 0);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" style="flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span style="font-size:13px;">Earlier request · <span style="font-weight:600;">2 secrets provided</span></span>
-                <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">ssh_acme_web <span style="font-family:Inter,sans-serif; color:oklch(0.45 0.13 145);">stored</span></span>
-                <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">ssh_acme_pass <span style="font-family:Inter,sans-serif; color:oklch(0.45 0.13 145);">stored</span></span>
-                <span title="20 Aug 2026 · 07:59 CEST" style="margin-left:auto; font-size:12px; color:oklch(0.606 0.016 285.938);">3h ago</span>
-              </div>
-
-              <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
-                  <span style="color:oklch(0.35 0.01 285.9);">secret_stored</span> by Robbert: ssh_happyshopper_key <span style="color:oklch(0.606 0.016 285.938);">— value write-only</span>
-                  <span title="20 Aug 2026 · 08:01 CEST" style="color:oklch(0.606 0.016 285.938);">· 3h ago</span>
-                </p>
-              </div>
-
-              <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px; flex:none;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.6; color:oklch(0.505 0.016 285.938);">
-                  <span style="color:oklch(0.35 0.01 285.9);">context_written</span> by agent: client-work/acme/acme.ssh.md <span style="color:oklch(0.606 0.016 285.938);">(ctx: add acme.ssh)</span>
-                  <span title="20 Aug 2026 · 08:04 CEST" style="color:oklch(0.606 0.016 285.938);">· 3h ago</span>
-                </p>
-              </div>
-
-              <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-                  </span>
-                  <span style="font-size:13px; font-weight:600;">agent</span>
-                  <span title="20 Aug 2026 · 08:05 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">2h ago</span>
-                </div>
-                <p style="margin:8px 0 0; font-size:14px; line-height:1.55; color:oklch(0.25 0.008 285.9);">Connection file written and verified. Approve the file and this card is done.</p>
-              </div>
-            </div>
-          </div>
-
-          <div style="flex:none; padding:20px 40px; max-width:880px;">
-            <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:12px 14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-              <span style="font-size:14px; color:oklch(0.606 0.016 285.938);">Add a comment…</span>
-              <div style="display:flex; align-items:center; gap:8px; margin-top:16px;">
-                <div style="display:flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.45 0.14 145); color:#fff; font-size:13px; font-weight:600;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  Approve → Done
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">Request changes</div>
-                <div style="margin-left:auto; display:flex; align-items:center; gap:6px; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:13px; font-weight:500;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-                  Archive
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- reason dialog, inline over the panel -->
-      <div style="width:300px; flex:none; border-left:1px solid oklch(0.92 0.004 286.32); padding:16px; display:flex; flex-direction:column; gap:12px;">
-        <span style="font-size:14px; font-weight:600;">Properties</span>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Status</span>
-          <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:3px 9px;">
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="#fff"/></svg>
-            review
-          </span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Owner</span>
-          <span style="font-size:13px; font-weight:500;">agent</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="width:76px; flex:none; font-size:13px; color:oklch(0.505 0.016 285.938);">Board</span>
-          <span style="font-size:13px; font-weight:500;">Client Work</span>
-        </div>
-
-        <div style="height:1px; background:oklch(0.92 0.004 286.32);"></div>
-
-        <div style="display:flex; flex-direction:column; gap:7px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:12px; font-weight:600; color:oklch(0.505 0.016 285.938); letter-spacing:0.02em;">SECRETS</span>
-            <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">3 · local vault</span>
-          </div>
-          <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px; align-self:flex-start;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            ssh_acme_web
-          </span>
-          <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px; align-self:flex-start;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            ssh_acme_pass
-          </span>
-          <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px; align-self:flex-start;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            ssh_happyshopper_key
-          </span>
-          <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">names only — no view, no copy, no edit</span>
-        </div>
-
-        <div style="height:1px; background:oklch(0.92 0.004 286.32);"></div>
-
-        <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:14px; box-shadow:0 8px 24px rgb(15 23 42 / 0.08), 0 2px 6px rgb(15 23 42 / 0.05);">
-          <span style="font-size:14px; font-weight:600;">Approve → Done</span>
-          <p style="margin:6px 0 0; font-size:13px; line-height:1.5; color:oklch(0.505 0.016 285.938);">A short reason, written to the timeline as an event.</p>
-          <div style="margin-top:10px; border:1px solid oklch(0.55 0.16 255); border-radius:8px; padding:7px 10px; font-size:13px; background:#fff;">Connection file checked, correct</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">Looks right</span>
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">Checked myself</span>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
-            <span style="font-size:13px; font-weight:500; color:oklch(0.505 0.016 285.938); padding:6px 10px;">Cancel</span>
-            <span style="font-size:13px; font-weight:600; color:#fff; background:oklch(0.45 0.14 145); border-radius:8px; padding:6px 12px;">Approve</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════ 1d — MOBILE ═══════════════ -->
-  <div id="1d" style="display:flex; flex-direction:column; gap:10px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">1d</span>
-      <span style="font-size:13px; font-weight:500;">Mobile — one-thumb triage and approving from the phone</span>
-    </div>
-
-    <div style="display:flex; gap:24px; flex-wrap:wrap;">
-
-      <!-- mobile board -->
-      <div style="width:390px; height:844px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
-        <div style="height:44px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 6px; font-size:13px; font-weight:600;">
-          <span>9:41</span>
-          <span style="display:flex; gap:5px; align-items:center;">
-            <svg width="16" height="11" viewBox="0 0 16 11" fill="oklch(0.21 0.006 285.885)"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="12.9" y="0" width="3" height="11" rx="1"/></svg>
-            <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="3" stroke="oklch(0.505 0.016 285.938)"/><rect x="2" y="2" width="13" height="7" rx="2" fill="oklch(0.21 0.006 285.885)"/><path d="M20 4v3a2 2 0 0 0 0-3z" fill="oklch(0.505 0.016 285.938)"/></svg>
-          </span>
-        </div>
-
-        <div style="flex:none; padding:6px 16px 12px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <span style="font-size:20px; font-weight:600; letter-spacing:-0.01em;">Client Work</span>
-            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:oklch(0.40 0.10 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 14%, #fff); border-radius:999px; padding:4px 10px;">
-              <span style="width:6px; height:6px; border-radius:999px; background:oklch(0.66 0.16 62);"></span>
-              3 need you
-            </span>
-          </div>
-          <div style="display:flex; gap:6px; margin-top:12px; overflow:hidden;">
-            <span style="font-size:13px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:6px 12px; white-space:nowrap;">needs_input 2</span>
-            <span style="font-size:13px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:6px 12px; white-space:nowrap;">review 2</span>
-            <span style="font-size:13px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:6px 12px; white-space:nowrap;">doing 1</span>
-            <span style="font-size:13px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:6px 12px; white-space:nowrap;">inbox 2</span>
-          </div>
-        </div>
-
-        <div style="flex:1; min-height:0; overflow:hidden; padding:14px 16px; display:flex; flex-direction:column; gap:14px;">
-
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.66 0.16 62); border-radius:999px; padding:3px 9px;">
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
-              needs_input
-            </span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2</span>
-          </div>
-
-          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-              <span style="display:inline-flex; align-items:center; gap:6px; min-width:0;"><span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_5b34</span><span title="in needs_input since 18 Aug 2026 · 09:12 CEST" style="font-size:11px; font-weight:500; color:oklch(0.44 0.11 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 16%, #fff); border-radius:999px; padding:1px 6px;">2d</span></span>
-              <span style="display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 8%, #fff); border-radius:999px; padding:1px 7px;">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-                @agent
-              </span>
-            </div>
-            <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35; text-wrap:pretty;">Cookie consent banner missing on client site</p>
-            <p style="margin:6px 0 0; font-size:13px; line-height:1.45; color:oklch(0.40 0.09 62);">waiting: your call — restore the plugin, or ask the client first?</p>
-          </div>
-
-          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 28%, #fff); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-            <span style="display:inline-flex; align-items:center; gap:6px;"><span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_c410</span><span title="in needs_input since 19 Aug 2026 · 16:40 CEST" style="font-size:11px; font-weight:500; color:oklch(0.44 0.11 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 16%, #fff); border-radius:999px; padding:1px 6px;">1d</span></span>
-            <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35;">Reply to Chris about the hosting invoice</p>
-            <p style="margin:6px 0 0; font-size:13px; line-height:1.45; color:oklch(0.40 0.09 62);">waiting: approve the reply text before it is sent</p>
-          </div>
-
-          <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:3px 9px;">
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="#fff"/></svg>
-              review
-            </span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">2</span>
-          </div>
-
-          <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 26%, #fff); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-            <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 9%, #fff); border-radius:6px; padding:1px 6px;">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
-              ops_2ae1
-            </span>
-            <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
-              <span style="display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; color:oklch(0.42 0.14 255); background:color-mix(in oklch, oklch(0.55 0.16 255) 8%, #fff); border-radius:999px; padding:1px 7px;">@agent</span>
-              <span title="in review since 20 Aug 2026 · 08:05 CEST" style="margin-left:auto; font-size:11px; font-weight:500; color:oklch(0.40 0.10 145); background:color-mix(in oklch, oklch(0.55 0.16 145) 12%, #fff); border-radius:999px; padding:1px 6px;">3h</span>
-            </div>
-            <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35;">Access needed: acme.com SSH</p>
-            <p style="margin:6px 0 0; font-size:13px; line-height:1.45; color:oklch(0.505 0.016 285.938);">Connection file written — approve to finish.</p>
-          </div>
-
-          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; padding:14px;">
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">task_88a3</span>
-            <p style="margin:6px 0 0; font-size:15px; font-weight:500; line-height:1.35;">Google Analytics 4 migration</p>
-          </div>
-        </div>
-
-        <div style="flex:none; display:flex; align-items:center; justify-content:space-around; padding:10px 12px 22px; border-top:1px solid oklch(0.92 0.004 286.32); background:#fff;">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:3px; min-width:44px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-            <span style="font-size:11px; font-weight:600;">Board</span>
-          </div>
-          <div style="display:flex; flex-direction:column; align-items:center; gap:3px; min-width:44px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Context</span>
-          </div>
-          <div style="display:flex; flex-direction:column; align-items:center; gap:3px; min-width:44px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-            <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">Agent</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- mobile ops approve -->
-      <div style="width:390px; height:1360px; flex:none; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
-        <div style="height:44px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 6px; font-size:13px; font-weight:600;">
-          <span>9:42</span>
-          <span style="display:flex; gap:5px; align-items:center;">
-            <svg width="16" height="11" viewBox="0 0 16 11" fill="oklch(0.21 0.006 285.885)"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="12.9" y="0" width="3" height="11" rx="1"/></svg>
-            <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="3" stroke="oklch(0.505 0.016 285.938)"/><rect x="2" y="2" width="13" height="7" rx="2" fill="oklch(0.21 0.006 285.885)"/><path d="M20 4v3a2 2 0 0 0 0-3z" fill="oklch(0.505 0.016 285.938)"/></svg>
-          </span>
-        </div>
-
-        <div style="flex:none; display:flex; align-items:center; gap:10px; padding:4px 12px 10px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">ops_2ae1</span>
-          <span style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:oklch(0.55 0.16 145); border-radius:999px; padding:3px 9px;">review</span>
-        </div>
-
-        <div style="flex:1; min-height:0; overflow:hidden; padding:16px 16px 0; display:flex; flex-direction:column; gap:14px;">
-
-          <!-- card state -->
-          <div style="flex:none;">
-            <h2 style="margin:0; font-size:19px; font-weight:600; line-height:1.3;">Access needed: acme.com SSH</h2>
-            <p style="margin:8px 0 0; font-size:14px; line-height:1.5; color:oklch(0.35 0.01 285.9);">Secret values go into the local vault, never into files.</p>
-          </div>
-
-          <div style="flex:none; display:flex; flex-wrap:wrap; gap:6px;">
-            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              ssh_acme_web
-            </span>
-            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              ssh_acme_pass
-            </span>
-            <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.25 0.008 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:3px 9px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-              acme.ssh.md
-            </span>
-          </div>
-
-          <!-- files: state, not an ask -->
-          <div style="flex:none; display:flex; align-items:center; gap:8px; padding:9px 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; background:#fff;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-            <span style="font-size:13px; font-weight:600;">Uploads</span>
-            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">1</span>
-            <span style="width:1px; height:14px; background:oklch(0.92 0.004 286.32);"></span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
-            <span style="font-size:13px; font-weight:600;">Artifacts</span>
-            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">1</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="m9 18 6-6-6-6"/></svg>
-          </div>
-
-          <!-- timeline starts here -->
-          <div style="flex:none; display:flex; align-items:center; gap:8px; padding-top:2px;">
-            <span style="font-size:15px; font-weight:600;">Timeline</span>
-            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">newest last</span>
-            <span style="flex:1; height:1px; background:oklch(0.92 0.004 286.32);"></span>
-          </div>
-
-          <div style="flex:none; display:flex; flex-direction:column; gap:12px; border-left:2px solid oklch(0.92 0.004 286.32); padding-left:12px; margin-left:3px;">
-
-            <!-- resolved earlier request -->
-            <div style="display:flex; align-items:flex-start; gap:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">secret_stored by Robbert: ssh_acme_web, ssh_acme_pass — value write-only · 3h ago</p>
-            </div>
-
-            <div style="display:flex; align-items:flex-start; gap:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-top:3px; flex:none;"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">action_taken by agent: Connection tested end-to-end · 3h ago</p>
-            </div>
-
-            <div style="display:flex; align-items:flex-start; gap:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.13 145)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px; flex:none;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-              <p style="margin:0; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; line-height:1.6; color:oklch(0.505 0.016 285.938);">context_written by agent: acme.ssh.md (ctx: add acme.ssh) · 3h ago</p>
-            </div>
-
-            <!-- agent comment -->
-            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.55 0.16 255) 20%, oklch(0.92 0.004 286.32)); border-radius:12px; padding:12px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center; flex:none;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-                </span>
-                <span style="font-size:13px; font-weight:600;">agent</span>
-                <span title="20 Aug 2026 · 08:05 CEST" style="font-size:12px; color:oklch(0.606 0.016 285.938);">2h ago</span>
-              </div>
-              <p style="margin:8px 0 0; font-size:14px; line-height:1.5; color:oklch(0.25 0.008 285.9);">Connection file written and verified. Approve the file and this card is done.</p>
-            </div>
-
-            <!-- the ask: newest timeline item, needs action -->
-            <div style="background:#fff; border:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 34%, #fff); border-radius:12px; overflow:hidden;">
-              <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:color-mix(in oklch, oklch(0.75 0.16 85) 9%, #fff); border-bottom:1px solid color-mix(in oklch, oklch(0.66 0.16 62) 20%, #fff);">
-                <span style="width:20px; height:20px; border-radius:999px; background:color-mix(in oklch, oklch(0.55 0.16 255) 12%, #fff); display:flex; align-items:center; justify-content:center; flex:none;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>
-                </span>
-                <span style="font-size:13px; font-weight:600;">agent asks for 2 secrets</span>
-                <span title="21 Aug 2026 · 09:38 CEST" style="font-size:11px; color:oklch(0.606 0.016 285.938);">4m ago</span>
-              </div>
-              <div style="padding:12px;">
-                <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:oklch(0.40 0.09 62); background:color-mix(in oklch, oklch(0.75 0.16 85) 18%, #fff); border-radius:999px; padding:2px 8px;">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.13 62)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                  action required
-                </span>
-                <p style="margin:8px 0 0; font-size:13px; line-height:1.5; color:oklch(0.25 0.008 285.9);">Deploy key and sudo password. Values go straight into the vault.</p>
-
-                <div style="margin-top:10px; display:flex; align-items:center; min-height:40px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:6px 10px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; background:oklch(0.988087 0 0);">ssh_happyshopper_key</div>
-                <div style="margin-top:6px; display:flex; align-items:center; min-height:44px; border:1px solid oklch(0.55 0.16 255); border-radius:10px; padding:6px 10px; background:#fff;">
-                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:15px; letter-spacing:0.12em; color:oklch(0.35 0.01 285.9);">••••••••••••••</span>
-                  <span style="margin-left:auto; font-size:12px; color:oklch(0.505 0.016 285.938);">pasted</span>
-                </div>
-
-                <div style="margin-top:12px; display:flex; align-items:center; min-height:40px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:6px 10px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; background:oklch(0.988087 0 0);">ssh_happyshopper_sudo</div>
-                <div style="margin-top:6px; display:flex; align-items:center; min-height:44px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:6px 10px; background:#fff; font-size:13px; color:oklch(0.606 0.016 285.938);">
-                  Paste the value
-                  <span style="margin-left:auto; font-size:12px; color:oklch(0.42 0.14 255); font-weight:500;">Paste</span>
-                </div>
-
-                <p style="margin:8px 0 0; font-size:11px; color:oklch(0.505 0.016 285.938);">Write-only — never shown again. Same name overwrites.</p>
-                <div style="margin-top:10px; display:flex; align-items:center; justify-content:center; height:44px; border-radius:10px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:15px; font-weight:600;">Store both secrets</div>
-                <div style="margin-top:8px; display:flex; align-items:center; justify-content:center; gap:8px; height:44px; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; font-size:14px; font-weight:500;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.35 0.01 285.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                  Use key files instead
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- sticky action bar -->
-        <div style="flex:none; padding:12px 16px 26px; border-top:1px solid oklch(0.92 0.004 286.32); background:#fff; box-shadow:0 -8px 24px rgb(15 23 42 / 0.06);">
-          <div style="display:flex; align-items:center; height:48px; border-radius:12px; background:oklch(0.45 0.14 145); color:#fff; justify-content:center; gap:8px; font-size:16px; font-weight:600;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            Approve → Done
-          </div>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <div style="flex:1; display:flex; align-items:center; justify-content:center; height:44px; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; font-size:14px; font-weight:500;">Comment</div>
-            <div style="flex:1; display:flex; align-items:center; justify-content:center; height:44px; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; font-size:14px; font-weight:500; color:oklch(0.505 0.016 285.938);">Archive</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- mobile status sheet -->
-      <div style="width:390px; height:844px; flex:none; position:relative; display:flex; flex-direction:column; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:28px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
-        <div style="height:44px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 6px; font-size:13px; font-weight:600;">
-          <span>9:43</span>
-          <span style="display:flex; gap:5px; align-items:center;">
-            <svg width="16" height="11" viewBox="0 0 16 11" fill="oklch(0.21 0.006 285.885)"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.3" y="5" width="3" height="6" rx="1"/><rect x="8.6" y="2.5" width="3" height="8.5" rx="1"/><rect x="12.9" y="0" width="3" height="11" rx="1"/></svg>
-            <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="3" stroke="oklch(0.505 0.016 285.938)"/><rect x="2" y="2" width="13" height="7" rx="2" fill="oklch(0.21 0.006 285.885)"/><path d="M20 4v3a2 2 0 0 0 0-3z" fill="oklch(0.505 0.016 285.938)"/></svg>
-          </span>
-        </div>
-
-        <div style="flex:none; display:flex; align-items:center; gap:10px; padding:4px 12px 10px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:oklch(0.505 0.016 285.938);">task_5b34</span>
-        </div>
-
-        <div style="flex:1; min-height:0; padding:16px; opacity:0.4;">
-          <h2 style="margin:0; font-size:19px; font-weight:600; line-height:1.3;">Cookie consent banner missing on client site</h2>
-          <p style="margin:8px 0 0; font-size:14px; line-height:1.5; color:oklch(0.35 0.01 285.9);">The client reports the consent banner is not showing on acme.com.</p>
-        </div>
-
-        <div style="position:absolute; inset:0; background:color-mix(in oklch, oklch(0.141 0.005 285.823) 34%, transparent);"></div>
-
-        <!-- bottom sheet -->
-        <div style="position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:20px 20px 0 0; padding:10px 0 26px; box-shadow:0 -12px 40px rgb(15 23 42 / 0.2);">
-          <div style="width:40px; height:4px; border-radius:999px; background:oklch(0.92 0.004 286.32); margin:0 auto 10px;"></div>
-          <div style="padding:0 18px 10px; display:flex; align-items:baseline; gap:8px;">
-            <span style="font-size:16px; font-weight:600;">Move to</span>
-            <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">a reason is asked next</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5" stroke-dasharray="1.1 1.7"/></svg>
-            <span style="font-size:16px;">inbox</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5"/></svg>
-            <span style="font-size:16px;">ready</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 255)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 0,1 7,10.5 Z" fill="oklch(0.55 0.16 255)"/></svg>
-            <span style="font-size:16px;">doing</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px; background:oklch(0.967 0.001 286.375);">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.66 0.16 62)" stroke-width="1.5"/><path d="M4.5 4.5 L9.5 9.5" stroke="oklch(0.66 0.16 62)" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <span style="font-size:16px; font-weight:600;">needs_input</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.21 0.006 285.885)" stroke-width="2.4" stroke-linecap="round" style="margin-left:auto;"><path d="M20 6 9 17l-5-5"/></svg>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.55 0.16 145)" stroke-width="1.5"/><path d="M7,7 L7,3.5 A3.5,3.5 0 1,1 3.5,7 Z" fill="oklch(0.55 0.16 145)"/></svg>
-            <span style="font-size:16px;">review</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="oklch(0.55 0.18 250)"/><path d="M10.951 4.249c.332.332.332.87 0 1.202l-5 5a.85.85 0 0 1-1.202 0l-2-2a.85.85 0 0 1 1.202-1.202L5.35 8.648l4.399-4.399a.85.85 0 0 1 1.202 0Z" fill="#fff"/></svg>
-            <span style="font-size:16px;">done</span>
-          </div>
-          <div style="height:1px; background:oklch(0.945 0.003 286.32); margin:6px 0;"></div>
-          <div style="display:flex; align-items:center; gap:12px; height:48px; padding:0 18px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-            <span style="font-size:16px; color:oklch(0.505 0.016 285.938);">archived</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ═══════════════ 1e — CONTEXT VIEWER ═══════════════ -->
-  <div id="1e" style="display:flex; flex-direction:column; gap:10px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">1e</span>
-      <span style="font-size:13px; font-weight:500;">Context viewer — read-only</span>
-    </div>
-
-    <div style="width:900px; height:600px; display:flex; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14);">
-      <div style="width:260px; flex:none; border-right:1px solid oklch(0.92 0.004 286.32); background:oklch(0.964435 0.001327 286.375); padding:12px 8px; display:flex; flex-direction:column; gap:2px;">
-        <div style="font-size:11px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); padding:4px 8px 8px;">Context · git</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-          _global/
-        </div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 26px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">user.md</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 26px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">trello.md</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-          client-work/
-        </div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 26px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">_board.md</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 26px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-          acme/
-        </div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 44px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">_client.md</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 44px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; font-weight:500; background:oklch(0.935 0.003 286.375); border-radius:8px;">acme.ssh.md</div>
-        <div style="display:flex; align-items:center; gap:6px; padding:5px 8px 5px 44px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.35 0.01 285.9);">trello-board.md</div>
-      </div>
-
-      <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
-        <div style="height:44px; flex:none; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; font-weight:500;">client-work/acme/acme.ssh.md</span>
-          <span style="font-size:11px; color:oklch(0.505 0.016 285.938); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">read-only</span>
-          <span style="margin-left:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">ctx: add acme.ssh (ops_2ae1)</span>
-        </div>
-
-        <div style="flex:1; min-height:0; padding:20px 24px; overflow:hidden;">
-          <!-- frontmatter as fields -->
-          <div style="background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:10px; padding:14px 16px; display:grid; grid-template-columns:120px 1fr; gap:8px 16px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">kind</span>
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; font-weight:500;">connection</span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">host</span>
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">35.204.x.x</span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">user</span>
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">acme</span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">port</span>
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">27375</span>
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">secret_ref</span>
-            <span style="display:flex; gap:6px; flex-wrap:wrap;">
-              <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                ssh_acme_web
-              </span>
-              <span style="display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                ssh_acme_pass
-              </span>
-            </span>
-          </div>
-
-          <div style="margin-top:20px;">
-            <h3 style="margin:0; font-size:16px; font-weight:600;">SSH acme.com</h3>
-            <p style="margin:10px 0 0; font-size:14px; line-height:1.6; color:oklch(0.25 0.008 285.9);">Site root is <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; background:oklch(0.967 0.001 286.375); border-radius:4px; padding:1px 5px;">/var/www/acme/current</span>. WordPress with the consent plugin in <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; background:oklch(0.967 0.001 286.375); border-radius:4px; padding:1px 5px;">wp-content/plugins</span>.</p>
-            <p style="margin:10px 0 0; font-size:14px; line-height:1.6; color:oklch(0.25 0.008 285.9);">Deploys run through the client's own pipeline — never edit files directly on the server without asking.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════ 1f — STATES ═══════════════ -->
-  <div id="1f" style="display:flex; flex-direction:column; gap:10px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-weight:500; background:oklch(0.141 0.005 285.823); color:#fff; padding:2px 7px; border-radius:6px;">1f</span>
-      <span style="font-size:13px; font-weight:500;">States — all clear, archive, quick add</span>
-    </div>
-
-    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
-
-      <!-- all clear -->
-      <div style="width:440px; height:280px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-4.8"/></svg>
-        <span style="font-size:18px; font-weight:600;">Nothing waiting on you</span>
-        <span style="font-size:14px; color:oklch(0.505 0.016 285.938);">2 cards in doing · agent working</span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.606 0.016 285.938);">last event 4 min ago</span>
-      </div>
-
-      <!-- archive -->
-      <div style="width:520px; flex:none; background:oklch(0.988087 0 0); border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 1px 2px rgb(15 23 42 / 0.04);">
-        <div style="height:40px; display:flex; align-items:center; gap:8px; padding:0 14px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-          <span style="font-size:13px; font-weight:600;">Archived</span>
-          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">24 cards · nothing is ever deleted</span>
-          <span style="margin-left:auto; font-size:12px; color:oklch(0.42 0.14 255);">from Board → done → Archived</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938); width:78px;">task_2d90</span>
-          <span style="font-size:13px; flex:1; min-width:0;">Old cookie banner ticket</span>
-          <span style="font-size:12px; color:oklch(0.505 0.016 285.938); width:190px; flex:none;">duplicate of task_5b34</span>
-          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">3 Jul</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid oklch(0.945 0.003 286.32);">
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255); width:78px;">ops_77c1</span>
-          <span style="font-size:13px; flex:1; min-width:0;">Access needed: old FTP account</span>
-          <span style="font-size:12px; color:oklch(0.505 0.016 285.938); width:190px; flex:none;">FTP dropped, SSH used instead</span>
-          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">28 Jun</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:12px; padding:10px 14px;">
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938); width:78px;">task_0a44</span>
-          <span style="font-size:13px; flex:1; min-width:0;">Newsletter June</span>
-          <span style="font-size:12px; color:oklch(0.505 0.016 285.938); width:190px; flex:none;">sent, nothing left to do</span>
-          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">24 Jun</span>
-        </div>
-      </div>
-
-      <!-- command palette -->
-      <div style="width:440px; flex:none; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
-        <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <span style="font-size:15px; color:oklch(0.35 0.01 285.9);">new ops<span style="border-left:1.5px solid oklch(0.55 0.16 255); margin-left:1px;"></span></span>
-        </div>
-        <div style="padding:6px;">
-          <div style="font-size:11px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); padding:8px 10px 6px;">Create</div>
-          <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:oklch(0.967 0.001 286.375);">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
-            <span style="font-size:14px; font-weight:500;">New ops card</span>
-            <span style="margin-left:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938); border:1px solid oklch(0.92 0.004 286.32); border-radius:5px; padding:0 4px;">⏎</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-            <span style="font-size:14px;">New task card</span>
-          </div>
-          <div style="font-size:11px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:oklch(0.606 0.016 285.938); padding:10px 10px 6px;">Jump to</div>
-          <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;">
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.42 0.14 255);">ops_2ae1</span>
-            <span style="font-size:14px; color:oklch(0.35 0.01 285.9);">Access needed: acme.com SSH</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;">
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:oklch(0.505 0.016 285.938);">ops_9f77</span>
-            <span style="font-size:14px; color:oklch(0.35 0.01 285.9);">Decision needed: hosting plan tier</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- create card -->
-      <div style="width:440px; flex:none; background:#fff; border:1px solid oklch(0.92 0.004 286.32); border-radius:12px; overflow:hidden; box-shadow:0 16px 40px rgb(15 23 42 / 0.14), 0 3px 10px rgb(15 23 42 / 0.08);">
-        <div style="display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid oklch(0.92 0.004 286.32);">
-          <span style="font-size:15px; font-weight:600;">New card</span>
-          <span style="font-size:12px; color:oklch(0.606 0.016 285.938);">lands in inbox</span>
-        </div>
-        <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Type</span>
-            <div style="display:flex; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; overflow:hidden; align-self:flex-start;">
-              <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:13px; font-weight:500; background:oklch(0.21 0.006 285.885); color:#fff;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-                task
-              </span>
-              <span style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:13px; color:oklch(0.35 0.01 285.9); border-left:1px solid oklch(0.92 0.004 286.32);">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="2" stroke-linecap="round"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><circle cx="12" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/></svg>
-                ops
-              </span>
-            </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Title</span>
-            <div style="min-height:34px; display:flex; align-items:center; border:1px solid oklch(0.577 0.245 27.325); border-radius:8px; padding:6px 10px; font-size:14px; color:oklch(0.606 0.016 285.938); box-shadow:0 0 0 3px color-mix(in oklch, oklch(0.577 0.245 27.325) 14%, transparent);">What needs to happen?</div>
-            <span style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:oklch(0.50 0.20 27);">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.50 0.20 27)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-              Title cannot be empty
-            </span>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Board <span style="color:oklch(0.50 0.20 27);">· required from All boards</span></span>
-            <div style="display:flex; align-items:center; gap:8px; min-height:34px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:6px 10px; font-size:14px;">
-              <span style="width:8px; height:8px; border-radius:999px; background:oklch(0.606 0.016 285.938);"></span>
-              <span style="color:oklch(0.606 0.016 285.938);">Pick a board</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="m6 9 6 6 6-6"/></svg>
-            </div>
-            <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">On a single board it is prefilled and read-only.</span>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Body <span style="color:oklch(0.606 0.016 285.938);">· optional, markdown</span></span>
-            <div style="min-height:64px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:8px 10px; font-size:14px; color:oklch(0.606 0.016 285.938);">Context the agent needs before starting…</div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Status</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border:1px solid oklch(0.92 0.004 286.32); border-radius:999px; padding:4px 10px;">
-                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="none" stroke="oklch(0.606 0.016 285.938)" stroke-width="1.5" stroke-dasharray="1.1 1.7"/></svg>
-                inbox
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-              </span>
-              <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">or drop it straight into <span style="font-family:'JetBrains Mono',ui-monospace,monospace;">ready</span></span>
-            </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Uploads <span style="color:oklch(0.606 0.016 285.938);">· optional, what the agent starts from</span></span>
-            <div style="border:1.5px dashed color-mix(in oklch, oklch(0.55 0.16 255) 35%, oklch(0.92 0.004 286.32)); border-radius:10px; background:color-mix(in oklch, oklch(0.55 0.16 255) 3%, #fff); padding:12px; display:flex; align-items:center; gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(0.48 0.15 255)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 16V6"/><path d="m8 10 4-4 4 4"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
-              <div style="display:flex; flex-direction:column;">
-                <span style="font-size:12px; font-weight:500;">Drop files, folders or a .zip</span>
-                <span style="font-size:11px; color:oklch(0.505 0.016 285.938);">uploaded when the card is created</span>
-              </div>
-              <span style="margin-left:auto; display:inline-flex; align-items:center; height:26px; padding:0 10px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; background:#fff; font-size:12px; font-weight:500;">Browse…</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; padding:2px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 2v6h6"/></svg>
-              <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px;">cookie-policy.pdf</span>
-              <span style="font-size:11px; color:oklch(0.606 0.016 285.938);">92 KB</span>
-              <span style="margin-left:auto; font-size:11px; color:oklch(0.606 0.016 285.938);">staged</span>
-            </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; color:oklch(0.505 0.016 285.938);">Labels <span style="color:oklch(0.606 0.016 285.938);">· optional</span></span>
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:34px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; padding:5px 8px;">
-              <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:oklch(0.35 0.01 285.9); background:oklch(0.967 0.001 286.375); border-radius:999px; padding:2px 8px;">privacy
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="oklch(0.505 0.016 285.938)" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </span>
-              <span style="font-size:13px; color:oklch(0.606 0.016 285.938);">add label…</span>
-            </div>
-          </div>
-
-          <div style="display:flex; align-items:center; gap:8px; padding-top:2px;">
-            <span style="display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:8px; background:oklch(0.21 0.006 285.885); color:#fff; font-size:13px; font-weight:600; opacity:0.45;">Create card</span>
-            <span style="display:inline-flex; align-items:center; height:32px; padding:0 12px; border:1px solid oklch(0.92 0.004 286.32); border-radius:8px; font-size:13px; font-weight:500;">Cancel</span>
-            <span style="margin-left:auto; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:oklch(0.606 0.016 285.938);">status: inbox · owner: human</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-</section>
-</x-dc>
-<script type="text/x-dc" data-dc-script>
-class Component extends DCLogic {
-  renderVals() { return {}; }
-}
-</script>
-</body>
-</html>
+                <span
