@@ -34,7 +34,8 @@ export async function renderSessions(root) {
   const completed = week.filter((s) => s.ended_at !== null && s.exit_status === 0).length;
   const handed = week.reduce((n, s) => n + s.handed_back.length, 0);
   const early = week.length - completed - week.filter((s) => s.live).length;
-  const cards = new Set(week.flatMap((s) => s.cards)).size;
+  // touched stays literal: the observer only read about those cards.
+  const cards = new Set(week.filter((s) => s.trigger !== 'observe').flatMap((s) => s.cards)).size;
   root.innerHTML = `
     ${crumb([{ text: 'Agentboard', href: '#/' }, { text: 'Agent log', strong: true }])}
     <div class="page-scroll">

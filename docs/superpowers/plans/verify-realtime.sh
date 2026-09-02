@@ -220,7 +220,28 @@ assert d['changed'] is True, ('changed should flip True again once the lock disa
 assert '.r0.' in d['cursor'], ('cursor should carry running=0 once the lock is gone', d['cursor'])
 " || fail "liveness leg: changed/running not True after the lock disappeared"
 
+# ============================================================================
+# Test 10: comment edit fires the change channel (task 6 probe leg).
+# editComment also writes an action_taken event, so the cursor's e component
+# would move even without the new m component (comment.updated_at) — this
+# leg only asserts the channel fires on an edit (changed:true), it does not
+# isolate the m component.
+# ============================================================================
+COMMENT_ID=$(curl -s -X POST "localhost:$PORT/api/cards/$CARD/comments" -H 'Content-Type: application/json' -d '{"text":"edit-probe"}' | id_of)
+
+CURSOR8=$(curl -s "localhost:$PORT/api/changes" | python3 -c "import json, sys; print(json.load(sys.stdin)['cursor'])")
+
+curl -s -X POST "localhost:$PORT/api/comments/$COMMENT_ID" -H 'Content-Type: application/json' -d '{"body":"edit-probe, edited"}' >/dev/null
+
+RESP=$(curl -s "localhost:$PORT/api/changes?since=$CURSOR8")
+echo "$RESP" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+assert d['changed'] is True, ('changed should be True after a comment edit', d)
+assert d['cursor'] != '$CURSOR8', ('cursor did not advance after a comment edit', d)
+" || fail "comment-edit leg: changed/cursor not advanced after editing a comment"
+
 kill "$SERVE_PID" >/dev/null 2>&1 || true
 wait "$SERVE_PID" 2>/dev/null || true
 
-echo "OK: realtime verified (cursor progression, changed flag, create/move/comment/edit, session liveness)"
+echo "OK: realtime verified (cursor progression, changed flag, create/move/comment/edit, session liveness, comment-edit)"

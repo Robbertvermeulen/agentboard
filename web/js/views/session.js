@@ -63,7 +63,7 @@ export async function renderSession(root, { id }) {
 
   let cursor = { offset: tail.offset, n: tail.n };
   let follow = true;
-  let lastStepAt = Date.now();
+  let lastStepAt = null;
   const list = root.querySelector('#s-steps');
   const followBtn = root.querySelector('#s-follow');
   followBtn.onclick = () => {
@@ -96,11 +96,12 @@ export async function renderSession(root, { id }) {
       if (follow) list.lastElementChild?.scrollIntoView({ block: 'end' });
     }
     const beat = root.querySelector('#s-beat');
-    if (beat) beat.textContent = `live · last step ${Math.max(0, Math.round((Date.now() - lastStepAt) / 1000))}s ago`;
+    if (beat) beat.textContent = lastStepAt === null ? 'live' : `live · last step ${Math.max(0, Math.round((Date.now() - lastStepAt) / 1000))}s ago`;
     if (!r.live) {
       // The session ended: one final static render shows duration, exit and
       // the observation block if one appeared.
       stopSessionPolling();
+      if (location.hash !== `#/session/${id}`) return; // navigated away while this poke was in flight
       await renderSession(root, { id });
     }
   };
