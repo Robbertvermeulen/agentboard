@@ -499,6 +499,9 @@ export async function renderCard(root, { boards, cardId }) {
       }
       // keyFile intentionally survives now: the rebuilt box's disabled state
       // and placeholder are restored above, so the indication is back too.
+      // The closure must never outlive the DOM state it is paired with: if
+      // the (re)mounted box shows no key-file indication, there is no file.
+      if (!root.querySelector('#sec-value')?.disabled) keyFile = null;
     };
   });
   const jumpToRequest = () => {
