@@ -4,8 +4,9 @@
 # a trailing partial line while the row is open vs. after it closes, and a
 # multibyte-UTF-8 step crossing that same incremental boundary), the
 # live/observed annotations on GET /api/sessions and /api/sessions/:id,
-# `agentboard observe` (refuses a running session and an observe session
-# itself, runs through the normal runner machinery, its own row carries
+# `agentboard observe` (refuses a lock-confirmed-live session and an observe
+# session itself, but proceeds on a crashed one -- an open row with no live
+# lock; runs through the normal runner machinery, its own row carries
 # trigger 'observe'), observation-report + JSON-escaped secret redaction, and
 # prune removing the observation file alongside the jsonl/stderr pair.
 # Composed from the verified probes of Tasks 1-4. One throwaway
@@ -255,26 +256,43 @@ assert raw not in detail, detail
 " || fail "JSON-escaped secret was not redacted in a tool step's detail"
 
 # ============================================================================
-# Leg 6: observe -- refuses a still-running session and refuses observing an
-# observe session itself, runs through the fake session cmd like any other
-# runner trigger, and its own session row carries trigger 'observe'.
+# Leg 6: observe -- an open row is only "still running" when the lock
+# confirms it (fix-round coordinator ruling, 2026-09-02): a crashed session
+# (open row, no live lock) is now observable -- exactly the session most
+# worth observing, since SIGKILL would otherwise leave it forever
+# unreviewable and "still running" would contradict the UI's own "ended
+# early (crash)" for that same row. A row this script's own lock names
+# (same acquireLock shape as leg 3, using $$) is still refused. Refusing to
+# observe an observe session itself is unaffected either way.
 # ============================================================================
-sqlite3 "$AGENTBOARD_DATA/board.db" \
-  "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
-S5=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT max(id) FROM session")
-
-expect_fail $CLI observe "$S5"
-ERR=$($CLI observe "$S5" 2>&1 1>/dev/null) || true
-echo "$ERR" | grep -q "still running" || fail "observe did not refuse a still-running session: $ERR"
-
-sqlite3 "$AGENTBOARD_DATA/board.db" \
-  "UPDATE session SET ended_at = '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', exit_status = 0 WHERE id = $S5"
-
 cat > "$SCRATCH/fakeobs.sh" << 'EOF'
 #!/usr/bin/env bash
 echo '{"type":"assistant","message":{"content":[{"type":"text","text":"observatie gedraaid"}]}}'
 EOF
 chmod +x "$SCRATCH/fakeobs.sh"
+
+# S5: open row, no lock at all -- a crash, so observe now proceeds.
+sqlite3 "$AGENTBOARD_DATA/board.db" \
+  "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
+S5=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT max(id) FROM session")
+
+AGENTBOARD_SESSION_CMD="$SCRATCH/fakeobs.sh" $CLI observe "$S5" >/dev/null \
+  || fail "observe refused a crashed session (open row, no live lock)"
+
+# S5B: a second open row, this time named by this script's own (alive) lock
+# -- lock-confirmed live, so observe still refuses.
+sqlite3 "$AGENTBOARD_DATA/board.db" \
+  "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
+S5B=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT max(id) FROM session")
+cat > "$AGENTBOARD_DATA/session.lock" << EOF
+{"pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
+EOF
+
+expect_fail $CLI observe "$S5B"
+ERR=$($CLI observe "$S5B" 2>&1 1>/dev/null) || true
+echo "$ERR" | grep -q "still running" || fail "observe did not refuse a lock-confirmed-live session: $ERR"
+
+rm -f "$AGENTBOARD_DATA/session.lock"
 
 AGENTBOARD_SESSION_CMD="$SCRATCH/fakeobs.sh" $CLI observe "$S4" >/dev/null
 S6=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT max(id) FROM session")

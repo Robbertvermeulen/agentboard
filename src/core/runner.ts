@@ -245,16 +245,24 @@ export function observeSession(
   visionPath?: string
 ): ReturnType<typeof runSession> & { report: string } {
   const db = openDb();
+  let row: { ended_at: string | null; trigger: string } | undefined;
   try {
-    const row = db.prepare('SELECT ended_at, "trigger" FROM session WHERE id = ?').get(nr) as
+    row = db.prepare('SELECT ended_at, "trigger" FROM session WHERE id = ?').get(nr) as
       | { ended_at: string | null; trigger: string }
       | undefined;
-    if (!row) throw new Error(`Session not found: ${nr}`);
-    if (row.ended_at === null) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
-    if (row.trigger === 'observe') throw new Error(`Session #${nr} is itself an observation — nothing to observe`);
   } finally {
     db.close();
   }
+  if (!row) throw new Error(`Session not found: ${nr}`);
+  if (row.ended_at === null) {
+    // An open row is only "still running" when the lock confirms it. SIGKILL
+    // leaves an open row with no live lock forever — exactly the crash most
+    // worth observing, and "still running" would contradict the UI's own
+    // "ended early (crash)" for the same row.
+    const status = sessionStatus();
+    if (status.session_id === nr) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
+  }
+  if (row.trigger === 'observe') throw new Error(`Session #${nr} is itself an observation — nothing to observe`);
   if (visionPath && !fs.existsSync(visionPath)) throw new Error(`Vision document not found: ${visionPath}`);
   const report = observationPath(nr);
   const prompt =
