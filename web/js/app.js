@@ -2,7 +2,7 @@
 import { api } from './api.js';
 import { icons } from './icons.js';
 import { esc } from './util.js';
-import { closeOverlay } from './components.js';
+import { closeOverlay, openOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
 import { renderCard, stopCardPolling, pokeCardRefresh, retryCardRefresh } from './views/card.js';
@@ -70,11 +70,50 @@ function renderSidebar(route, views) {
 }
 
 function renderTabbar(route) {
-  const onBoard = route.name !== 'ctx';
+  const onBoard = route.name === 'all' || route.name === 'board' || route.name === 'archive' || route.name === 'card';
   tabbar.innerHTML = `
     <a class="tab-item ${onBoard ? 'active' : ''}" href="#/">${icons.board(22, onBoard ? 'var(--dark)' : 'var(--mut-2)')}<span>Board</span></a>
     <a class="tab-item ${route.name === 'ctx' ? 'active' : ''}" href="#/ctx">${icons.fileText(22, route.name === 'ctx' ? 'var(--dark)' : 'var(--mut-2)')}<span>Context</span></a>
+    <a class="tab-item ${route.name === 'sessions' || route.name === 'session' ? 'active' : ''}" href="#/sessions">${icons.bot(22, route.name === 'sessions' || route.name === 'session' ? 'var(--dark)' : 'var(--mut-2)')}<span>Agent log</span></a>
+    <button type="button" class="tab-item" id="tab-more">${icons.chevronDown(22, 'var(--mut-2)')}<span>More</span><span class="tab-badge" id="more-badge" hidden></span></button>
   `;
+  tabbar.querySelector('#tab-more').onclick = () => openMoreSheet(route);
+  // Badge: a paused routine must not fail silently behind the More tab.
+  api.routines()
+    .then(({ routines }) => {
+      const paused = routines.filter((r) => r.enabled === false).length;
+      const badge = tabbar.querySelector('#more-badge');
+      if (badge && paused > 0) {
+        badge.textContent = paused;
+        badge.hidden = false;
+      }
+    })
+    .catch(() => {});
+}
+
+function openMoreSheet(route) {
+  const boardId = route.boardId ?? boards[0]?.id ?? '';
+  const el = openOverlay(
+    `<div class="sheet more-sheet">
+      <div class="sheet-handle"></div>
+      <button type="button" class="more-row" id="more-routines">${icons.history(18)}<span class="t">Routines</span><span class="meta" id="more-routines-meta"></span></button>
+      <a class="more-row" href="#/board/${esc(boardId)}/archived">${icons.archive(18)}<span class="t">Archive</span><span class="meta">searchable</span></a>
+      <div class="sheet-head"><span>Switch board</span></div>
+      ${boards.map((b) => `<a class="more-row board" href="#/board/${esc(b.id)}"><span class="dot" style="background:${boardDot(boards.indexOf(b))}"></span><span class="t">${esc(b.name)}</span>${route.boardId === b.id ? `<span class="meta">current</span>` : ''}</a>`).join('')}
+    </div>`,
+    { sheet: true }
+  );
+  el.querySelector('#more-routines').onclick = () => {
+    closeOverlay();
+    openRoutinesModal({ boards, boardId: route.boardId ?? null });
+  };
+  api.routines()
+    .then(({ routines }) => {
+      const paused = routines.filter((r) => r.enabled === false).length;
+      const meta = el.querySelector('#more-routines-meta');
+      if (meta) meta.textContent = `${routines.length}${paused ? ` · ${paused} paused` : ''}`;
+    })
+    .catch(() => {});
 }
 
 function renderError(err) {
