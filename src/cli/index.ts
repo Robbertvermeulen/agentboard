@@ -29,7 +29,7 @@ import {
   writeContext,
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
-import { observeSession, runSession } from '../core/runner.js';
+import { observeSession, runSession, sessionStatus } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 
 interface OutputOpts {
@@ -607,13 +607,22 @@ secret
 
 const sessions = program.command('sessions').description('recorded runner sessions (JSONL + index)');
 
-function sessionLine(s: any): string {
+function sessionLine(s: any, liveId: number | null): string {
+  const live = s.ended_at === null && s.id === liveId;
   const dur =
     s.ended_at !== null
       ? `${Math.max(1, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s`
-      : 'running';
+      : live
+        ? 'running'
+        : '—';
   const outcome =
-    s.ended_at === null ? 'running' : s.exit_status === 0 ? 'completed' : `ended early (${s.exit_status ?? 'crash'})`;
+    s.ended_at === null
+      ? live
+        ? 'running'
+        : 'ended early (crash)'
+      : s.exit_status === 0
+        ? 'completed'
+        : `ended early (${s.exit_status ?? 'crash'})`;
   const handed = s.handed_back.length ? `  handed back: ${s.handed_back.map((h: any) => h.id).join(', ')}` : '';
   return `  #${String(s.id).padEnd(4)} ${s.trigger.padEnd(7)} ${s.started_at}  ${dur.padEnd(8)} ${outcome}${
     s.cards.length ? `  [${s.cards.join(', ')}]` : ''
@@ -627,7 +636,10 @@ sessions
   .action(
     run((opts) => {
       const all = listSessions();
-      output(opts, all.length ? all.map(sessionLine).join('\n') : 'No sessions yet', { sessions: all });
+      const liveId = sessionStatus().session_id;
+      output(opts, all.length ? all.map((s) => sessionLine(s, liveId)).join('\n') : 'No sessions yet', {
+        sessions: all,
+      });
     })
   );
 
@@ -638,7 +650,7 @@ sessions
   .action(
     run((opts, nr: string) => {
       const detail = sessionDetail(Number(nr));
-      const lines = [sessionLine(detail.session), ''];
+      const lines = [sessionLine(detail.session, sessionStatus().session_id), ''];
       lines.push(...detail.steps.map((s) => `  [${s.type.padEnd(6)}] ${s.label}`));
       output(opts, lines.join('\n'), detail);
     })

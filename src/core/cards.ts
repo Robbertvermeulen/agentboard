@@ -67,6 +67,7 @@ export interface EnrichedCard extends Card {
   status_since: string;
   blockers: BlockerInfo[];
   wait_check: string | null;
+  open_requests: number;
 }
 
 function assertOneOf<T extends string>(value: string, allowed: readonly T[], what: string): T {
@@ -153,6 +154,42 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
   const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
   const blockerById = new Map(blockerInfoIn(db, blockerIds).map((b) => [b.id, b]));
   const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
+  // Open secret requests (design 3c): same derivation the card view uses —
+  // names asked in the body or an agent comment's `secret_ref:` line count
+  // as open until a secret_stored event newer than the newest ask exists.
+  // Only ops cards still in play can have an intake, so only they get > 0.
+  const SECRET_LINE = /^secret_ref:\s*(.+)$/m;
+  const parseNames = (text: string | null) =>
+    (text?.match(SECRET_LINE)?.[1] ?? '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  const openRequests = new Map<string, number>();
+  for (const card of cards) {
+    if (card.type !== 'ops' || card.status === 'done' || card.status === 'archived') continue;
+    const askedAt = new Map<string, string>();
+    for (const n of parseNames(card.body)) askedAt.set(n, card.created_at);
+    const comments = db
+      .prepare("SELECT body, created_at FROM comment WHERE card_id = ? AND author = 'agent' ORDER BY id")
+      .all(card.id) as { body: string; created_at: string }[];
+    for (const c of comments) for (const n of parseNames(c.body)) askedAt.set(n, c.created_at);
+    if (askedAt.size === 0) continue;
+    const stored = db
+      .prepare("SELECT payload, created_at FROM event WHERE card_id = ? AND kind = 'secret_stored'")
+      .all(card.id) as { payload: string; created_at: string }[];
+    const storedAt = new Map<string, string>();
+    for (const e of stored) {
+      const n = String((JSON.parse(e.payload) as { name?: string }).name ?? '').toLowerCase();
+      const prev = storedAt.get(n);
+      if (!prev || e.created_at > prev) storedAt.set(n, e.created_at);
+    }
+    let open = 0;
+    for (const [n, asked] of askedAt) {
+      const st = storedAt.get(n);
+      if (!st || asked > st) open += 1;
+    }
+    if (open > 0) openRequests.set(card.id, open);
+  }
   return cards.map((card) => {
     const last = lastChange.get(card.id);
     const reason = last ? JSON.parse(last.payload).reason : null;
@@ -162,6 +199,7 @@ function enrichCardsIn(db: Database.Database, cards: Card[]): EnrichedCard[] {
       status_since: last ? last.created_at : card.created_at,
       blockers: card.blocked_by.map((id) => blockerById.get(id)).filter((b): b is BlockerInfo => b !== undefined),
       wait_check: waits.get(card.id) ?? null,
+      open_requests: openRequests.get(card.id) ?? 0,
     };
   });
 }
@@ -627,16 +665,19 @@ export function gateWork(): Card[] {
 // only touch card.updated_at, and comments are not events. Session liveness
 // rides along too (amendement 2026-08-28): a session start/end/crash moves
 // neither an event, comment nor card, so without it a crashed session could
-// leave presence showing "live" forever on an otherwise quiet board. The
-// cursor is opaque to clients; any advance changes the string.
+// leave presence showing "live" forever on an otherwise quiet board. A
+// comment edit is narrower still — it only bumps comment.updated_at, never
+// card.updated_at or a new comment id — so it needs its own component too.
+// The cursor is opaque to clients; any advance changes the string.
 export function changesSince(since?: string, running = false): { cursor: string; changed: boolean } {
   const db = openDb();
   try {
     const e = (db.prepare('SELECT MAX(id) AS m FROM event').get() as { m: number | null }).m ?? 0;
     const c = (db.prepare('SELECT MAX(id) AS m FROM comment').get() as { m: number | null }).m ?? 0;
     const s = (db.prepare('SELECT MAX(id) AS m FROM session').get() as { m: number | null }).m ?? 0;
+    const m = (db.prepare('SELECT MAX(updated_at) AS m FROM comment').get() as { m: string | null }).m ?? '';
     const u = (db.prepare('SELECT MAX(updated_at) AS m FROM card').get() as { m: string | null }).m ?? '';
-    const cursor = `e${e}.c${c}.s${s}.r${running ? 1 : 0}.u${u}`;
+    const cursor = `e${e}.c${c}.s${s}.r${running ? 1 : 0}.m${m}.u${u}`;
     return { cursor, changed: since !== undefined && since !== cursor };
   } finally {
     db.close();
