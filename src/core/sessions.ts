@@ -16,6 +16,7 @@ export interface SessionMeta {
 const sessionsDir = () => path.join(dataDir(), 'sessions');
 export const sessionJsonlPath = (id: number) => path.join(sessionsDir(), `${id}.jsonl`);
 export const sessionStderrPath = (id: number) => path.join(sessionsDir(), `${id}.stderr.log`);
+export const observationPath = (id: number) => path.join(sessionsDir(), `${id}-observation.md`);
 
 export function startSessionRecord(trigger: string): { id: number; jsonl: string; stderr: string } {
   fs.mkdirSync(sessionsDir(), { recursive: true });
@@ -95,6 +96,12 @@ export function secretRedactor(): (text: string) => string {
       }
     }
   }
+  // A secret inside a stream-json transcript appears JSON-escaped; a value
+  // with quotes, backslashes or non-ASCII would otherwise slip past.
+  for (const r of [...replacements]) {
+    const escaped = JSON.stringify(r.value).slice(1, -1);
+    if (escaped !== r.value) replacements.push({ value: escaped, name: r.name });
+  }
   replacements.sort((a, b) => b.value.length - a.value.length); // longest first
   return (text) => {
     let out = text;
@@ -118,11 +125,11 @@ const firstLine = (s: string) => (s.split('\n')[0] ?? '').slice(0, 120);
 
 // stream-json lines -> flat steps. Unparseable lines stay visible as 'raw',
 // so a session captured with a non-JSON command still renders.
-export function parseSessionSteps(jsonlText: string): SessionStep[] {
+export function parseSessionSteps(jsonlText: string, baseN = 0): SessionStep[] {
   const steps: SessionStep[] = [];
   const push = (type: SessionStep['type'], label: string, detail: string) =>
     steps.push({
-      n: steps.length + 1,
+      n: baseN + steps.length + 1,
       type,
       label,
       detail,
@@ -167,6 +174,50 @@ export function parseSessionSteps(jsonlText: string): SessionStep[] {
   return steps;
 }
 
+// Incremental read for the live tail: parse only the complete lines past
+// `offset`, numbering steps from `n`. A trailing line without a newline is
+// still being written (or died mid-write): skip it and do not advance the
+// offset past it — unless the session has ended, in which case that line
+// will never complete and is parsed as its final (possibly raw) step.
+export function sessionStepsSince(
+  id: number,
+  offset = 0,
+  n = 0
+): { steps: SessionStep[]; offset: number; n: number } {
+  const db = openDb();
+  let ended: boolean;
+  try {
+    const row = db.prepare('SELECT ended_at FROM session WHERE id = ?').get(id) as
+      | { ended_at: string | null }
+      | undefined;
+    if (!row) throw new Error(`Session not found: ${id}`);
+    ended = row.ended_at !== null;
+  } finally {
+    db.close();
+  }
+  const file = sessionJsonlPath(id);
+  const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
+  if (size <= offset) return { steps: [], offset, n };
+  const fd = fs.openSync(file, 'r');
+  let chunk: string;
+  try {
+    const buf = Buffer.alloc(size - offset);
+    fs.readSync(fd, buf, 0, buf.length, offset);
+    chunk = buf.toString('utf8');
+  } finally {
+    fs.closeSync(fd);
+  }
+  const cut = chunk.lastIndexOf('\n');
+  const complete = ended ? chunk : cut === -1 ? '' : chunk.slice(0, cut + 1);
+  const redact = secretRedactor();
+  const steps = parseSessionSteps(complete, n).map((s) => ({
+    ...s,
+    label: redact(s.label),
+    detail: redact(s.detail),
+  }));
+  return { steps, offset: offset + Buffer.byteLength(complete, 'utf8'), n: n + steps.length };
+}
+
 function rowToMeta(db: Database.Database, row: any): SessionMeta {
   const cards = (
     db.prepare('SELECT card_id FROM session_card WHERE session_id = ? ORDER BY card_id').all(row.id) as {
@@ -185,19 +236,25 @@ export function listSessions(): SessionMeta[] {
   }
 }
 
-export function sessionDetail(id: number): { session: SessionMeta; steps: SessionStep[] } {
+export function sessionDetail(id: number): {
+  session: SessionMeta;
+  steps: SessionStep[];
+  observation: string | null;
+  tail: { offset: number; n: number };
+} {
   const db = openDb();
+  let session: SessionMeta;
   try {
     const row = db.prepare('SELECT * FROM session WHERE id = ?').get(id);
     if (!row) throw new Error(`Session not found: ${id}`);
-    const file = sessionJsonlPath(id);
-    const raw = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-    const redact = secretRedactor();
-    const steps = parseSessionSteps(raw).map((s) => ({ ...s, label: redact(s.label), detail: redact(s.detail) }));
-    return { session: rowToMeta(db, row), steps };
+    session = rowToMeta(db, row);
   } finally {
     db.close();
   }
+  const { steps, offset, n } = sessionStepsSince(id, 0, 0);
+  const obsFile = observationPath(id);
+  const observation = fs.existsSync(obsFile) ? redactSecrets(fs.readFileSync(obsFile, 'utf8')) : null;
+  return { session, steps, observation, tail: { offset, n } };
 }
 
 // Card-first (design 2g): per session that touched this card, only the
@@ -251,6 +308,7 @@ export function pruneSessions(olderThan: string): { removed: number[] } {
     for (const r of rows) {
       fs.rmSync(sessionJsonlPath(r.id), { force: true });
       fs.rmSync(sessionStderrPath(r.id), { force: true });
+      fs.rmSync(observationPath(r.id), { force: true });
     }
     return { removed: rows.map((r) => r.id) };
   } finally {

@@ -43,6 +43,7 @@ export const api = {
   toggleRoutine: (path, enabled) => req('/api/routines/toggle', json('POST', { path, enabled })),
   sessions: () => req('/api/sessions'),
   session: (id) => req(`/api/sessions/${encodeURIComponent(id)}`),
+  sessionSteps: (id, offset, n) => req(`/api/sessions/${encodeURIComponent(id)}/steps?offset=${offset}&n=${n}`),
   cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
   sessionStatus: () => req('/api/session-status'),
   changes: (since) => req(`/api/changes${since ? `?since=${encodeURIComponent(since)}` : ''}`),

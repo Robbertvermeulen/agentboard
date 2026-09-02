@@ -24,7 +24,7 @@ import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
 import { sessionStatus } from '../core/runner.js';
-import { cardSessions, listSessions, sessionDetail } from '../core/sessions.js';
+import { cardSessions, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
@@ -303,7 +303,24 @@ export function createApp(): Hono {
 
   app.get('/api/sessions', (c) => {
     try {
-      return c.json({ sessions: listSessions() });
+      const status = sessionStatus();
+      const sessions = listSessions().map((s) => ({
+        ...s,
+        live: s.ended_at === null && status.running && status.session_id === s.id,
+        observed: fs.existsSync(observationPath(s.id)),
+      }));
+      return c.json({ sessions });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/sessions/:id/steps', (c) => {
+    try {
+      const id = Number(c.req.param('id'));
+      const r = sessionStepsSince(id, Number(c.req.query('offset') ?? 0), Number(c.req.query('n') ?? 0));
+      const status = sessionStatus();
+      return c.json({ ...r, live: status.running && status.session_id === id });
     } catch (err) {
       return errorResponse(c, err);
     }
@@ -311,7 +328,10 @@ export function createApp(): Hono {
 
   app.get('/api/sessions/:id', (c) => {
     try {
-      return c.json(sessionDetail(Number(c.req.param('id'))));
+      const d = sessionDetail(Number(c.req.param('id')));
+      const status = sessionStatus();
+      const live = d.session.ended_at === null && status.running && status.session_id === d.session.id;
+      return c.json({ ...d, session: { ...d.session, live } });
     } catch (err) {
       return errorResponse(c, err);
     }
