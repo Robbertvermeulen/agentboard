@@ -37,7 +37,7 @@ Chat works for one task. It breaks down when the work is your whole week.
 - **16:00** Three cards in review. You read, approve, done. The timeline shows
   what happened while you were out.
 
-![On your phone: what needs you, nothing else](docs/readme/mobile.png)
+<img src="docs/readme/mobile.png" width="390" alt="On your phone: what needs you, nothing else">
 
 ## How a card moves
 
