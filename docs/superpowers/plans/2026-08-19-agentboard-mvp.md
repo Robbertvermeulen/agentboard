@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node 24 + TypeScript (NodeNext ESM), better-sqlite3 (raw SQL, no ORM), commander, gray-matter, simple-git.
 
-**Spec:** `startprompt-agentboard.md` (repo root) — the plan argues from that spec; read both.
+**Spec:** `startprompt-agentboard.md` (removed from the tree on 2026-09-03, see git history) — the plan argues from that spec; read both.
 
 ## Global Constraints
 
@@ -111,7 +111,7 @@
 
 ### Task 6: End-to-end pass
 
-- [x] Step 1: Fresh scratch `AGENTBOARD_DATA`; run the spec's "first session with Chris" flow: init → ops card "Toegang nodig: site X" → comment with details → ctx write `chris/vakantiewoningen-nl.ssh.md` → move to review → move to done as human.
+- [x] Step 1: Fresh scratch `AGENTBOARD_DATA`; run the spec's "first session with a client" flow: init → ops card "Toegang nodig: site X" → comment with details → ctx write `acme/webshop.ssh.md` → move to review → move to done as human.
 - [x] Step 2: Confirm every command supports `--json` and non-zero exit + stderr on errors.
 - [x] Step 3: Commit any fixes; merge branch to main.
 

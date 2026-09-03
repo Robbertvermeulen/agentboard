@@ -16,3 +16,6 @@ claude.ai/design is the source of truth. The export caps files at 256 KiB, so
 the local canvas is truncated: artboards 1c to 1f are missing. Open the file
 over HTTP, not `file://`, to view it. The images in `../readme/` were rendered
 from this canvas with the demo names replaced.
+
+The colour palette takes inspiration from [Multica](https://github.com/multica-ai/multica).
+Everything else, design and code, is Agentboard's own.

@@ -6,7 +6,7 @@ import { contextDir, openDb, secretsPath } from './db.js';
 import { addEventIn, assertActor } from './cards.js';
 import { assertRoutineFrontmatter } from './routines.js';
 
-// Paths are always relative to context/, e.g. 'chris/vakantiewoningen-nl.md'.
+// Paths are always relative to context/, e.g. 'acme/webshop.md'.
 function resolveContextPath(relPath: string): string {
   const root = contextDir();
   if (!fs.existsSync(root)) {

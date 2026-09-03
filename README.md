@@ -1,6 +1,6 @@
 # Agentboard
 
-![Node 22+](https://img.shields.io/badge/node-22%2B-339933)
+[![Build](https://github.com/Robbertvermeulen/agentboard/actions/workflows/build.yml/badge.svg)](https://github.com/Robbertvermeulen/agentboard/actions/workflows/build.yml) ![Node 22+](https://img.shields.io/badge/node-22%2B-339933) [![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue)](LICENSE)
 
 Agentboard turns an AI agent from something you operate, into someone you
 delegate to. You bring context and decisions, it brings the work, and the

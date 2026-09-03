@@ -10,7 +10,7 @@ review.
 > (`.claude/worktrees/feat-blockers-claiming/docs/design/…`) in plaats van de echte
 > checkout-locatie — deze sessie mag de shared checkout alleen lezen, niet beschrijven.
 > Verplaats/kopieer dit bestand naar
-> `/Users/robbertvermeulen/orca/projects/agentboard/docs/design/design-update-2026-08-25-summary.md`.
+> `docs/design/design-update-2026-08-25-summary.md`.
 
 ## Belangrijk: het gefetchte bestand is afgekapt (256 KiB cap)
 
