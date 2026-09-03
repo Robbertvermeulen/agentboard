@@ -403,7 +403,7 @@ export async function renderCard(root, { boards, cardId }) {
         </div>
         <div class="composer-wrap">
           <div class="composer">
-            <textarea id="comment-input" rows="1" placeholder="${card.status === 'needs_input' ? 'Answer the agent…' : 'Add a comment…'}"></textarea>
+            <textarea id="comment-input" rows="2" placeholder="${card.status === 'needs_input' ? 'Answer the agent…' : 'Add a comment…'}"></textarea>
             <div class="composer-actions">
               ${
                 card.status === 'needs_input'
@@ -615,6 +615,12 @@ export async function renderCard(root, { boards, cardId }) {
   const mChange = root.querySelector('#m-change-status');
   if (mChange) mChange.onclick = () => openStatusMenu(card, rerender);
   const input = root.querySelector('#comment-input');
+  // Grow with the draft: height follows the text instead of a fixed two rows.
+  const grow = () => {
+    input.style.height = 'auto';
+    input.style.height = `${input.scrollHeight}px`;
+  };
+  input.addEventListener('input', grow);
   root.querySelector('#comment-send').onclick = async () => {
     if (!input.value.trim()) return;
     await api.comment(card.id, input.value.trim());
@@ -830,7 +836,10 @@ export async function renderCard(root, { boards, cardId }) {
     if (freshScroller) freshScroller.scrollTop = savedScroll.pane;
     window.scrollTo(0, savedScroll.win);
     const fresh = root.querySelector('#comment-input');
-    if (fresh && saved) fresh.value = saved;
+    if (fresh && saved) {
+      fresh.value = saved;
+      fresh.dispatchEvent(new Event('input'));
+    }
     root.querySelectorAll('.comment-card').forEach((el) => {
       if (!prevIds.has(el.dataset.cid)) el.classList.add('flash');
     });
