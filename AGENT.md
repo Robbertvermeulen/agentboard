@@ -62,7 +62,7 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 8. The card's timeline is your memory between sessions. When you wait on
    something external (a reply, a deploy, a person), log exactly what to
    check and where ("check thread X in gmail-zakelijk for a reply from
-   Chris") — the next session, cron-started or human-started, resumes from
+   the client") — the next session, cron-started or human-started, resumes from
    that line. Always log a wait-state with a check time: `card log <id>
    "check thread X in gmail-zakelijk" --as agent --check-after 2d` — the
    scheduler brings the card back into the gate once the check time passes;

@@ -279,7 +279,7 @@ Multiple connections of the same type can coexist (two business
 mailboxes): each gets its own file in `_global/`, and the client or
 resource file names which one applies.
 
-Wait-states ("mailed Chris, awaiting reply") are logged with
+Wait-states ("mailed the client, awaiting reply") are logged with
 `check_after`, a structured timestamp on the event payload. The gate
 brings the card back when the check time expires, allowing the next
 session (cron or manual) to pick it up — see rule 8 and the Trigger
