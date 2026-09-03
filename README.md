@@ -16,9 +16,9 @@ lots of status changes, fast to query). Context lives in markdown + git
     _global/            above the boards: user.md (profile), shared connections
     freelance/          one dir per board
       _board.md         board profile, overrides _global
-      happyshopper/     one dir per client
+      acme/             one dir per client
         _client.md      client profile, overrides board and _global
-        akudeco.ssh.md
+        webshop.ssh.md
 ```
 
 One data dir = one package, holding any number of boards (one per
@@ -270,7 +270,7 @@ same capture, same crash net — and shows up in `sessions list`.
 
 A ref on a card says *what* (a Trello card, an email, a repo). *How* to
 reach it runs through the card's `context_refs`: resource file (e.g.
-`happyshopper/trello-board.md`) → `connection` file (e.g.
+`acme/trello-board.md`) → `connection` file (e.g.
 `_global/trello.md`) → `secret_ref` → `secrets.env`. New services (Gmail,
 GitHub, ...) become new `kind: connection` files in the same chain — no
 extra structure in `refs` itself.
