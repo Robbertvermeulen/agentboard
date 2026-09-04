@@ -3,7 +3,11 @@
 async function req(path, options) {
   const res = await fetch(path, options);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(data.error ?? `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -53,4 +57,12 @@ export const api = {
   cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
   sessionStatus: () => req('/api/session-status'),
   changes: (since) => req(`/api/changes${since ? `?since=${encodeURIComponent(since)}` : ''}`),
+  auth: {
+    state: () => req('/auth/state'),
+    registerOptions: (token) => req('/auth/register/options', json('POST', { token })),
+    registerVerify: (token, response, name) => req('/auth/register/verify', json('POST', { token, response, name })),
+    loginOptions: () => req('/auth/login/options', json('POST', {})),
+    loginVerify: (response) => req('/auth/login/verify', json('POST', { response })),
+    logout: () => req('/auth/logout', json('POST', {})),
+  },
 };

@@ -98,3 +98,19 @@ LAST=$((${#PIDS[@]} - 1)); kill "${PIDS[$LAST]}"; unset "PIDS[$LAST]"
   grep -q "localhost only" /tmp/ab-serve-off.log || { kill $SP; fail "serve must announce localhost-only"; }
   kill $SP )
 echo "leg 3 ok: http"
+
+# ============================================================================
+# Leg 4: browser — enrol, sign out, one-click login with a virtual authenticator (Task 5)
+# ============================================================================
+export AGENTBOARD_DATA="$(mktemp -d)/abdata"
+$CLI init >/dev/null
+PORT=$(free_port)
+export AGENTBOARD_ORIGIN="http://localhost:$PORT"
+$CLI serve --port "$PORT" >/dev/null 2>&1 & PIDS+=($!)
+wait_port "$PORT"
+ENROL=$($CLI auth enrol --name "Probe phone" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['url'])")
+node docs/superpowers/plans/verify-auth-browser.mjs "$AGENTBOARD_ORIGIN" "$ENROL"
+$CLI auth list | grep -q "Probe phone" || fail "auth list after enrol"
+$CLI auth list --json | python3 -c "import json,sys; c=json.load(sys.stdin)['credentials']; assert c[0]['last_used_at'], 'last_used_at not set by login'"
+echo "leg 4 ok: browser"
+echo "ALL OK"

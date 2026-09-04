@@ -11,12 +11,15 @@ import { renderSessions } from './views/sessions.js';
 import { renderCtx } from './views/ctx.js';
 import { renderArchive } from './views/archive.js';
 import { openRoutinesModal } from './views/routines.js';
+import { renderLogin } from './views/login.js';
+import { renderEnrol } from './views/enrol.js';
 
 const view = document.getElementById('view');
 const sidebar = document.getElementById('sidebar');
 const tabbar = document.getElementById('tabbar');
 
 let boards = [];
+let authState = { auth: false, user: null };
 
 function parseRoute() {
   const hash = location.hash.replace(/^#/, '') || '/';
@@ -28,7 +31,18 @@ function parseRoute() {
   if ((m = hash.match(/^\/card\/([^/]+)$/))) return { name: 'card', cardId: decodeURIComponent(m[1]) };
   if (hash === '/ctx') return { name: 'ctx', path: null };
   if ((m = hash.match(/^\/ctx\/(.+)$/))) return { name: 'ctx', path: decodeURIComponent(m[1]) };
+  if ((m = hash.match(/^\/enrol\/([^/]+)$/))) return { name: 'enrol', token: m[1] };
   return { name: 'all' };
+}
+
+async function signOut() {
+  try {
+    await api.auth.logout();
+  } catch {
+    /* already gone */
+  }
+  location.hash = '#/';
+  location.reload();
 }
 
 function renderSidebar(route, views) {
@@ -64,9 +78,12 @@ function renderSidebar(route, views) {
         </a>`
       )
       .join('')}
+    ${authState.auth ? `<div class="side-sep"></div><button type="button" class="side-item" id="side-signout">${icons.user(16, 'var(--mut)')}<span>Sign out</span></button>` : ''}
   `;
   const rt = sidebar.querySelector('#side-routines');
   if (rt) rt.onclick = () => openRoutinesModal({ boards, boardId: route.boardId ?? null });
+  const so = sidebar.querySelector('#side-signout');
+  if (so) so.onclick = signOut;
 }
 
 function renderTabbar(route) {
@@ -100,6 +117,7 @@ function openMoreSheet(route) {
       <a class="more-row" href="#/board/${esc(boardId)}/archived">${icons.archive(18)}<span class="t">Archive</span><span class="meta">searchable</span></a>
       <div class="sheet-head"><span>Switch board</span></div>
       ${boards.map((b) => `<a class="more-row board" href="#/board/${esc(b.id)}"><span class="dot" style="background:${boardDot(boards.indexOf(b))}"></span><span class="t">${esc(b.name)}</span>${route.boardId === b.id ? `<span class="meta">current</span>` : ''}</a>`).join('')}
+      ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-signout">${icons.user(18)}<span class="t">Sign out</span></button>` : ''}
     </div>`,
     { sheet: true }
   );
@@ -114,6 +132,8 @@ function openMoreSheet(route) {
       if (meta) meta.textContent = `${routines.length}${paused ? ` · ${paused} paused` : ''}`;
     })
     .catch(() => {});
+  const so = el.querySelector('#more-signout');
+  if (so) so.onclick = signOut;
 }
 
 function renderError(err) {
@@ -130,6 +150,14 @@ async function route() {
   stopCardPolling();
   stopSessionPolling();
   const r = parseRoute();
+  if (r.name === 'enrol') {
+    // Enrol has no session yet: no sidebar, no board fetches.
+    sidebar.innerHTML = '';
+    tabbar.innerHTML = '';
+    view.innerHTML = '';
+    await renderEnrol(view, { token: r.token });
+    return;
+  }
   renderTabbar(r);
   try {
     boards = (await api.boards()).boards;
@@ -150,18 +178,31 @@ async function route() {
     const views = await Promise.all(boards.map((b) => api.board(b.id)));
     renderSidebar(r, views);
   } catch (err) {
+    if (err.status === 401) {
+      sidebar.innerHTML = '';
+      tabbar.innerHTML = '';
+      renderLogin(view, { next: location.hash });
+      return;
+    }
     renderError(err);
   }
 }
 
 window.addEventListener('hashchange', route);
-route();
+api.auth
+  .state()
+  .then((s) => {
+    authState = s;
+  })
+  .catch(() => {})
+  .finally(route);
 
 // --- realtime (vision besluit K): one cheap poll drives every view ---
 let cursor = null;
 let ticking = false;
 async function tick() {
   if (document.hidden || ticking) return;
+  if (document.getElementById('login-btn')) return; // login view: nothing to sync
   ticking = true;
   try {
     const res = await api.changes(cursor ?? undefined);

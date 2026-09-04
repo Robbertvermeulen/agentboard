@@ -823,3 +823,9 @@ input, textarea, select { font: inherit; color: var(--ink); }
   .archive-wrap { padding: 12px; }
   .archive-row .r { width: auto; flex: 1; }
 }
+
+/* ---------- auth: login + enrol views ---------- */
+.auth-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+.auth-view .side-logo { margin-bottom: 4px; }
+.auth-view .field { width: 280px; max-width: 100%; text-align: left; }
+.auth-view .mut-sm code { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
