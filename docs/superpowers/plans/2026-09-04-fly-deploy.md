@@ -357,6 +357,6 @@ owner present, from the repo root on `main` after PR 2 merged.
 - [ ] `fly machine list` and `fly volumes list` → exactly one machine and one volume, attached.
 - [ ] `curl -s -o /dev/null -w "%{http_code}\n" https://agentboard-app.fly.dev/api/boards` → `401`.
 - [ ] Migration per `docs/deploy.md` (owner confirms the local runner loop is stopped; it was not running on 2026-09-03).
-- [ ] `fly ssh console -C "agentboard auth enrol --name iPhone"` → owner opens the link on the phone → board renders.
+- [ ] `fly ssh console -u node -C "agentboard auth enrol --name iPhone"` → owner opens the link on the phone → board renders.
 - [ ] Owner moves one card from the phone; within a minute the Agent log page (or `fly ssh console -u node -C "agentboard sessions list"`) shows a new session — the serve-hook runner's own output never reaches `fly logs`.
 - [ ] Record in `docs/deploy.md` anything that differed (gosu availability, volume ownership, prompts from `fly launch`), commit as `docs(deploy): notes from the first deploy`.

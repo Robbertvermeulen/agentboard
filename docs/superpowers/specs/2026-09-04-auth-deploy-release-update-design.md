@@ -302,7 +302,7 @@ Executed together with the owner on first deploy; every command listed:
    `/data` (replacing the empty ones `init` made), restart the machine
    (`fly machine restart`; `start.sh` fixes ownership on boot). Never copy `session.lock`, `sessions/` or
    `work/` (not in the backup anyway).
-6. `fly ssh console -C "agentboard auth enrol --name iPhone"` → open the
+6. `fly ssh console -u node -C "agentboard auth enrol --name iPhone"` → open the
    printed URL on the phone → Face ID → board.
 7. Check `fly logs` for a runner tick and `Agentboard on http://…`.
 8. From now on the local machine only edits the repo, never runs `serve`
