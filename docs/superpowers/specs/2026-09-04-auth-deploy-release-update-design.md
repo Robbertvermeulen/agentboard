@@ -212,8 +212,12 @@ Fresh scratch data dir, `serve` on a free port with
 
 ### Image (`Dockerfile`, `.dockerignore`)
 
-- `FROM node:22-bookworm-slim`. `apt-get install` `git`, `openssh-client`,
-  `ca-certificates`, `curl`. `npm i -g @anthropic-ai/claude-code`.
+- Two stages on `node:22-bookworm-slim`. Build stage: `python3 make g++`
+  (better-sqlite3 compiles its native module when no prebuilt binary
+  matches), `npm ci`, `npm run build`, `npm prune --omit=dev`. Runtime
+  stage: `git`, `openssh-client`, `ca-certificates`, `curl`, `gosu`,
+  `npm i -g @anthropic-ai/claude-code`, and `COPY --from=build` of
+  `node_modules`, `dist`, `web`, `AGENT.md`, `package*.json`.
 - Copy `package*.json`, `npm ci`; copy `src/`, `web/`, `tsconfig.json`,
   `AGENT.md`; `npm run build`; `npm prune --omit=dev`.
 - `/usr/local/bin/agentboard` is a two-line wrapper around
