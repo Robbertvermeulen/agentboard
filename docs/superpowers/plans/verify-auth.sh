@@ -66,3 +66,35 @@ case "$URL" in "http://localhost:4666/#/enrol/"*) ;; *) fail "enrol url shape: $
 $CLI auth list | grep -q "No passkeys yet" || fail "auth list before enrol"
 ( unset AGENTBOARD_ORIGIN; expect_fail $CLI auth enrol --name x )
 echo "leg 2 ok: cli"
+
+# ============================================================================
+# Leg 3: HTTP — 401, Origin check, state, options endpoints, localhost-only (Task 4)
+# ============================================================================
+PORT=$(free_port)
+export AGENTBOARD_ORIGIN="http://localhost:$PORT"
+$CLI serve --port "$PORT" >/dev/null 2>&1 & PIDS+=($!)
+wait_port "$PORT"
+B="http://127.0.0.1:$PORT"
+code() { curl -s -o /dev/null -w "%{http_code}" "$@"; }
+[ "$(code "$B/")" = "200" ] || fail "static shell must be public"
+[ "$(code "$B/api/boards")" = "401" ] || fail "api without session must be 401"
+[ "$(code -X POST -H "Content-Type: application/json" -d '{}' "$B/api/boards")" = "403" ] || fail "mutating request without Origin must be 403"
+[ "$(code -X POST -H "Origin: http://evil.example" -H "Content-Type: application/json" -d '{}' "$B/api/boards")" = "403" ] || fail "wrong Origin must be 403"
+curl -s "$B/auth/state" | grep -q '"auth":true' || fail "auth state on"
+[ "$(code -X POST -H "Origin: $AGENTBOARD_ORIGIN" -H "Content-Type: application/json" -d '{"token":"bogus"}' "$B/auth/register/options")" = "400" ] || fail "bogus enrol token must be 400"
+TOKEN=$($CLI auth enrol --name "Probe laptop" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['url'].split('/enrol/')[1])")
+curl -s -c /tmp/ab-chal.txt -X POST -H "Origin: $AGENTBOARD_ORIGIN" -H "Content-Type: application/json" -d "{\"token\":\"$TOKEN\"}" "$B/auth/register/options" | grep -q '"challenge"' || fail "register options"
+grep -q ab_chal /tmp/ab-chal.txt || fail "challenge cookie not set"
+curl -s -X POST -H "Origin: $AGENTBOARD_ORIGIN" -H "Content-Type: application/json" -d '{}' "$B/auth/login/options" | grep -q '"challenge"' || fail "login options"
+LAST=$((${#PIDS[@]} - 1)); kill "${PIDS[$LAST]}"; unset "PIDS[$LAST]"
+
+# auth off: localhost only, no 401
+( unset AGENTBOARD_ORIGIN AGENTBOARD_SESSION_SECRET
+  P2=$(free_port)
+  $CLI serve --port "$P2" >/tmp/ab-serve-off.log 2>&1 & SP=$!
+  for _ in $(seq 1 60); do curl -sf -o /dev/null "http://127.0.0.1:$P2/api/boards" && break; perl -e 'select(undef,undef,undef,0.1)'; done
+  curl -sf "http://127.0.0.1:$P2/api/boards" | grep -q '"boards"' || { kill $SP; fail "auth off must serve the api on localhost"; }
+  curl -s "http://127.0.0.1:$P2/auth/state" | grep -q '"auth":false' || { kill $SP; fail "auth state off"; }
+  grep -q "localhost only" /tmp/ab-serve-off.log || { kill $SP; fail "serve must announce localhost-only"; }
+  kill $SP )
+echo "leg 3 ok: http"
