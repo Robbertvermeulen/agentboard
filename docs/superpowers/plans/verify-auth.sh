@@ -29,3 +29,31 @@ const names = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table'\").
 for (const t of ['user','credential','auth_session','enrol_token']) if (!names.includes(t)) { console.error('missing table ' + t); process.exit(1); }
 "
 echo "leg 0 ok: auth tables"
+
+# ============================================================================
+# Leg 1: core — owner, enrol token lifecycle, sessions (Task 2)
+# ============================================================================
+export AGENTBOARD_ORIGIN="http://localhost:4666"
+export AGENTBOARD_SESSION_SECRET="probe-secret-probe-secret-probe-secret-1234"
+node --input-type=module -e "
+import { ensureOwner, createEnrolToken, lookupEnrolToken, consumeEnrolToken, createSession, getSession, deleteSession, pruneAuth, registrationOptions, authenticationOptions } from '$ROOT/dist/core/auth.js';
+const u = ensureOwner();
+if (u.name !== 'owner' || ensureOwner().id !== u.id) throw new Error('ensureOwner not idempotent');
+const t = createEnrolToken('iPhone');
+if (!t.token || t.name !== 'iPhone') throw new Error('token shape');
+if (lookupEnrolToken(t.token).name !== 'iPhone') throw new Error('lookup');
+let threw = false; try { lookupEnrolToken('nope'); } catch { threw = true; } if (!threw) throw new Error('bogus token accepted');
+consumeEnrolToken(t.token);
+threw = false; try { lookupEnrolToken(t.token); } catch { threw = true; } if (!threw) throw new Error('used token accepted');
+const s = createSession(u.id, 'probe-agent');
+if (!getSession(s.id)) throw new Error('session missing');
+deleteSession(s.id);
+if (getSession(s.id)) throw new Error('session not deleted');
+const ro = await registrationOptions(u);
+if (ro.rp.id !== 'localhost' || ro.authenticatorSelection.residentKey !== 'required') throw new Error('registration options');
+const ao = await authenticationOptions();
+if (ao.rpId !== 'localhost' || ao.allowCredentials !== undefined) throw new Error('authentication options must be discoverable');
+const p = pruneAuth();
+if (typeof p.tokens !== 'number') throw new Error('prune');
+"
+echo "leg 1 ok: core"
