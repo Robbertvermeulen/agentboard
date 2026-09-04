@@ -212,8 +212,12 @@ Fresh scratch data dir, `serve` on a free port with
 
 ### Image (`Dockerfile`, `.dockerignore`)
 
-- `FROM node:22-bookworm-slim`. `apt-get install` `git`, `openssh-client`,
-  `ca-certificates`, `curl`. `npm i -g @anthropic-ai/claude-code`.
+- Two stages on `node:22-bookworm-slim`. Build stage: `python3 make g++`
+  (better-sqlite3 compiles its native module when no prebuilt binary
+  matches), `npm ci`, `npm run build`, `npm prune --omit=dev`. Runtime
+  stage: `git`, `openssh-client`, `ca-certificates`, `curl`, `gosu`,
+  `npm i -g @anthropic-ai/claude-code`, and `COPY --from=build` of
+  `node_modules`, `dist`, `web`, `AGENT.md`, `package*.json`.
 - Copy `package*.json`, `npm ci`; copy `src/`, `web/`, `tsconfig.json`,
   `AGENT.md`; `npm run build`; `npm prune --omit=dev`.
 - `/usr/local/bin/agentboard` is a two-line wrapper around
@@ -286,11 +290,11 @@ Secrets (never in the file): `ANTHROPIC_API_KEY`,
 
 Executed together with the owner on first deploy; every command listed:
 
-1. `fly launch --no-deploy --copy-config --name agentboard-app --region ams`
-   (creates the app; keeps our fly.toml).
+1. `fly apps create agentboard-app`
+   (creates the app; the region comes from `fly.toml` at deploy).
 2. `fly volumes create agentboard_data --region ams --size 3`.
 3. `fly secrets set ANTHROPIC_API_KEY=… AGENTBOARD_SESSION_SECRET=$(openssl rand -base64 48) FLY_API_TOKEN="$(fly tokens deploy)"`.
-4. `fly deploy` (remote builder; no local Docker needed).
+4. `fly deploy --ha=false` (remote builder; no local Docker needed).
 5. Migration: locally `agentboard backup --out /tmp/ab-migrate` → one
    `tar.gz` containing `<name>/board.db`, `secrets.env`, `artifacts/`,
    `uploads/`, `context/`. Upload with `fly sftp shell` (`put`), then
@@ -298,7 +302,7 @@ Executed together with the owner on first deploy; every command listed:
    `/data` (replacing the empty ones `init` made), restart the machine
    (`fly machine restart`; `start.sh` fixes ownership on boot). Never copy `session.lock`, `sessions/` or
    `work/` (not in the backup anyway).
-6. `fly ssh console -C "agentboard auth enrol --name iPhone"` → open the
+6. `fly ssh console -u node -C "agentboard auth enrol --name iPhone"` → open the
    printed URL on the phone → Face ID → board.
 7. Check `fly logs` for a runner tick and `Agentboard on http://…`.
 8. From now on the local machine only edits the repo, never runs `serve`

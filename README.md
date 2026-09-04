@@ -84,6 +84,7 @@ Scheduler, secrets, backups, other agents: [docs/reference.md](docs/reference.md
 ## Learn more
 
 - [Reference](docs/reference.md): data layout, every command, the runner, backups.
+- [Deploy on Fly](docs/deploy.md): one machine, one volume, phone login.
 - [AGENT.md](AGENT.md): the rules the agent works by.
 - [Design](docs/design/README.md): the Claude Design canvas the UI was built from.
 - [Specs and plans](docs/superpowers): how it was built. Partly in Dutch.

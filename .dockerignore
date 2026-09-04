@@ -1,0 +1,9 @@
+node_modules
+dist
+docs
+.git
+.github
+.playwright-mcp
+.claude
+*.md
+!AGENT.md
