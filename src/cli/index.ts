@@ -31,6 +31,7 @@ import {
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 import { observeSession, runSession, sessionStatus } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
+import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -602,6 +603,44 @@ secret
         process.stdout.write(data);
         if (!data.length || data[data.length - 1] !== 0x0a) process.stdout.write('\n');
       }
+    })
+  );
+
+const auth = program.command('auth').description('passkey login for the web UI (on when AGENTBOARD_ORIGIN is set)');
+
+auth
+  .command('enrol')
+  .description('print a one-time link (15 min) to register a passkey on a device')
+  .requiredOption('--name <label>', 'device label, e.g. iPhone')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const cfg = authConfig();
+      if (!cfg.enabled) {
+        throw new Error('Auth is off: set AGENTBOARD_ORIGIN (and AGENTBOARD_SESSION_SECRET) on the serve process first');
+      }
+      const t = createEnrolToken(opts.name);
+      const url = `${cfg.origin}/#/enrol/${t.token}`;
+      output(
+        opts,
+        `Open this link on the device you want to enrol (valid 15 minutes):\n  ${url}`,
+        { url, expires_at: t.expires_at, name: t.name }
+      );
+    })
+  );
+
+auth
+  .command('list')
+  .description('registered passkeys')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const credentials = listCredentials();
+      const lines = credentials.map(
+        (c) =>
+          `  ${c.name.padEnd(16)} ${(c.device_type ?? '-').padEnd(12)} ${c.backed_up ? 'synced ' : 'device '} created ${c.created_at}  last used ${c.last_used_at ?? 'never'}`
+      );
+      output(opts, lines.length ? lines.join('\n') : 'No passkeys yet', { credentials });
     })
   );
 

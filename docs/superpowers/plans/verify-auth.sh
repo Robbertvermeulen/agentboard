@@ -57,3 +57,12 @@ const p = pruneAuth();
 if (typeof p.tokens !== 'number') throw new Error('prune');
 "
 echo "leg 1 ok: core"
+
+# ============================================================================
+# Leg 2: CLI — auth enrol prints a fragment URL, auth list, off without origin (Task 3)
+# ============================================================================
+URL=$($CLI auth enrol --name "Probe phone" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['url'])")
+case "$URL" in "http://localhost:4666/#/enrol/"*) ;; *) fail "enrol url shape: $URL";; esac
+$CLI auth list | grep -q "No passkeys yet" || fail "auth list before enrol"
+( unset AGENTBOARD_ORIGIN; expect_fail $CLI auth enrol --name x )
+echo "leg 2 ok: cli"
