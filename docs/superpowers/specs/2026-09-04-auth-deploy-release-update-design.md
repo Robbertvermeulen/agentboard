@@ -154,10 +154,12 @@ Middleware, only when auth is on:
 
 ### UI (`web/`)
 
-- `web/js/vendor/simplewebauthn-browser.js`: the ESM bundle of
-  `@simplewebauthn/browser` ^13, installed as a devDependency and copied
-  from `node_modules` by `npm run vendor` (a one-line script), MIT header
-  and version kept in the file. No build step for `web/`, as before.
+- `web/js/vendor/simplewebauthn-browser.js`: the UMD bundle of
+  `@simplewebauthn/browser` ^13 (the package ships no single-file ESM
+  bundle), installed as a devDependency and copied from `node_modules` by
+  `npm run vendor` (a one-line script), MIT header and version kept in the
+  file. `web/index.html` loads it with a classic script tag before `app.js`;
+  the views read `window.SimpleWebAuthnBrowser`. No build step for `web/`.
 - `api.js`: `req()` throws an error with `status = 401` on 401. `app.js`
   catches it in `route()`: remembers the intended hash, renders the login
   view instead of the error view.
