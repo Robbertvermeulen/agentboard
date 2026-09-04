@@ -290,11 +290,11 @@ Secrets (never in the file): `ANTHROPIC_API_KEY`,
 
 Executed together with the owner on first deploy; every command listed:
 
-1. `fly launch --no-deploy --copy-config --name agentboard-app --region ams`
-   (creates the app; keeps our fly.toml).
+1. `fly apps create agentboard-app`
+   (creates the app; the region comes from `fly.toml` at deploy).
 2. `fly volumes create agentboard_data --region ams --size 3`.
 3. `fly secrets set ANTHROPIC_API_KEY=… AGENTBOARD_SESSION_SECRET=$(openssl rand -base64 48) FLY_API_TOKEN="$(fly tokens deploy)"`.
-4. `fly deploy` (remote builder; no local Docker needed).
+4. `fly deploy --ha=false` (remote builder; no local Docker needed).
 5. Migration: locally `agentboard backup --out /tmp/ab-migrate` → one
    `tar.gz` containing `<name>/board.db`, `secrets.env`, `artifacts/`,
    `uploads/`, `context/`. Upload with `fly sftp shell` (`put`), then

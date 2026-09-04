@@ -20,7 +20,7 @@ FROM node:22-bookworm-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git openssh-client ca-certificates curl gosu \
  && rm -rf /var/lib/apt/lists/* \
- && npm install -g @anthropic-ai/claude-code
+ && npm install -g @anthropic-ai/claude-code@2.1.260
 WORKDIR /app
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
@@ -31,7 +31,11 @@ COPY bin ./bin
 RUN chmod +x bin/start.sh bin/run.sh \
  && printf '#!/bin/sh\nexec node /app/dist/cli/index.js "$@"\n' > /usr/local/bin/agentboard \
  && chmod +x /usr/local/bin/agentboard \
+ && git config --system user.name agentboard \
+ && git config --system user.email agentboard@localhost \
  && mkdir -p /data /home/node/.claude \
+ && mkdir -p /home/node/.ssh \
+ && printf 'StrictHostKeyChecking accept-new\n' > /home/node/.ssh/config \
  && chown -R node:node /data /home/node
 
 ENV AGENTBOARD_DATA=/data \

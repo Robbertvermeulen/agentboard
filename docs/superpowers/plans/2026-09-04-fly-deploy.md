@@ -240,35 +240,38 @@ first deploy and the data migration are done once, by hand.
 ## First deploy
 
 ```
-fly launch --no-deploy --copy-config --name agentboard-app --region ams
+fly apps create agentboard-app
 fly volumes create agentboard_data --region ams --size 3
 fly secrets set \
   ANTHROPIC_API_KEY=sk-ant-... \
   AGENTBOARD_SESSION_SECRET="$(openssl rand -base64 48)" \
   FLY_API_TOKEN="$(fly tokens deploy)"
-fly deploy
+fly deploy --ha=false
+fly machine list
+fly volumes list
 fly logs
 ```
+
+`fly machine list` and `fly volumes list` should each show exactly one
+machine and one volume, attached.
 
 `fly logs` should show `Agentboard on https://agentboard-app.fly.dev`
 and, once a minute, `runner: gate: 0 cards, 0 routines`.
 
 `FLY_API_TOKEN` is a deploy token scoped to this app; the in-app update
-uses it to swap the machine's image (see the reference, "Updates").
-
-## Enrol your phone
-
-```
-fly ssh console -C "agentboard auth enrol --name iPhone"
-```
-
-Open the printed link on the phone, confirm with Face ID, and the board
-opens. Repeat with another `--name` for a laptop.
+uses it to swap the machine's image (see the reference, "Updates")
+(lands with the update PR).
 
 ## Migrate an existing data dir
 
-Do this before anyone uses the new board. Locally, with the old
-`AGENTBOARD_DATA`:
+Do this before anyone uses the new board.
+
+Stop the local board first: kill `agentboard serve` and the runner loop
+(`pgrep -fl agentboard` shows both), confirm `~/.agentboard/session.lock`
+is absent, then back up. From here on the old machine must never run
+`serve` or `runner` again — one machine per data dir.
+
+Locally, with the old `AGENTBOARD_DATA`:
 
 ```
 agentboard backup --out /tmp/ab-migrate      # prints <archive>.tar.gz
@@ -289,8 +292,17 @@ The archive holds `board.db` (a consistent `VACUUM INTO` snapshot),
 history. `session.lock`, `sessions/` and `work/` are not in it and must not
 be copied. `start.sh` fixes file ownership on the restart.
 
-From now on the old machine only edits the repo. Never run `serve` or
-`runner` against the old data dir again: one machine per data dir.
+## Enrol your phone
+
+Enrol after the migration — passkeys live in `board.db`, which the
+migration replaces.
+
+```
+fly ssh console -u node -C "agentboard auth enrol --name iPhone"
+```
+
+Open the printed link on the phone, confirm with Face ID, and the board
+opens. Repeat with another `--name` for a laptop.
 
 ## Day two
 
@@ -300,7 +312,8 @@ From now on the old machine only edits the repo. Never run `serve` or
   (`fly ips list`).
 - Logs: `fly logs`. Shell: `fly ssh console`. Restart: `fly apps restart agentboard-app`.
 - Updates: the board tells you when a new release exists; `agentboard update`
-  or the button in the sidebar swaps the machine image.
+  or the button in the sidebar swaps the machine image (lands with the
+  update PR).
 ```
 
 - [ ] **Step 2: README link**
@@ -337,12 +350,13 @@ EOF
 Fly actions cost money and need the owner's account; run these with the
 owner present, from the repo root on `main` after PR 2 merged.
 
-- [ ] `fly launch --no-deploy --copy-config --name agentboard-app --region ams` — answer "no" to every extra service it offers (Postgres, Redis, Sentry).
+- [ ] `fly apps create agentboard-app`
 - [ ] `fly volumes create agentboard_data --region ams --size 3`
 - [ ] `fly secrets set ANTHROPIC_API_KEY=… AGENTBOARD_SESSION_SECRET="$(openssl rand -base64 48)" FLY_API_TOKEN="$(fly tokens deploy)"` — the API key comes from the owner.
-- [ ] `fly deploy` → wait for `Agentboard on https://agentboard-app.fly.dev` in `fly logs`.
+- [ ] `fly deploy --ha=false` → wait for `Agentboard on https://agentboard-app.fly.dev` in `fly logs`.
+- [ ] `fly machine list` and `fly volumes list` → exactly one machine and one volume, attached.
 - [ ] `curl -s -o /dev/null -w "%{http_code}\n" https://agentboard-app.fly.dev/api/boards` → `401`.
 - [ ] Migration per `docs/deploy.md` (owner confirms the local runner loop is stopped; it was not running on 2026-09-03).
 - [ ] `fly ssh console -C "agentboard auth enrol --name iPhone"` → owner opens the link on the phone → board renders.
-- [ ] Owner moves one card from the phone; `fly logs` shows `runner: lock acquired` within seconds (serve-hook) and a session starting with the real `claude -p`.
+- [ ] Owner moves one card from the phone; within a minute the Agent log page (or `fly ssh console -u node -C "agentboard sessions list"`) shows a new session — the serve-hook runner's own output never reaches `fly logs`.
 - [ ] Record in `docs/deploy.md` anything that differed (gosu availability, volume ownership, prompts from `fly launch`), commit as `docs(deploy): notes from the first deploy`.

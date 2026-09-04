@@ -4,6 +4,7 @@
 # stderr (fly logs). If serve dies, the container exits and Fly restarts it.
 set -e
 agentboard init
+rm -f "$AGENTBOARD_DATA/session.lock"   # a fresh boot has no live session; a stale lock would block the runner for up to two hours
 (
   while true; do
     agentboard runner --trigger cron || true

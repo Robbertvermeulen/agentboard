@@ -1,6 +1,7 @@
 # One machine, one volume, never asleep: the runner loop must keep ticking.
 app = "agentboard-app"
 primary_region = "ams"
+swap_size_mb = 512
 
 [build]
   dockerfile = "Dockerfile"
@@ -12,6 +13,7 @@ primary_region = "ams"
   AGENTBOARD_ORIGIN = "https://agentboard-app.fly.dev"
   AGENTBOARD_SESSION_CMD = "claude -p --output-format stream-json --verbose --dangerously-skip-permissions"
   TZ = "Europe/Amsterdam"
+  DISABLE_AUTOUPDATER = "1"
 
 [http_service]
   internal_port = 4666
