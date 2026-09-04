@@ -76,6 +76,33 @@ The web UI also has an Agent log page (sidebar, next to Routines): the
 session list with derived outcomes, and a running session's detail page
 that follows along live via the same realtime channel.
 
+## Auth
+
+The web UI is protected by passkeys (WebAuthn) as soon as `AGENTBOARD_ORIGIN`
+is set on the `serve` process:
+
+```
+AGENTBOARD_ORIGIN=https://board.example.com
+AGENTBOARD_SESSION_SECRET=$(openssl rand -base64 48)
+agentboard serve
+agentboard auth enrol --name iPhone     # prints a one-time link, valid 15 minutes
+agentboard auth list
+```
+
+Open the link on the device you want to sign in from; Face ID, Touch ID or
+the device PIN registers a passkey bound to the origin's hostname. Run
+`auth enrol` again for every extra device. Signing in is one button.
+
+Rules: every `/api` request needs the session cookie (`HttpOnly`, `Secure`
+on https, `SameSite=Lax`, 30 days rolling); every mutating request must
+carry an `Origin` header equal to `AGENTBOARD_ORIGIN`; the static UI shell
+stays public because it carries no data. The agent needs none of this: it
+uses the CLI on the same machine.
+
+Without `AGENTBOARD_ORIGIN` there is no auth, and `serve` binds
+`127.0.0.1` only. Changing the origin's hostname later invalidates every
+passkey; enrol again.
+
 ## Files: uploads, workdir, artifacts, context
 
 Four homes, one decision rule — input from you? → uploads. Needed today?
