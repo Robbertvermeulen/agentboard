@@ -6,12 +6,12 @@ first deploy and the data migration are done once, by hand.
 ## First deploy
 
 ```
-fly apps create agentboard-app
-fly volumes create agentboard_data --region ams --size 3
+fly apps create agentboard-app --org personal
+fly volumes create agentboard_data --region ams --size 3 -a agentboard-app --yes
 fly secrets set \
-  ANTHROPIC_API_KEY=sk-ant-... \
   AGENTBOARD_SESSION_SECRET="$(openssl rand -base64 48)" \
-  FLY_API_TOKEN="$(fly tokens deploy)"
+  FLY_API_TOKEN="$(fly tokens deploy -a agentboard-app)" \
+  -a agentboard-app
 fly deploy --ha=false
 fly machine list
 fly volumes list
@@ -23,6 +23,15 @@ machine and one volume, attached.
 
 `fly logs` should show `Agentboard on https://agentboard-app.fly.dev`
 and, once a minute, `runner: gate: 0 cards, 0 routines`.
+
+Claude Code needs one more secret, set from your own terminal so the value never
+passes through a chat or a log. On a Claude subscription: run `claude setup-token`
+(opens the browser once, prints a long-lived token) and store it as
+`CLAUDE_CODE_OAUTH_TOKEN`. On API billing: store `ANTHROPIC_API_KEY` instead.
+
+```
+fly secrets set CLAUDE_CODE_OAUTH_TOKEN=... -a agentboard-app
+```
 
 `FLY_API_TOKEN` is a deploy token scoped to this app; the in-app update
 uses it to swap the machine's image (see the reference, "Updates")
