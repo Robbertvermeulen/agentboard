@@ -7,7 +7,8 @@
     "agentboard": "dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "vendor": "mkdir -p web/js/vendor && cp node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js web/js/vendor/simplewebauthn-browser.js"
   },
   "license": "FSL-1.1-ALv2",
   "private": true,
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
+    "@simplewebauthn/server": "^13.3.3",
     "better-sqlite3": "^13.0.3",
     "commander": "^15.0.0",
     "croner": "^10.0.1",
@@ -28,8 +30,10 @@
     "simple-git": "^3.36.0"
   },
   "devDependencies": {
+    "@simplewebauthn/browser": "^13.3.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.2.0",
+    "playwright": "^1.62.1",
     "typescript": "^7.0.2"
   }
 }
