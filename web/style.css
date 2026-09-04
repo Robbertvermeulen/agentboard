@@ -740,6 +740,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
     align-items: center; justify-content: space-around; padding: 10px 12px 22px;
     border-top: 1px solid var(--line); background: #fff;
   }
+  #tabbar:empty { display: none; }
   .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; font-size: 11px; color: var(--mut); }
   .tab-item.active { color: var(--ink); font-weight: 600; }
   .tab-item:hover { text-decoration: none; }

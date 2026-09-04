@@ -305,9 +305,10 @@ export function getSession(id: string): AuthSession | null {
 }
 
 // Rolling expiry, written at most once a day so a 2.5 s poller does not
-// turn every tick into a write.
-export function touchSession(session: AuthSession): void {
-  if (Date.now() - new Date(session.last_seen_at).getTime() < TOUCH_MS) return;
+// turn every tick into a write. Returns true when it wrote, so the caller
+// can re-issue the session cookie with a fresh Max-Age.
+export function touchSession(session: AuthSession): boolean {
+  if (Date.now() - new Date(session.last_seen_at).getTime() < TOUCH_MS) return false;
   const db = openDb();
   try {
     db.prepare('UPDATE auth_session SET last_seen_at = ?, expires_at = ? WHERE id = ?').run(
@@ -315,6 +316,7 @@ export function touchSession(session: AuthSession): void {
       plusMs(SESSION_MS),
       session.id
     );
+    return true;
   } finally {
     db.close();
   }

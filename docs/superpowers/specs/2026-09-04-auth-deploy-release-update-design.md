@@ -136,7 +136,11 @@ Routes, all JSON, all return `{ error }` with 4xx on failure:
 Cookies (via `hono/cookie` signed helpers, HMAC with the secret):
 
 - `ab_session`: session id. `HttpOnly`, `Secure` when the origin is https,
-  `SameSite=Lax`, `Path=/`, `Max-Age` 30 days. Rolling via `touchSession`.
+  `SameSite=Lax`, `Path=/`, `Max-Age` 30 days. Rolling: `touchSession`
+  extends `expires_at` at most once a day and, when it does, the
+  middleware re-issues the cookie with a fresh `Max-Age` (a fixed
+  `Max-Age` would make the browser drop the cookie 30 days after login
+  regardless of use).
 - `ab_chal`: `{ purpose: 'register'|'login', challenge, tokenHash? }`,
   `Max-Age` 300, same flags. Cleared after use.
 

@@ -158,7 +158,9 @@ export function createApp(): Hono {
       const id = await getSignedCookie(c, auth.secret, SESSION_COOKIE);
       const session = id ? getSession(id) : null;
       if (!session) return c.json({ error: 'unauthenticated' }, 401);
-      touchSession(session);
+      if (touchSession(session)) {
+        await setSignedCookie(c, SESSION_COOKIE, session.id, auth.secret, cookieOpts(auth, 30 * 24 * 60 * 60));
+      }
       await next();
     });
 

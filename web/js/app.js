@@ -202,7 +202,7 @@ let cursor = null;
 let ticking = false;
 async function tick() {
   if (document.hidden || ticking) return;
-  if (document.getElementById('login-btn')) return; // login view: nothing to sync
+  if (parseRoute().name === 'enrol' || document.getElementById('login-btn')) return; // login/enrol view: nothing to sync
   ticking = true;
   try {
     const res = await api.changes(cursor ?? undefined);

@@ -89,6 +89,12 @@ agentboard auth enrol --name iPhone     # prints a one-time link, valid 15 minut
 agentboard auth list
 ```
 
+Updating an existing install? Run `agentboard init` once (it is idempotent)
+to create the auth tables before starting `serve` with an origin.
+
+WebAuthn needs a secure context: `https://` origins, or `http://localhost`
+for local use. An `http://` origin on a LAN address fails in the browser.
+
 Open the link on the device you want to sign in from; Face ID, Touch ID or
 the device PIN registers a passkey bound to the origin's hostname. Run
 `auth enrol` again for every extra device. Signing in is one button.
