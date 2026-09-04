@@ -42,7 +42,7 @@ npm install --save-dev @simplewebauthn/browser@^13 playwright@^1
 ls node_modules/@simplewebauthn/browser/dist/bundle/
 ```
 
-Expected: the `ls` shows an ESM bundle (`index.js`) next to a UMD one. If the ESM file has another name, use that name in the `vendor` script below.
+Expected: the `ls` shows the UMD bundles (`index.umd.min.js`, `index.es5.umd.min.js`). The package ships no single-file ESM bundle (its `esm/` entry is a multi-file tree), so the UI vendors the UMD build and reads it from the global `window.SimpleWebAuthnBrowser`.
 
 - [ ] **Step 2: Add the `vendor` script**
 
@@ -51,7 +51,7 @@ In `package.json` `scripts`:
 ```json
 "scripts": {
   "build": "tsc",
-  "vendor": "mkdir -p web/js/vendor && cp node_modules/@simplewebauthn/browser/dist/bundle/index.js web/js/vendor/simplewebauthn-browser.js"
+  "vendor": "mkdir -p web/js/vendor && cp node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js web/js/vendor/simplewebauthn-browser.js"
 }
 ```
 
@@ -930,7 +930,7 @@ git commit -m "feat(auth): http — session and origin middlewares, /auth routes
 - Create: `web/js/views/login.js`, `web/js/views/enrol.js`
 - Modify: `web/js/api.js` (status on errors, `auth` group)
 - Modify: `web/js/app.js` (route parsing, 401 → login, enrol route, sign out in sidebar and More-sheet)
-- Modify: `web/style.css` (`.auth-view`)
+- Modify: `web/style.css` (`.auth-view`), `web/index.html` (script tag for the vendored library)
 - Modify: `docs/superpowers/plans/verify-auth.sh` (leg 4, Playwright), Create: `docs/superpowers/plans/verify-auth-browser.mjs`
 
 **Interfaces:**
@@ -941,11 +941,15 @@ git commit -m "feat(auth): http — session and origin middlewares, /auth routes
 
 ```bash
 npm run vendor
-head -c 300 web/js/vendor/simplewebauthn-browser.js
-grep -c "export" web/js/vendor/simplewebauthn-browser.js
+head -c 120 web/js/vendor/simplewebauthn-browser.js
 ```
 
-Expected: the file begins with the MIT header (`/* [@simplewebauthn/browser@13…] */`) and contains `export` statements (ESM). If it has no `export`, the copied file is the UMD build: fix the `vendor` script to point at the ESM bundle and re-run.
+Expected: the file begins with the MIT header (`/* [@simplewebauthn/browser@13.…] */`) followed by the UMD wrapper (`!function(e,t){…}`). It defines the global `window.SimpleWebAuthnBrowser` with `startRegistration` and `startAuthentication`. Load it from `web/index.html` with a classic script tag placed **before** the module script, so the global exists when the views run:
+
+```html
+<script src="./js/vendor/simplewebauthn-browser.js"></script>
+<script type="module" src="./js/app.js"></script>
+```
 
 - [ ] **Step 2: Write the Playwright probe (failing)**
 
@@ -1053,7 +1057,8 @@ Create `web/js/views/login.js`:
 // Login: one button, no username — the authenticator offers its passkeys.
 import { api } from '../api.js';
 import { icons } from '../icons.js';
-import { startAuthentication } from '../vendor/simplewebauthn-browser.js';
+// Vendored UMD build (web/index.html loads it before app.js): no import, a global.
+const { startAuthentication } = window.SimpleWebAuthnBrowser;
 
 export function renderLogin(view, { next }) {
   view.innerHTML = `<div class="auth-view">
@@ -1093,7 +1098,8 @@ Create `web/js/views/enrol.js`:
 import { api } from '../api.js';
 import { icons } from '../icons.js';
 import { esc } from '../util.js';
-import { startRegistration } from '../vendor/simplewebauthn-browser.js';
+// Vendored UMD build (web/index.html loads it before app.js): no import, a global.
+const { startRegistration } = window.SimpleWebAuthnBrowser;
 
 export async function renderEnrol(view, { token }) {
   view.innerHTML = `<div class="auth-view">
@@ -1275,7 +1281,7 @@ Append to `web/style.css`:
 - [ ] **Step 8: Run the probe**
 
 Run: `npm run build && docs/superpowers/plans/verify-auth.sh`
-Expected: `leg 4 ok: browser` and `ALL OK`. If the click on `Register this device` hangs, check the browser console for the vendored module failing to load (`page.on('console')`); the usual cause is the UMD file being copied instead of the ESM one.
+Expected: `leg 4 ok: browser` and `ALL OK`. If the click on `Register this device` throws `Cannot destructure … SimpleWebAuthnBrowser`, the script tag in `web/index.html` is missing or placed after the module script.
 
 - [ ] **Step 9: Manual check on a phone-sized viewport (optional but recommended)**
 
@@ -1284,7 +1290,7 @@ With `serve` running as in leg 4, open the enrol URL in Chrome with the device t
 - [ ] **Step 10: Commit**
 
 ```bash
-git add web/js/vendor/simplewebauthn-browser.js web/js/views/login.js web/js/views/enrol.js web/js/api.js web/js/app.js web/style.css docs/superpowers/plans/verify-auth.sh docs/superpowers/plans/verify-auth-browser.mjs
+git add web/index.html web/js/vendor/simplewebauthn-browser.js web/js/views/login.js web/js/views/enrol.js web/js/api.js web/js/app.js web/style.css docs/superpowers/plans/verify-auth.sh docs/superpowers/plans/verify-auth-browser.mjs
 git add docs/design/verify/auth 2>/dev/null || true
 git commit -m "feat(auth): ui — login and enrol views, sign out, vendored webauthn client"
 ```

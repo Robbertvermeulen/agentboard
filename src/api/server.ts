@@ -5,6 +5,22 @@ import { spawn } from 'node:child_process';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { serve } from '@hono/node-server';
+import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie';
+import {
+  AuthConfig,
+  authConfig,
+  authenticationOptions,
+  consumeEnrolToken,
+  createSession,
+  deleteSession,
+  getSession,
+  lookupEnrolToken,
+  pruneAuth,
+  registrationOptions,
+  touchSession,
+  verifyAuthentication,
+  verifyRegistration,
+} from '../core/auth.js';
 import {
   addComment,
   archivedCards,
@@ -38,6 +54,39 @@ function errorResponse(c: Context, err: unknown) {
   const message = err instanceof Error ? err.message : String(err);
   const status = /not found|no such|unknown board/i.test(message) ? 404 : 400;
   return c.json({ error: message }, status);
+}
+
+// Cookie rules (spec Part 1): HttpOnly always, Secure iff the origin is
+// https, SameSite=Lax, Path=/. ab_session rolls 30 days; ab_chal lives 300 s.
+const SESSION_COOKIE = 'ab_session';
+const CHALLENGE_COOKIE = 'ab_chal';
+
+function cookieOpts(auth: AuthConfig, maxAge: number) {
+  return { path: '/', httpOnly: true, secure: auth.secure, sameSite: 'Lax' as const, maxAge };
+}
+
+interface Challenge {
+  purpose: 'register' | 'login';
+  challenge: string;
+  token?: string;
+}
+
+async function setChallenge(c: Context, auth: AuthConfig, data: Challenge): Promise<void> {
+  await setSignedCookie(c, CHALLENGE_COOKIE, JSON.stringify(data), auth.secret, cookieOpts(auth, 300));
+}
+
+async function takeChallenge(c: Context, auth: AuthConfig, purpose: Challenge['purpose']): Promise<Challenge> {
+  const raw = await getSignedCookie(c, auth.secret, CHALLENGE_COOKIE);
+  deleteCookie(c, CHALLENGE_COOKIE, { path: '/' });
+  if (!raw) throw new Error('Challenge expired — try again');
+  const data = JSON.parse(raw) as Challenge;
+  if (data.purpose !== purpose) throw new Error('Challenge mismatch — try again');
+  return data;
+}
+
+async function startSession(c: Context, auth: AuthConfig, userId: string): Promise<void> {
+  const s = createSession(userId, c.req.header('user-agent') ?? null);
+  await setSignedCookie(c, SESSION_COOKIE, s.id, auth.secret, cookieOpts(auth, 30 * 24 * 60 * 60));
 }
 
 const WEB_TYPES: Record<string, string> = {
@@ -81,6 +130,98 @@ function maybeAutorun(): void {
 
 export function createApp(): Hono {
   const app = new Hono();
+  const auth = authConfig();
+
+  // Public: tells the UI whether to expect a login and whether to show Sign out.
+  app.get('/auth/state', async (c) => {
+    if (!auth.enabled) return c.json({ auth: false });
+    const id = await getSignedCookie(c, auth.secret, SESSION_COOKIE);
+    const session = id ? getSession(id) : null;
+    return c.json({ auth: true, user: session ? { name: 'owner' } : null });
+  });
+
+  if (auth.enabled) {
+    // Origin check on every mutating request replaces CSRF tokens: a
+    // cross-site form or fetch never carries our origin.
+    app.use('*', async (c, next) => {
+      const m = c.req.method;
+      const guarded = c.req.path.startsWith('/api/') || c.req.path.startsWith('/auth/');
+      if (guarded && m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS' && c.req.header('origin') !== auth.origin) {
+        return c.json({ error: 'bad origin' }, 403);
+      }
+      await next();
+    });
+
+    // The static shell stays public (it carries no data); every /api route
+    // needs a live session.
+    app.use('/api/*', async (c, next) => {
+      const id = await getSignedCookie(c, auth.secret, SESSION_COOKIE);
+      const session = id ? getSession(id) : null;
+      if (!session) return c.json({ error: 'unauthenticated' }, 401);
+      if (touchSession(session)) {
+        await setSignedCookie(c, SESSION_COOKIE, session.id, auth.secret, cookieOpts(auth, 30 * 24 * 60 * 60));
+      }
+      await next();
+    });
+
+    app.post('/auth/register/options', async (c) => {
+      try {
+        const body = await c.req.json();
+        const token = String(body.token ?? '');
+        const { user, name } = lookupEnrolToken(token);
+        const options = await registrationOptions(user);
+        await setChallenge(c, auth, { purpose: 'register', challenge: options.challenge, token });
+        return c.json({ options, name });
+      } catch (err) {
+        return errorResponse(c, err);
+      }
+    });
+
+    app.post('/auth/register/verify', async (c) => {
+      try {
+        const body = await c.req.json();
+        const chal = await takeChallenge(c, auth, 'register');
+        const token = String(body.token ?? '');
+        if (chal.token !== token) throw new Error('Enrol token mismatch — open the link again');
+        const { user, name } = lookupEnrolToken(token);
+        const cred = await verifyRegistration(user, body.response, chal.challenge, String(body.name || name));
+        consumeEnrolToken(token);
+        await startSession(c, auth, user.id);
+        return c.json({ ok: true, credential: { id: cred.id, name: cred.name } }, 201);
+      } catch (err) {
+        return errorResponse(c, err);
+      }
+    });
+
+    app.post('/auth/login/options', async (c) => {
+      try {
+        const options = await authenticationOptions();
+        await setChallenge(c, auth, { purpose: 'login', challenge: options.challenge });
+        return c.json({ options });
+      } catch (err) {
+        return errorResponse(c, err);
+      }
+    });
+
+    app.post('/auth/login/verify', async (c) => {
+      try {
+        const body = await c.req.json();
+        const chal = await takeChallenge(c, auth, 'login');
+        const user = await verifyAuthentication(body.response, chal.challenge);
+        await startSession(c, auth, user.id);
+        return c.json({ ok: true });
+      } catch (err) {
+        return errorResponse(c, err);
+      }
+    });
+
+    app.post('/auth/logout', async (c) => {
+      const id = await getSignedCookie(c, auth.secret, SESSION_COOKIE);
+      if (id) deleteSession(id);
+      deleteCookie(c, SESSION_COOKIE, { path: '/' });
+      return c.json({ ok: true });
+    });
+  }
 
   app.get('/api/boards', (c) => {
     try {
@@ -409,6 +550,15 @@ export function createApp(): Hono {
 }
 
 export function startServer(port: number): void {
-  serve({ fetch: createApp().fetch, port });
-  console.log(`Agentboard on http://localhost:${port}`);
+  const auth = authConfig();
+  if (auth.enabled) pruneAuth();
+  // Without an origin there is no auth, so the server must not be reachable
+  // from other hosts: bind the loopback interface only.
+  const hostname = auth.enabled ? '0.0.0.0' : '127.0.0.1';
+  serve({ fetch: createApp().fetch, port, hostname });
+  console.log(
+    auth.enabled
+      ? `Agentboard on ${auth.origin} (port ${port}, passkey auth on)`
+      : `Agentboard on http://localhost:${port} (auth off — listening on localhost only; set AGENTBOARD_ORIGIN to expose it)`
+  );
 }

@@ -77,6 +77,8 @@ Create a card on the board, move it to `ready`, then run one session:
     export AGENTBOARD_SESSION_CMD="claude -p --output-format stream-json --verbose --dangerously-skip-permissions"
     agentboard runner
 
+Without `AGENTBOARD_ORIGIN` the board listens on localhost only, no login needed. Exposing it is in [docs/reference.md](docs/reference.md#auth).
+
 Scheduler, secrets, backups, other agents: [docs/reference.md](docs/reference.md).
 
 ## Learn more

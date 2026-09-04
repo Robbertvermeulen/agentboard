@@ -740,6 +740,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
     align-items: center; justify-content: space-around; padding: 10px 12px 22px;
     border-top: 1px solid var(--line); background: #fff;
   }
+  #tabbar:empty { display: none; }
   .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; font-size: 11px; color: var(--mut); }
   .tab-item.active { color: var(--ink); font-weight: 600; }
   .tab-item:hover { text-decoration: none; }
@@ -823,3 +824,9 @@ input, textarea, select { font: inherit; color: var(--ink); }
   .archive-wrap { padding: 12px; }
   .archive-row .r { width: auto; flex: 1; }
 }
+
+/* ---------- auth: login + enrol views ---------- */
+.auth-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+.auth-view .side-logo { margin-bottom: 4px; }
+.auth-view .field { width: 280px; max-width: 100%; text-align: left; }
+.auth-view .mut-sm code { font-family: 'JetBrains Mono', monospace; font-size: 11px; }

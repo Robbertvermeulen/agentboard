@@ -136,7 +136,11 @@ Routes, all JSON, all return `{ error }` with 4xx on failure:
 Cookies (via `hono/cookie` signed helpers, HMAC with the secret):
 
 - `ab_session`: session id. `HttpOnly`, `Secure` when the origin is https,
-  `SameSite=Lax`, `Path=/`, `Max-Age` 30 days. Rolling via `touchSession`.
+  `SameSite=Lax`, `Path=/`, `Max-Age` 30 days. Rolling: `touchSession`
+  extends `expires_at` at most once a day and, when it does, the
+  middleware re-issues the cookie with a fresh `Max-Age` (a fixed
+  `Max-Age` would make the browser drop the cookie 30 days after login
+  regardless of use).
 - `ab_chal`: `{ purpose: 'register'|'login', challenge, tokenHash? }`,
   `Max-Age` 300, same flags. Cleared after use.
 
@@ -154,10 +158,12 @@ Middleware, only when auth is on:
 
 ### UI (`web/`)
 
-- `web/js/vendor/simplewebauthn-browser.js`: the ESM bundle of
-  `@simplewebauthn/browser` ^13, installed as a devDependency and copied
-  from `node_modules` by `npm run vendor` (a one-line script), MIT header
-  and version kept in the file. No build step for `web/`, as before.
+- `web/js/vendor/simplewebauthn-browser.js`: the UMD bundle of
+  `@simplewebauthn/browser` ^13 (the package ships no single-file ESM
+  bundle), installed as a devDependency and copied from `node_modules` by
+  `npm run vendor` (a one-line script), MIT header and version kept in the
+  file. `web/index.html` loads it with a classic script tag before `app.js`;
+  the views read `window.SimpleWebAuthnBrowser`. No build step for `web/`.
 - `api.js`: `req()` throws an error with `status = 401` on 401. `app.js`
   catches it in `route()`: remembers the intended hash, renders the login
   view instead of the error view.
