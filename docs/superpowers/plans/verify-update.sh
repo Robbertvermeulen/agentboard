@@ -118,3 +118,16 @@ AGENTBOARD_RELEASES_URL="http://127.0.0.1:$SAME_PORT/releases/latest" $CLI serve
 wait_port "$PORT2" "api/boards"
 [ "$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$PORT2/api/update")" = "409" ] || fail "update with nothing newer must be 409"
 echo "leg 3 ok: api + cli"
+
+# ============================================================================
+# Leg 4: UI — sidebar notice, dialog, POST, "Updating…" state (Task 4)
+# ============================================================================
+node docs/superpowers/plans/verify-update-browser.mjs "$B" "99.0.0"
+python3 - "$RECORD" <<'PY'
+import json, sys
+calls = json.load(open(sys.argv[1]))
+posts = [c for c in calls if c['method'] == 'POST' and c['url'].startswith('/v1/apps/')]
+assert len(posts) >= 2, 'the UI click must reach the stub as a second POST'
+PY
+echo "leg 4 ok: ui"
+echo "ALL OK"

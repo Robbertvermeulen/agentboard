@@ -57,6 +57,8 @@ export const api = {
   cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
   sessionStatus: () => req('/api/session-status'),
   changes: (since) => req(`/api/changes${since ? `?since=${encodeURIComponent(since)}` : ''}`),
+  version: () => req('/api/version'),
+  update: () => req('/api/update', json('POST', {})),
   auth: {
     state: () => req('/auth/state'),
     registerOptions: (token) => req('/auth/register/options', json('POST', { token })),
