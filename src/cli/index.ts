@@ -32,6 +32,7 @@ import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 import { observeSession, runSession, sessionStatus } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
+import { performUpdate, versionInfo } from '../core/update.js';
 
 interface OutputOpts {
   json?: boolean;
@@ -306,6 +307,49 @@ program
       const result = createBackup(opts.out);
       const mb = (result.bytes / (1024 * 1024)).toFixed(1);
       output(opts, `Backup written to ${result.archive} (${mb} MB)`, result);
+    })
+  );
+
+program
+  .command('version')
+  .description('running version, newest release, and how this install updates')
+  .option('--json', 'JSON output')
+  .action(
+    run(async (opts) => {
+      const info = await versionInfo({ fresh: true });
+      const latest = info.latest ? `${info.latest.version}${info.updateAvailable ? ' (update available)' : ''}` : 'unknown (offline?)';
+      output(opts, `agentboard ${info.version}  latest ${latest}  strategy ${info.strategy}`, info);
+    })
+  );
+
+program
+  .command('update')
+  .description('pull the newest release (fly: swap the machine image; git: checkout + build; image: print the pull line)')
+  .option('--check', 'only report whether an update is available')
+  .option('--json', 'JSON output')
+  .action(
+    run(async (opts) => {
+      const info = await versionInfo({ fresh: true });
+      if (!info.latest) {
+        output(opts, 'Could not reach GitHub to check for a release — try again later', { ...info, updated: false });
+        return;
+      }
+      if (!info.updateAvailable) {
+        output(opts, `Already on the newest release (${info.version})`, { ...info, updated: false });
+        return;
+      }
+      if (opts.check) {
+        output(opts, `Update available: ${info.version} -> ${info.latest.version}  ${info.latest.url}`, info);
+        return;
+      }
+      const result = await performUpdate(info.latest.version);
+      const text =
+        result.mode === 'fly'
+          ? `Machine is restarting on ${result.image} — back in about a minute`
+          : result.mode === 'git'
+            ? `Installed ${result.version}. Restart 'agentboard serve' to finish`
+            : `This install updates by pulling the image:\n  ${result.command}`;
+      output(opts, text, result);
     })
   );
 

@@ -41,6 +41,7 @@ import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeCo
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
 import { sessionStatus } from '../core/runner.js';
 import { cardSessions, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
+import { performUpdate, versionInfo } from '../core/update.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
 const ACTOR = 'human';
@@ -491,6 +492,29 @@ export function createApp(): Hono {
       return c.json(sessionStatus());
     } catch (err) {
       return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/version', async (c) => {
+    try {
+      return c.json(await versionInfo());
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // Pull the newest release. 409 when there is nothing newer, when an agent
+  // session runs (fly) or when the checkout is dirty (git).
+  app.post('/api/update', async (c) => {
+    try {
+      const info = await versionInfo({ fresh: true });
+      if (!info.latest) return c.json({ error: 'Could not reach GitHub to check for a release — try again later' }, 409);
+      if (!info.updateAvailable) return c.json({ error: 'Already on the newest release' }, 409);
+      return c.json(await performUpdate(info.latest.version));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`update: ${message}`);
+      return c.json({ error: message }, 409);
     }
   });
 

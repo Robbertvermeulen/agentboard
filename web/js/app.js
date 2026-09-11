@@ -13,6 +13,7 @@ import { renderArchive } from './views/archive.js';
 import { openRoutinesModal } from './views/routines.js';
 import { renderLogin } from './views/login.js';
 import { renderEnrol } from './views/enrol.js';
+import { openUpdateDialog } from './views/update.js';
 
 const view = document.getElementById('view');
 const sidebar = document.getElementById('sidebar');
@@ -20,6 +21,29 @@ const tabbar = document.getElementById('tabbar');
 
 let boards = [];
 let authState = { auth: false, user: null };
+
+let versionState = null; // { version, latest, strategy, updateAvailable }
+
+function versionLabel(id) {
+  if (!versionState) return `<span id="${id}" class="side-foot"></span>`;
+  const v = versionState.version;
+  return versionState.updateAvailable
+    ? `<span id="${id}" class="side-foot">v${esc(v)} · <button type="button" class="link">${esc(versionState.latest.version)} available</button></span>`
+    : `<span id="${id}" class="side-foot">v${esc(v)}</span>`;
+}
+
+function wireVersion(root, id) {
+  const btn = root.querySelector(`#${id} button`);
+  if (btn) btn.onclick = () => openUpdateDialog(versionState);
+}
+
+async function refreshVersion() {
+  try {
+    versionState = await api.version();
+  } catch {
+    versionState = null;
+  }
+}
 
 function parseRoute() {
   const hash = location.hash.replace(/^#/, '') || '/';
@@ -79,11 +103,13 @@ function renderSidebar(route, views) {
       )
       .join('')}
     ${authState.auth ? `<div class="side-sep"></div><button type="button" class="side-item" id="side-signout">${icons.user(16, 'var(--mut)')}<span>Sign out</span></button>` : ''}
+    ${versionLabel('side-version')}
   `;
   const rt = sidebar.querySelector('#side-routines');
   if (rt) rt.onclick = () => openRoutinesModal({ boards, boardId: route.boardId ?? null });
   const so = sidebar.querySelector('#side-signout');
   if (so) so.onclick = signOut;
+  wireVersion(sidebar, 'side-version');
 }
 
 function renderTabbar(route) {
@@ -118,6 +144,7 @@ function openMoreSheet(route) {
       <div class="sheet-head"><span>Switch board</span></div>
       ${boards.map((b) => `<a class="more-row board" href="#/board/${esc(b.id)}"><span class="dot" style="background:${boardDot(boards.indexOf(b))}"></span><span class="t">${esc(b.name)}</span>${route.boardId === b.id ? `<span class="meta">current</span>` : ''}</a>`).join('')}
       ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-signout">${icons.user(18)}<span class="t">Sign out</span></button>` : ''}
+      <div class="sheet-head"><span>About</span></div><div class="more-row">${versionLabel('more-version')}</div>
     </div>`,
     { sheet: true }
   );
@@ -134,6 +161,7 @@ function openMoreSheet(route) {
     .catch(() => {});
   const so = el.querySelector('#more-signout');
   if (so) so.onclick = signOut;
+  wireVersion(el, 'more-version');
 }
 
 function renderError(err) {
@@ -189,13 +217,18 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
-api.auth
-  .state()
-  .then((s) => {
-    authState = s;
-  })
-  .catch(() => {})
-  .finally(route);
+Promise.all([
+  api.auth ? api.auth.state().then((s) => { authState = s; }).catch(() => {}) : Promise.resolve(),
+  refreshVersion(),
+]).finally(route);
+setInterval(async () => {
+  await refreshVersion();
+  const el = document.getElementById('side-version');
+  if (el) {
+    el.outerHTML = versionLabel('side-version');
+    wireVersion(sidebar, 'side-version');
+  }
+}, 60 * 60 * 1000);
 
 // --- realtime (vision besluit K): one cheap poll drives every view ---
 let cursor = null;
