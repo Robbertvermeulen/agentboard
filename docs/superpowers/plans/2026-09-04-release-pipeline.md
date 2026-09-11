@@ -59,6 +59,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -95,7 +98,7 @@ In `README.md` line 3 replace both occurrences of `workflows/build.yml` with `wo
 
 ```bash
 perl -pi -e 's#workflows/build\.yml#workflows/ci.yml#g' README.md
-grep -c 'workflows/ci.yml' README.md
+grep -o 'workflows/ci.yml' README.md | wc -l
 ```
 
 Expected: `2`.
@@ -183,12 +186,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - id: semrel
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v6
         with:
+          semantic_version: 25
           extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
+            @semantic-release/changelog@7.0.0
+            @semantic-release/git@11.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -210,6 +215,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          provenance: false
           push: true
           tags: |
             ghcr.io/robbertvermeulen/agentboard:${{ needs.release.outputs.version }}
@@ -290,10 +296,11 @@ Expected: the Release run succeeded and `gh release list` is still empty (a `ci:
 ```bash
 gh release list --limit 1                       # v0.2.0
 git pull --ff-only && head -5 CHANGELOG.md      # 0.2.0 section
+gh auth refresh -h github.com -s read:packages   # once; the packages API needs this scope
 gh api /users/Robbertvermeulen/packages/container/agentboard/versions --jq '.[0].metadata.container.tags'
 ```
 
-Expected: `v0.2.0`, a changelog, tags `["0.2.0","latest"]`.
+Expected: `v0.2.0`, a changelog, tags `["0.2.0","latest"]` (order may come back as `["latest","0.2.0"]`).
 
 - [ ] **Step 4: Make the GHCR package public (once)**
 
@@ -304,3 +311,5 @@ docker manifest inspect ghcr.io/robbertvermeulen/agentboard:latest >/dev/null &&
 ```
 
 Expected: `public pull ok` (or, without Docker, `curl -s https://ghcr.io/v2/robbertvermeulen/agentboard/tags/list` returns a token challenge rather than 404). Note the outcome in `docs/deploy.md` under "Day two".
+
+- [ ] **Recovery**: If only the `image` job fails: `gh run rerun <run-id> --failed`. If the `release` job fails after the tag was pushed: create the release by hand with `gh release create v<version> --notes-from-tag` and rerun the image job by re-triggering the workflow (add `workflow_dispatch` temporarily).

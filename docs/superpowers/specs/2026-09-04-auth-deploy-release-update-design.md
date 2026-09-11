@@ -362,8 +362,9 @@ release`, permissions `contents: write`, `issues: write`, `pull-requests:
 write`, `packages: write`:
 
 - job `release`: checkout (`fetch-depth: 0`, `persist-credentials:
-  false`), Node 22, `npm ci`, `cycjimmy/semantic-release-action@v4` with
-  `extra_plugins: @semantic-release/changelog @semantic-release/git` and
+  false`), Node 22, `npm ci`, `npm run build`, `cycjimmy/semantic-release-action@v6`
+  pinned with `semantic_version: 25` and `extra_plugins:
+  @semantic-release/changelog@7.0.0 @semantic-release/git@11.0.1` and
   `GITHUB_TOKEN`. Outputs `new_release_published`, `new_release_version`.
 - job `image`, `needs: release`, `if: new_release_published == 'true'`:
   checkout `v${version}`, `docker/login-action` to GHCR with
