@@ -95,3 +95,26 @@ const r = await performUpdate('99.0.0');
 if (r.mode !== 'image' || !r.command.includes('docker pull ghcr.io/robbertvermeulen/agentboard:99.0.0')) throw new Error('image result ' + JSON.stringify(r));
 " )
 echo "leg 2 ok: performUpdate"
+
+# ============================================================================
+# Leg 3: API + CLI (Task 3) — auth off (no origin), fly env set, stub as remote
+# ============================================================================
+$CLI version | grep -q "$PKG_VERSION" || fail "cli version"
+$CLI version --json | python3 -c "import json,sys; i=json.load(sys.stdin); assert i['updateAvailable'] and i['latest']['version']=='99.0.0' and i['strategy']=='fly', i"
+$CLI update --check | grep -q "99.0.0" || fail "update --check"
+$CLI update --json | python3 -c "import json,sys; r=json.load(sys.stdin); assert r['mode']=='fly' and r['image'].endswith(':99.0.0'), r"
+
+PORT=$(free_port)
+$CLI serve --port "$PORT" >/dev/null 2>&1 & PIDS+=($!)
+wait_port "$PORT" "api/boards"
+B="http://127.0.0.1:$PORT"
+curl -sf "$B/api/version" | python3 -c "import json,sys; i=json.load(sys.stdin); assert i['version']=='$PKG_VERSION' and i['updateAvailable'], i"
+curl -s -X POST "$B/api/update" | python3 -c "import json,sys; r=json.load(sys.stdin); assert r['mode']=='fly', r"
+# nothing newer → 409: a second stub that reports the running version, and a second serve pointed at it
+SAME_PORT=$(free_port); node docs/superpowers/plans/verify-update-stub.mjs "$SAME_PORT" "$PKG_VERSION" "$(mktemp)" & PIDS+=($!)
+wait_port "$SAME_PORT" "releases/latest"
+PORT2=$(free_port)
+AGENTBOARD_RELEASES_URL="http://127.0.0.1:$SAME_PORT/releases/latest" $CLI serve --port "$PORT2" >/dev/null 2>&1 & PIDS+=($!)
+wait_port "$PORT2" "api/boards"
+[ "$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$PORT2/api/update")" = "409" ] || fail "update with nothing newer must be 409"
+echo "leg 3 ok: api + cli"
