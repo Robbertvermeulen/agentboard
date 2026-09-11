@@ -28,12 +28,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - id: semrel
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v6
         with:
+          semantic_version: 25
           extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
+            @semantic-release/changelog@7.0.0
+            @semantic-release/git@11.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -55,6 +57,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          provenance: false
           push: true
           tags: |
             ghcr.io/robbertvermeulen/agentboard:${{ needs.release.outputs.version }}
