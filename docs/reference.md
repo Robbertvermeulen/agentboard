@@ -153,6 +153,33 @@ are deliberately excluded — they're working logs, not source data.
 `sessions prune --older-than 30d|12h|45m` is the cleanup channel for
 them.
 
+## Updates
+
+Releases never deploy. A running Agentboard checks GitHub's newest release
+once an hour and shows it in the sidebar and the mobile More-sheet.
+
+```
+agentboard version           # running version, newest release, strategy
+agentboard update --check
+agentboard update
+```
+
+How an install updates is derived from its environment:
+
+- **fly** — `FLY_APP_NAME`, `FLY_MACHINE_ID` and `FLY_API_TOKEN` (a deploy
+  token, stored as a Fly secret) are set. The update reads the machine's
+  config through the internal Machines API, swaps `image` for
+  `ghcr.io/robbertvermeulen/agentboard:<version>` and sends it back; Fly
+  reboots the machine on the new image, the volume persists. Refused while
+  an agent session is running.
+- **git** — the app root is a git checkout: fetch tags, check out
+  `v<version>`, `npm ci`, `npm run build`; then restart `agentboard serve`.
+  Refused on a dirty working tree.
+- **image** — anything else: the notice shows the `docker pull` line.
+
+`AGENTBOARD_RELEASES_URL` overrides the GitHub endpoint (probes);
+`FLY_API_HOSTNAME` overrides `_api.internal:4280`.
+
 ## Routines
 
 Recurring work is a context file (`kind: routine`) under a board dir:
