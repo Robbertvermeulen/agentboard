@@ -104,6 +104,18 @@ function workDir(): string {
   return dir;
 }
 
+// The session gets the environment minus the secrets only the server
+// process needs: the Fly deploy token (it can replace this machine) and the
+// cookie-signing secret. A headless session that runs repo code with
+// --dangerously-skip-permissions must not be able to read either.
+const SESSION_ENV_STRIP = ['FLY_API_TOKEN', 'AGENTBOARD_SESSION_SECRET'];
+
+function sessionEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of SESSION_ENV_STRIP) delete env[key];
+  return env;
+}
+
 function agentMdPath(): string {
   return (
     process.env.AGENTBOARD_AGENT_MD ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../AGENT.md')
@@ -223,6 +235,7 @@ export function runSession(
         status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(due.routines)], {
           stdio: ['ignore', out, err],
           cwd: workDir(),
+          env: sessionEnv(),
         }).status;
       } finally {
         fs.closeSync(out);
