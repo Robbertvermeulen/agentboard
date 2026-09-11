@@ -508,10 +508,12 @@ export function createApp(): Hono {
   app.post('/api/update', async (c) => {
     try {
       const info = await versionInfo({ fresh: true });
-      if (!info.updateAvailable || !info.latest) return c.json({ error: 'Already on the newest release' }, 409);
+      if (!info.latest) return c.json({ error: 'Could not reach GitHub to check for a release — try again later' }, 409);
+      if (!info.updateAvailable) return c.json({ error: 'Already on the newest release' }, 409);
       return c.json(await performUpdate(info.latest.version));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error(`update: ${message}`);
       return c.json({ error: message }, 409);
     }
   });

@@ -109,7 +109,7 @@ export async function performUpdate(version: string): Promise<UpdateResult> {
       method: 'POST',
       headers,
       body: JSON.stringify({ config: { ...machine.config, image } }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(60_000),
     });
     if (!upd.ok) throw new Error(`Fly API: update failed (${upd.status}) ${await upd.text()}`);
     return { mode: 'fly', restarting: true, image };

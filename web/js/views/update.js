@@ -38,7 +38,7 @@ export function openUpdateDialog(info) {
     err.hidden = false;
     if (ok) ok.disabled = false;
   };
-  const awaitRestart = () => {
+  const awaitRestart = (target) => {
     sub.textContent = 'Updating… the board restarts in a minute.';
     if (ok) ok.remove();
     cancel.textContent = 'Close';
@@ -46,9 +46,9 @@ export function openUpdateDialog(info) {
     timer = setInterval(async () => {
       try {
         const i = await api.version();
-        if (i.version === v) {
+        if (i.version === target) {
           clearInterval(timer);
-          sub.textContent = `Updated to ${v}.`;
+          sub.textContent = `Updated to ${target}.`;
           setTimeout(() => location.reload(), 1200);
           return;
         }
@@ -67,16 +67,19 @@ export function openUpdateDialog(info) {
       err.hidden = true;
       try {
         const r = await api.update();
-        if (r.mode === 'fly') awaitRestart();
-        else if (r.mode === 'git') {
+        if (r.mode === 'fly') {
+          const target = r.image.split(':').pop() || v;
+          awaitRestart(target);
+        } else if (r.mode === 'git') {
           sub.textContent = `Installed ${v}. Restart agentboard serve to finish.`;
           ok.remove();
           cancel.textContent = 'Close';
         } else sub.textContent = r.command;
       } catch (e) {
-        // The fly machine may reboot before the response lands: a network
-        // error right after the click means it is already on its way.
-        if (info.strategy === 'fly' && /fetch|network/i.test(e.message)) awaitRestart();
+        // The machine reboots to apply the update, so the reply often never
+        // arrives: a network error, a proxy 502/503 or a timeout all mean it
+        // is on its way. Only a definite 4xx is a refusal.
+        if (info.strategy === 'fly' && !(e.status >= 400 && e.status < 500)) awaitRestart(v);
         else showError(e.message);
       }
     };

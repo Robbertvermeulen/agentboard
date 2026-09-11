@@ -330,7 +330,11 @@ program
   .action(
     run(async (opts) => {
       const info = await versionInfo({ fresh: true });
-      if (!info.updateAvailable || !info.latest) {
+      if (!info.latest) {
+        output(opts, 'Could not reach GitHub to check for a release — try again later', { ...info, updated: false });
+        return;
+      }
+      if (!info.updateAvailable) {
         output(opts, `Already on the newest release (${info.version})`, { ...info, updated: false });
         return;
       }

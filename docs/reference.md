@@ -171,14 +171,25 @@ How an install updates is derived from its environment:
   config through the internal Machines API, swaps `image` for
   `ghcr.io/robbertvermeulen/agentboard:<version>` and sends it back; Fly
   reboots the machine on the new image, the volume persists. Refused while
-  an agent session is running.
+  an agent session is running. The image must be pullable without
+  credentials: the GHCR package `ghcr.io/robbertvermeulen/agentboard` is
+  public.
 - **git** — the app root is a git checkout: fetch tags, check out
   `v<version>`, `npm ci`, `npm run build`; then restart `agentboard serve`.
-  Refused on a dirty working tree.
+  Refused on a dirty working tree. If `npm ci` or the build fails after
+  the checkout, the tree is left on the tag: `git checkout main && npm ci
+  && npm run build` restores it.
 - **image** — anything else: the notice shows the `docker pull` line.
 
 `AGENTBOARD_RELEASES_URL` overrides the GitHub endpoint (probes);
 `FLY_API_HOSTNAME` overrides `_api.internal:4280`.
+
+The probe (`docs/superpowers/plans/verify-update.sh`) proves the request
+shape against a stub of the Machines API, not Fly's behaviour — the first
+real update on a machine is verified by hand (see docs/deploy.md).
+Running `agentboard update` over `fly ssh console` works, but the ssh
+session dies with the machine, so the confirmation line may never print —
+watch `fly logs` instead.
 
 ## Routines
 
