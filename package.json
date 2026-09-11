@@ -1,6 +1,6 @@
 {
   "name": "agentboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lean CLI for an agent-driven Kanban board. Cards in SQLite, context in markdown + git.",
   "type": "module",
   "bin": {
