@@ -167,7 +167,11 @@ function notify(handbacks: { id: string; to: string }[]): void {
     .join(', ')}`;
   const parts = cmd.split(/\s+/);
   try {
-    const result = spawnSync(parts[0], [...parts.slice(1), summary], { stdio: 'ignore', timeout: 30_000 });
+    const result = spawnSync(parts[0], [...parts.slice(1), summary], {
+      stdio: 'ignore',
+      timeout: 30_000,
+      env: sessionEnv(), // the notify script needs neither server secret either
+    });
     // spawnSync does not throw for the common failures (missing binary, non-zero
     // exit) — it reports them on the result instead, so they must be checked
     // explicitly or a failing notify silently vanishes.
