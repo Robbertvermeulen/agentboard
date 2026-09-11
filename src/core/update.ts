@@ -83,3 +83,48 @@ export async function versionInfo(opts?: { fresh?: boolean }): Promise<VersionIn
     updateAvailable: latest !== null && compareVersions(version, latest.version) < 0,
   };
 }
+
+export type UpdateResult =
+  | { mode: 'fly'; restarting: true; image: string }
+  | { mode: 'git'; restartRequired: true; version: string }
+  | { mode: 'image'; command: string };
+
+export async function performUpdate(version: string): Promise<UpdateResult> {
+  const mode = strategy();
+
+  if (mode === 'fly') {
+    // The machine reboots on the new image; a running agent session would
+    // die mid-task. Refuse and let the caller retry after it ends.
+    if (sessionStatus().running) throw new Error('An agent session is running — try again when it has finished');
+    const base = `http://${process.env.FLY_API_HOSTNAME ?? '_api.internal:4280'}`;
+    const url = `${base}/v1/apps/${process.env.FLY_APP_NAME}/machines/${process.env.FLY_MACHINE_ID}`;
+    const headers = { Authorization: `Bearer ${process.env.FLY_API_TOKEN}`, 'Content-Type': 'application/json' };
+    const cur = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
+    if (!cur.ok) throw new Error(`Fly API: reading the machine failed (${cur.status})`);
+    const machine = (await cur.json()) as { config: Record<string, unknown> };
+    const image = `${IMAGE}:${version}`;
+    // Partial updates are not supported: send the whole config back with
+    // only the image changed.
+    const upd = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ config: { ...machine.config, image } }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!upd.ok) throw new Error(`Fly API: update failed (${upd.status}) ${await upd.text()}`);
+    return { mode: 'fly', restarting: true, image };
+  }
+
+  if (mode === 'git') {
+    const root = appRoot();
+    const git = (...args: string[]): string => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+    if (git('status', '--porcelain').trim()) throw new Error('Working tree has local changes — commit or stash them first');
+    git('fetch', '--tags', '--quiet');
+    git('checkout', '--quiet', `v${version}`);
+    execFileSync('npm', ['ci', '--silent'], { cwd: root, stdio: 'inherit' });
+    execFileSync('npm', ['run', 'build', '--silent'], { cwd: root, stdio: 'inherit' });
+    return { mode: 'git', restartRequired: true, version };
+  }
+
+  return { mode: 'image', command: `docker pull ${IMAGE}:${version}` };
+}

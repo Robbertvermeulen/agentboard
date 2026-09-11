@@ -44,3 +44,54 @@ process.env.AGENTBOARD_RELEASES_URL = 'http://127.0.0.1:1/nope';
 if ((await latestRelease({ fresh: true })) !== null) throw new Error('failure must yield null');
 "
 echo "leg 1 ok: core"
+
+# ============================================================================
+# Leg 2: performUpdate — fly path against the stub, refusals, image path (Task 2)
+# ============================================================================
+export FLY_APP_NAME=probe-app FLY_MACHINE_ID=m1 FLY_API_TOKEN=probe-token FLY_API_HOSTNAME="127.0.0.1:$STUB_PORT"
+node --input-type=module -e "
+import { performUpdate } from '$ROOT/dist/core/update.js';
+const r = await performUpdate('99.0.0');
+if (r.mode !== 'fly' || r.image !== 'ghcr.io/robbertvermeulen/agentboard:99.0.0') throw new Error('fly result ' + JSON.stringify(r));
+"
+python3 - "$RECORD" <<'PY'
+import json, sys
+calls = json.load(open(sys.argv[1]))
+fly = [c for c in calls if c['url'].startswith('/v1/apps/probe-app/machines/m1')]
+assert [c['method'] for c in fly] == ['GET', 'POST'], fly
+assert all(c['auth'] == 'Bearer probe-token' for c in fly), 'auth header'
+body = json.loads(fly[1]['body'])
+assert body['config']['image'] == 'ghcr.io/robbertvermeulen/agentboard:99.0.0', body
+assert body['config']['env'] == {'TZ': 'Europe/Amsterdam'}, 'full config must be sent back, not just the image'
+PY
+# refuse while a session runs: a live lock owned by this host + an open session row
+# the lock must name a live process: the stub server's pid (this shell's python exits at once)
+node -e "
+const fs = require('fs'), os = require('os'), path = require('path');
+fs.writeFileSync(path.join(process.env.AGENTBOARD_DATA, 'session.lock'), JSON.stringify({ pid: Number(process.argv[1]), hostname: os.hostname(), started_at: new Date().toISOString() }));
+" "${PIDS[0]}"
+node -e "
+const Database = require('better-sqlite3');
+const db = new Database(process.env.AGENTBOARD_DATA + '/board.db');
+db.prepare('INSERT INTO session (started_at, ended_at, \"trigger\", exit_status) VALUES (?, NULL, ?, NULL)').run('2026-09-04T10:00:00Z', 'cron');
+"
+node --input-type=module -e "
+import { performUpdate } from '$ROOT/dist/core/update.js';
+let msg = ''; try { await performUpdate('99.0.0'); } catch (e) { msg = e.message; }
+if (!/session is running/.test(msg)) throw new Error('must refuse while a session runs, got: ' + msg);
+"
+rm -f "$AGENTBOARD_DATA/session.lock"
+node -e "
+const Database = require('better-sqlite3');
+new Database(process.env.AGENTBOARD_DATA + '/board.db').prepare(\"UPDATE session SET ended_at = '2026-09-04T10:01:00Z', exit_status = 0\").run();
+"
+# image path: no fly env, no .git → notice only
+( unset FLY_APP_NAME FLY_MACHINE_ID FLY_API_TOKEN
+  TMPAPP="$(mktemp -d)"; cp -R "$ROOT/dist" "$ROOT/package.json" "$TMPAPP/"; mkdir -p "$TMPAPP/node_modules"; ln -s "$ROOT/node_modules/"* "$TMPAPP/node_modules/" 2>/dev/null || true
+  node --input-type=module -e "
+import { performUpdate, strategy } from '$TMPAPP/dist/core/update.js';
+if (strategy() !== 'image') throw new Error('strategy without .git must be image, got ' + strategy());
+const r = await performUpdate('99.0.0');
+if (r.mode !== 'image' || !r.command.includes('docker pull ghcr.io/robbertvermeulen/agentboard:99.0.0')) throw new Error('image result ' + JSON.stringify(r));
+" )
+echo "leg 2 ok: performUpdate"
