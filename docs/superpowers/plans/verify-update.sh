@@ -122,12 +122,13 @@ echo "leg 3 ok: api + cli"
 # ============================================================================
 # Leg 4: UI — sidebar notice, dialog, POST, "Updating…" state (Task 4)
 # ============================================================================
+BEFORE=$(python3 -c "import json,sys; c=json.load(open(sys.argv[1])); print(sum(1 for x in c if x['method']=='POST' and x['url'].startswith('/v1/apps/')))" "$RECORD")
 node docs/superpowers/plans/verify-update-browser.mjs "$B" "99.0.0"
-python3 - "$RECORD" <<'PY'
+python3 - "$RECORD" "$BEFORE" <<'PY'
 import json, sys
 calls = json.load(open(sys.argv[1]))
 posts = [c for c in calls if c['method'] == 'POST' and c['url'].startswith('/v1/apps/')]
-assert len(posts) >= 2, 'the UI click must reach the stub as a second POST'
+assert len(posts) > int(sys.argv[2]), 'the UI click must reach the stub as a new POST'
 PY
 echo "leg 4 ok: ui"
 echo "ALL OK"

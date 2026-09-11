@@ -28,7 +28,11 @@ export function openUpdateDialog(info) {
   const err = el.querySelector('#update-error');
   const ok = el.querySelector('#update-ok');
   const cancel = el.querySelector('#update-cancel');
-  cancel.onclick = closeOverlay;
+  let timer = null;
+  cancel.onclick = () => {
+    if (timer) clearInterval(timer);
+    closeOverlay();
+  };
   const showError = (m) => {
     err.textContent = m;
     err.hidden = false;
@@ -39,7 +43,7 @@ export function openUpdateDialog(info) {
     if (ok) ok.remove();
     cancel.textContent = 'Close';
     const started = Date.now();
-    const timer = setInterval(async () => {
+    timer = setInterval(async () => {
       try {
         const i = await api.version();
         if (i.version === v) {
