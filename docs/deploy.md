@@ -35,7 +35,7 @@ fly secrets set CLAUDE_CODE_OAUTH_TOKEN=... -a agentboard-app
 
 `FLY_API_TOKEN` is a deploy token scoped to this app; the in-app update
 uses it to swap the machine's image (see the reference, "Updates")
-(lands with the update PR).
+.
 
 ## Migrate an existing data dir
 
@@ -78,6 +78,22 @@ fly ssh console -u node -C "agentboard auth enrol --name iPhone"
 
 Open the printed link on the phone, confirm with Face ID, and the board
 opens. Repeat with another `--name` for a laptop.
+
+## Updates and rollback
+
+The board tells you when a new release exists; the sidebar button or
+`agentboard update` swaps the machine image through Fly's Machines API (see
+the reference, "Updates"). Two things to know:
+
+- The image `ghcr.io/robbertvermeulen/agentboard:<version>` must be pullable
+  without credentials. The repository is public, so its packages are too.
+- A machine that runs a version without the update feature cannot update
+  itself: deploy the published image once by hand, then the button works
+  from the next release on. The same command is the rollback:
+
+```
+fly deploy --ha=false --image ghcr.io/robbertvermeulen/agentboard:<version> -a agentboard-app
+```
 
 ## Day two
 
