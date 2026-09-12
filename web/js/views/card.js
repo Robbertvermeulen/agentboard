@@ -621,16 +621,19 @@ export async function renderCard(root, { boards, cardId }) {
     input.style.height = `${input.scrollHeight}px`;
   };
   input.addEventListener('input', grow);
-  root.querySelector('#comment-send').onclick = async () => {
-    if (!input.value.trim()) return;
-    await api.comment(card.id, input.value.trim());
-    await rerender();
+  const scrollToLastComment = () => {
     const items = root.querySelectorAll('.comment-card');
     const posted = items[items.length - 1];
     if (posted) {
       posted.scrollIntoView({ behavior: 'smooth', block: 'center' });
       posted.classList.add('flash');
     }
+  };
+  root.querySelector('#comment-send').onclick = async () => {
+    if (!input.value.trim()) return;
+    await api.comment(card.id, input.value.trim());
+    await rerender();
+    scrollToLastComment();
   };
   const composerError = root.querySelector('#composer-error');
   const showComposerError = (msg) => {
@@ -646,6 +649,7 @@ export async function renderCard(root, { boards, cardId }) {
       await api.move(card.id, 'ready', reason);
       input.value = '';
       await rerender();
+      scrollToLastComment();
     } catch (err) {
       showComposerError(err.message);
     }
