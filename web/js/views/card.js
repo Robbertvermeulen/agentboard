@@ -92,6 +92,30 @@ function commentCard(c) {
   </div>`;
 }
 
+// An agent comment's `choices:` line (pipe-separated, mirrors secret_ref's
+// intake-form trick from AGENT.md rule 3) renders as clickable buttons.
+// Answered = the next comment is human and its text exactly matches one of
+// the options — the same text a click itself posts.
+const CHOICES_LINE = /^choices:\s*(.+)$/m;
+const parseChoices = (text) =>
+  (text?.match(CHOICES_LINE)?.[1] ?? '')
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+function choiceBoxHtml(options, { answered, canAnswer }) {
+  if (!options.length) return '';
+  return `<div class="choice-box">
+    ${options
+      .map((o) => {
+        const selected = answered === o;
+        const disabled = !canAnswer || !!answered;
+        return `<button type="button" class="choice-btn${selected ? ' selected' : ''}" data-choice="${esc(o)}" ${disabled ? 'disabled' : ''}>${selected ? icons.check(12) : ''}${esc(o)}</button>`;
+      })
+      .join('')}
+  </div>`;
+}
+
 function fileRow(cardId, f, urlFn) {
   const icon = /\.zip$/i.test(f.name) ? icons.folderDown() : IMAGE_EXT.test(f.name) ? icons.image() : icons.fileText(14);
   return `<div class="art-row">
@@ -238,16 +262,25 @@ export async function renderCard(root, { boards, cardId }) {
       </div>`;
   }
 
+  const canAnswerChoices = card.status !== 'done' && card.status !== 'archived';
   const timeline = [
-    ...comments.map((c) => ({
-      at: c.created_at,
-      kind: 'comment',
-      author: c.author,
-      // Nested under the newest re-request's own comment entry, so a
-      // timeline-filter rerender (which replaces #timeline-list wholesale
-      // from these cached html strings) carries the box along with it.
-      html: commentCard(c) + (c === nestedRequest?.comment ? secretBoxHtml(nestedRequest.names, { nested: true }) : ''),
-    })),
+    ...comments.map((c, i) => {
+      const choices = c.author === 'agent' ? parseChoices(c.body) : [];
+      const next = comments[i + 1];
+      const answered = choices.length && next?.author === 'human' && choices.includes(next.body.trim()) ? next.body.trim() : null;
+      return {
+        at: c.created_at,
+        kind: 'comment',
+        author: c.author,
+        // Nested under the newest re-request's own comment entry, so a
+        // timeline-filter rerender (which replaces #timeline-list wholesale
+        // from these cached html strings) carries the box along with it.
+        html:
+          commentCard(c) +
+          (c === nestedRequest?.comment ? secretBoxHtml(nestedRequest.names, { nested: true }) : '') +
+          choiceBoxHtml(choices, { answered, canAnswer: canAnswerChoices }),
+      };
+    }),
     ...events.map((e) => ({ at: e.created_at, kind: 'event', author: e.actor, html: eventLine(e) })),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
@@ -554,6 +587,22 @@ export async function renderCard(root, { boards, cardId }) {
   // --- comment editing: bare edit, no history — the old text is gone ---
   // Delegated on the list, so the handlers survive the filter re-renders.
   tlList.onclick = async (e) => {
+    const choiceBtn = e.target.closest('.choice-btn');
+    if (choiceBtn && !choiceBtn.disabled) {
+      const text = choiceBtn.dataset.choice;
+      choiceBtn.closest('.choice-box').querySelectorAll('.choice-btn').forEach((b) => (b.disabled = true));
+      try {
+        // Same two calls as the composer's "Reply & hand back": comment
+        // first so the agent reads the answer before the status flips.
+        await api.comment(card.id, text);
+        if (card.status === 'needs_input') await api.move(card.id, 'ready', 'answered via choice');
+        await rerender();
+        scrollToLastComment();
+      } catch {
+        choiceBtn.closest('.choice-box').querySelectorAll('.choice-btn').forEach((b) => (b.disabled = false));
+      }
+      return;
+    }
     if (e.target.closest('.show-all-link')) {
       jumpToRequest();
       return;
