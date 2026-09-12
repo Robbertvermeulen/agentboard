@@ -491,6 +491,18 @@ input, textarea, select { font: inherit; color: var(--ink); }
 }
 .cc-editor-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .cc-editor-actions .btn-dark, .cc-editor-actions .btn-ghost { height: 26px; padding: 0 10px; border-radius: 7px; font-size: 12px; font-weight: 600; }
+.choice-box { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.choice-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--ink);
+  background: #fff;
+}
+.choice-btn:hover:not(:disabled) { border-color: var(--brand); background: color-mix(in oklch, var(--brand) 6%, #fff); }
+.choice-btn:disabled { cursor: default; opacity: 0.5; }
+.choice-btn.selected {
+  opacity: 1; font-weight: 600; color: var(--brand); border-color: var(--brand);
+  background: color-mix(in oklch, var(--brand) 10%, #fff);
+}
 .event-row { display: flex; align-items: flex-start; gap: 10px; padding: 0 4px; }
 .event-row svg { margin-top: 3px; }
 .event-row p { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--mut); overflow-wrap: anywhere; }

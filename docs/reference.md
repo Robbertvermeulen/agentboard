@@ -72,6 +72,13 @@ A re-request after a failed value (a new comment with a `secret_ref:`
 line) renders the intake under that comment and marks the earlier chips
 "needed again".
 
+The same trick works for a decision: a `choices:` line on an agent
+comment (pipe-separated, e.g. `choices: Optie A | Optie B`) renders as
+clickable buttons under that comment. Clicking one posts it as a plain
+reply comment — and hands the card back to ready if it was in
+needs_input — so picking never requires typing. Once answered the
+buttons stay as a read-only record of which option was picked.
+
 The web UI also has an Agent log page (sidebar, next to Routines): the
 session list with derived outcomes, and a running session's detail page
 that follows along live via the same realtime channel.
