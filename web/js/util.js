@@ -82,7 +82,7 @@ export async function filesFromDrop(dt) {
   return out;
 }
 
-function inline(md) {
+export function inline(md) {
   return esc(md)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')

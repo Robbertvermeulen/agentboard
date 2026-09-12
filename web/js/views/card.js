@@ -1,7 +1,7 @@
 // Card detail: body, chips, artifacts, timeline, composer, properties panel.
 import { api } from '../api.js';
 import { icons, statusIcon } from '../icons.js';
-import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, CARD_ID_RE, ageShort } from '../util.js';
+import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, inline, CARD_ID_RE, ageShort } from '../util.js';
 import {
   idChip,
   statusPill,
@@ -88,7 +88,7 @@ function commentCard(c) {
       ${c.updated_at ? `<span class="cc-edited" title="${esc(absTime(c.updated_at))}">(edited)</span>` : ''}
       ${agent ? '' : `<button type="button" class="cc-edit" title="Edit comment">${icons.pencil(12)}</button>`}
     </div>
-    <p class="cc-body">${esc(c.body)}</p>
+    <p class="cc-body">${inline(c.body)}</p>
   </div>`;
 }
 
