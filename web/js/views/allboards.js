@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { icons, STATUS_META, STATUSES } from '../icons.js';
 import { esc } from '../util.js';
 import { cardTile, statusPill, openCreateDialog, openBoardDialog, crumb } from '../components.js';
-import { tabs, needYouCount, openCount } from './board.js';
+import { tabs, wireTabs, needYouCount, openCount } from './board.js';
 
 export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
 
@@ -67,6 +67,7 @@ export async function renderAllBoards(root, { boards }) {
         .join('')}
     </div>
   `;
+  wireTabs(root);
   root.querySelectorAll('[data-new]').forEach((b) => {
     b.onclick = () => openCreateDialog({ boards, boardId: null }, (card) => (location.hash = `#/card/${card.id}`));
   });
