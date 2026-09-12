@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.0...v0.5.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **card:** scroll to new comment after hand-back too ([#28](https://github.com/Robbertvermeulen/agentboard/issues/28)) ([e5cc37d](https://github.com/Robbertvermeulen/agentboard/commit/e5cc37d98105064cb02c2a3e93e67404bfd87790)), closes [#24](https://github.com/Robbertvermeulen/agentboard/issues/24)
+
 # [0.5.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.4.0...v0.5.0) (2026-09-12)
 
 
