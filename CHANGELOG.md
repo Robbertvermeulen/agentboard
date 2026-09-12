@@ -1,3 +1,38 @@
+# [0.8.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.7.0...v0.8.0) (2026-09-12)
+
+
+### Features
+
+* **board:** convert board tabs to a dropdown ([#33](https://github.com/Robbertvermeulen/agentboard/issues/33)) ([a713db8](https://github.com/Robbertvermeulen/agentboard/commit/a713db8a2424f5060ea3bfba8e440fb98ff9601c))
+
+# [0.7.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.6.0...v0.7.0) (2026-09-12)
+
+
+### Features
+
+* **links:** auto-link bare http/https urls in descriptions and comments ([#34](https://github.com/Robbertvermeulen/agentboard/issues/34)) ([63130c4](https://github.com/Robbertvermeulen/agentboard/commit/63130c411f17bcb2afb12f9d6c668299794ee8b6))
+
+# [0.6.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.1...v0.6.0) (2026-09-12)
+
+
+### Features
+
+* **update:** manual release check + shorter cache ([#30](https://github.com/Robbertvermeulen/agentboard/issues/30)) ([44e5777](https://github.com/Robbertvermeulen/agentboard/commit/44e577759bcfd13522410b2de0fd40f4c341f4bc)), closes [#29](https://github.com/Robbertvermeulen/agentboard/issues/29)
+
+## [0.5.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.0...v0.5.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **card:** scroll to new comment after hand-back too ([#28](https://github.com/Robbertvermeulen/agentboard/issues/28)) ([e5cc37d](https://github.com/Robbertvermeulen/agentboard/commit/e5cc37d98105064cb02c2a3e93e67404bfd87790)), closes [#24](https://github.com/Robbertvermeulen/agentboard/issues/24)
+
+# [0.5.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.4.0...v0.5.0) (2026-09-12)
+
+
+### Features
+
+* **comments:** render inline markdown (incl. links) in card comments ([#27](https://github.com/Robbertvermeulen/agentboard/issues/27)) ([71e2792](https://github.com/Robbertvermeulen/agentboard/commit/71e2792a0b20ce3f203c2c25f3a7cf8bdcdb49cf)), closes [#10](https://github.com/Robbertvermeulen/agentboard/issues/10) [#10](https://github.com/Robbertvermeulen/agentboard/issues/10)
+
 # [0.4.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.3.0...v0.4.0) (2026-09-12)
 
 

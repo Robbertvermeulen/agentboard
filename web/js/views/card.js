@@ -1,7 +1,7 @@
 // Card detail: body, chips, artifacts, timeline, composer, properties panel.
 import { api } from '../api.js';
 import { icons, statusIcon } from '../icons.js';
-import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, CARD_ID_RE, ageShort } from '../util.js';
+import { esc, relTime, absTime, fmtBytes, filesFromDrop, renderMarkdown, inline, CARD_ID_RE, ageShort } from '../util.js';
 import {
   idChip,
   statusPill,
@@ -88,7 +88,7 @@ function commentCard(c) {
       ${c.updated_at ? `<span class="cc-edited" title="${esc(absTime(c.updated_at))}">(edited)</span>` : ''}
       ${agent ? '' : `<button type="button" class="cc-edit" title="Edit comment">${icons.pencil(12)}</button>`}
     </div>
-    <p class="cc-body">${esc(c.body)}</p>
+    <p class="cc-body">${inline(c.body)}</p>
   </div>`;
 }
 
@@ -621,16 +621,19 @@ export async function renderCard(root, { boards, cardId }) {
     input.style.height = `${input.scrollHeight}px`;
   };
   input.addEventListener('input', grow);
-  root.querySelector('#comment-send').onclick = async () => {
-    if (!input.value.trim()) return;
-    await api.comment(card.id, input.value.trim());
-    await rerender();
+  const scrollToLastComment = () => {
     const items = root.querySelectorAll('.comment-card');
     const posted = items[items.length - 1];
     if (posted) {
       posted.scrollIntoView({ behavior: 'smooth', block: 'center' });
       posted.classList.add('flash');
     }
+  };
+  root.querySelector('#comment-send').onclick = async () => {
+    if (!input.value.trim()) return;
+    await api.comment(card.id, input.value.trim());
+    await rerender();
+    scrollToLastComment();
   };
   const composerError = root.querySelector('#composer-error');
   const showComposerError = (msg) => {
@@ -646,6 +649,7 @@ export async function renderCard(root, { boards, cardId }) {
       await api.move(card.id, 'ready', reason);
       input.value = '';
       await rerender();
+      scrollToLastComment();
     } catch (err) {
       showComposerError(err.message);
     }

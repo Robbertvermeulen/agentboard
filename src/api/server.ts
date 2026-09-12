@@ -503,7 +503,7 @@ export function createApp(): Hono {
 
   app.get('/api/version', async (c) => {
     try {
-      return c.json(await versionInfo());
+      return c.json(await versionInfo({ fresh: c.req.query('fresh') === '1' }));
     } catch (err) {
       return errorResponse(c, err);
     }

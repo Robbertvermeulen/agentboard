@@ -82,12 +82,38 @@ export async function filesFromDrop(dt) {
   return out;
 }
 
-function inline(md) {
-  return esc(md)
+// Trailing sentence punctuation isn't part of the url; a trailing ')' only
+// counts as punctuation if it isn't balancing a '(' earlier in the url
+// (so "https://en.wikipedia.org/wiki/Foo_(bar)" stays whole).
+function splitTrailingPunctuation(url) {
+  let trail = '';
+  while (url.length) {
+    const last = url.slice(-1);
+    const closesUrlParen = last === ')' && (url.match(/\(/g)?.length ?? 0) < (url.match(/\)/g)?.length ?? 0);
+    if (!'.,;:!?\'"'.includes(last) && !closesUrlParen) break;
+    trail = last + trail;
+    url = url.slice(0, -1);
+  }
+  return [url, trail];
+}
+
+export function inline(md) {
+  const withMarks = esc(md)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  let inLink = 0;
+  return withMarks.replace(/(<[^>]+>)|(https?:\/\/[^\s<]+)/g, (m, tag, url) => {
+    if (tag) {
+      if (/^<a[ >]/i.test(tag)) inLink++;
+      else if (/^<\/a>/i.test(tag)) inLink = Math.max(0, inLink - 1);
+      return tag;
+    }
+    if (inLink) return url;
+    const [href, trail] = splitTrailingPunctuation(url);
+    return href ? `<a href="${href}" target="_blank" rel="noopener">${href}</a>${trail}` : url;
+  });
 }
 
 // Minimal markdown: headings, lists, code fences, paragraphs, inline marks.
