@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.3.0...v0.4.0) (2026-09-12)
+
+
+### Features
+
+* **artifacts:** render .html artifacts inline, sandboxed ([#26](https://github.com/Robbertvermeulen/agentboard/issues/26)) ([f2ebf4b](https://github.com/Robbertvermeulen/agentboard/commit/f2ebf4bee2d6bc4ca7ac18bc0893fd17e695bdd8)), closes [#22](https://github.com/Robbertvermeulen/agentboard/issues/22)
+
 # [0.3.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.2.0...v0.3.0) (2026-09-12)
 
 
