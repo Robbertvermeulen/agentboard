@@ -36,8 +36,7 @@ export async function renderAllBoards(root, { boards }) {
     <div class="toolbar">
       ${tabs(boards, null)}
       ${totalNeed > 0 ? `<span class="needsme-chip"><span class="dot"></span>${totalNeed} need you across ${boardsWithNeed} board${boardsWithNeed === 1 ? '' : 's'}</span>` : `<span class="allclear-chip">${icons.allClear(16)}Nothing waiting on you</span>`}
-      <button type="button" class="btn-new" data-new>${icons.plus(14, '#fff')}New card</button>
-      <button type="button" class="btn-ghost" data-new-board>${icons.plus(14, 'currentColor')}New board</button>
+      <button type="button" class="btn-new" data-new-menu>${icons.plus(14, '#fff')}New${icons.chevronDown(14, '#fff')}</button>
     </div>
     <div class="m-head">
       <div class="row"><span class="title">All boards</span><button type="button" class="m-new" data-new-menu>${icons.plus(13, '#fff')}New${icons.chevronDown(13, '#fff')}</button></div>
@@ -69,13 +68,14 @@ export async function renderAllBoards(root, { boards }) {
   `;
   const goToCard = (card) => (location.hash = `#/card/${card.id}`);
   const goToBoard = (board) => (location.hash = `#/board/${board.id}`);
-  root.querySelectorAll('[data-new]').forEach((b) => {
-    b.onclick = () => openCreateDialog({ boards, boardId: null }, goToCard);
+  root.querySelectorAll('[data-new-menu]').forEach((b) => {
+    b.onclick = () =>
+      openNewMenu(
+        {
+          onCard: () => openCreateDialog({ boards, boardId: null }, goToCard),
+          onBoard: () => openBoardDialog(goToBoard),
+        },
+        b
+      );
   });
-  root.querySelector('[data-new-board]').onclick = () => openBoardDialog(goToBoard);
-  root.querySelector('[data-new-menu]').onclick = () =>
-    openNewMenu({
-      onCard: () => openCreateDialog({ boards, boardId: null }, goToCard),
-      onBoard: () => openBoardDialog(goToBoard),
-    });
 }

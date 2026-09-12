@@ -564,26 +564,38 @@ export function openBoardDialog(onCreated) {
   name.focus();
 }
 
-/* ---------- new card / new board picker (mobile "New" button) ---------- */
+/* ---------- new card / new board picker: dropdown on desktop, bottom sheet on mobile ---------- */
 
-export function openNewMenu({ onCard, onBoard }) {
-  const el = openOverlay(
-    `<div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-head"><span>New</span></div>
-      <button type="button" class="status-item sheet-item" data-kind="card">${icons.fileText(16, 'var(--mut)')}<span>New card</span></button>
-      <button type="button" class="status-item sheet-item" data-kind="board">${icons.board(16, 'var(--dark)')}<span>New board</span></button>
-    </div>`,
-    { sheet: true }
-  );
-  el.querySelector('[data-kind="card"]').onclick = () => {
+export function openNewMenu({ onCard, onBoard }, anchor) {
+  const pick = (kind) => {
     closeOverlay();
-    onCard();
+    (kind === 'card' ? onCard : onBoard)();
   };
-  el.querySelector('[data-kind="board"]').onclick = () => {
-    closeOverlay();
-    onBoard();
-  };
+  const items = `
+    <button type="button" class="status-item" data-kind="card">${icons.fileText(isMobile() ? 16 : 13, 'var(--mut)')}<span>New card</span></button>
+    <button type="button" class="status-item" data-kind="board">${icons.board(isMobile() ? 16 : 13, 'var(--dark)')}<span>New board</span></button>`;
+  if (isMobile()) {
+    const el = openOverlay(
+      `<div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><span>New</span></div>
+        ${items.replaceAll('class="status-item', 'class="status-item sheet-item')}
+      </div>`,
+      { sheet: true }
+    );
+    el.querySelectorAll('.status-item').forEach((b) => (b.onclick = () => pick(b.dataset.kind)));
+  } else {
+    const el = openOverlay(`<div class="dialog status-menu">${items}</div>`);
+    if (anchor) {
+      el.classList.add('anchored');
+      const menu = el.querySelector('.status-menu');
+      const rect = anchor.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 216)}px`;
+      menu.style.top = `${rect.bottom + 6}px`;
+    }
+    el.querySelectorAll('.status-item').forEach((b) => (b.onclick = () => pick(b.dataset.kind)));
+  }
 }
 
 /* ---------- shared breadcrumb ---------- */
