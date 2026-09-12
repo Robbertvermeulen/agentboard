@@ -51,6 +51,8 @@ export const icons = {
     stroke(size, color, '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'),
   history: (size = 14, color = 'currentColor') =>
     stroke(size, color, '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>'),
+  refresh: (size = 11, color = 'var(--mut-2)') =>
+    stroke(size, color, '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 16H3v5"/>'),
 };
 
 // Status glyphs share one 14x14 circle grammar (dashed, empty, half,

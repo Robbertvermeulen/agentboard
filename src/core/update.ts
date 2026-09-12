@@ -10,7 +10,7 @@ import { sessionStatus } from './runner.js';
 // tag and rebuild), image (notice only).
 export const IMAGE = 'ghcr.io/robbertvermeulen/agentboard';
 const RELEASES_URL = 'https://api.github.com/repos/Robbertvermeulen/agentboard/releases/latest';
-const CACHE_MS = 60 * 60 * 1000;
+const CACHE_MS = 10 * 60 * 1000;
 
 const appRoot = (): string => path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 

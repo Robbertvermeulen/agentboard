@@ -27,19 +27,32 @@ let versionState = null; // { version, latest, strategy, updateAvailable }
 function versionLabel(id) {
   if (!versionState) return `<span id="${id}" class="side-foot"></span>`;
   const v = versionState.version;
+  const refreshBtn = `<button type="button" class="icon-btn" data-refresh-version title="Check for a new release now">${icons.refresh()}</button>`;
   return versionState.updateAvailable
-    ? `<span id="${id}" class="side-foot">v${esc(v)} · <button type="button" class="link">${esc(versionState.latest.version)} available</button></span>`
-    : `<span id="${id}" class="side-foot">v${esc(v)}</span>`;
+    ? `<span id="${id}" class="side-foot">v${esc(v)} · <button type="button" class="link">${esc(versionState.latest.version)} available</button> ${refreshBtn}</span>`
+    : `<span id="${id}" class="side-foot">v${esc(v)} ${refreshBtn}</span>`;
 }
 
 function wireVersion(root, id) {
-  const btn = root.querySelector(`#${id} button`);
-  if (btn) btn.onclick = () => openUpdateDialog(versionState);
+  const updateBtn = root.querySelector(`#${id} .link`);
+  if (updateBtn) updateBtn.onclick = () => openUpdateDialog(versionState);
+  const refreshBtn = root.querySelector(`#${id} [data-refresh-version]`);
+  if (refreshBtn) {
+    refreshBtn.onclick = async () => {
+      refreshBtn.disabled = true;
+      await refreshVersion(true);
+      const el = document.getElementById(id);
+      if (el) {
+        el.outerHTML = versionLabel(id);
+        wireVersion(root, id);
+      }
+    };
+  }
 }
 
-async function refreshVersion() {
+async function refreshVersion(fresh = false) {
   try {
-    versionState = await api.version();
+    versionState = await api.version({ fresh });
   } catch {
     versionState = null;
   }
