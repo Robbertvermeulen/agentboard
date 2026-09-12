@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.1...v0.6.0) (2026-09-12)
+
+
+### Features
+
+* **update:** manual release check + shorter cache ([#30](https://github.com/Robbertvermeulen/agentboard/issues/30)) ([44e5777](https://github.com/Robbertvermeulen/agentboard/commit/44e577759bcfd13522410b2de0fd40f4c341f4bc)), closes [#29](https://github.com/Robbertvermeulen/agentboard/issues/29)
+
 ## [0.5.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.0...v0.5.1) (2026-09-12)
 
 
