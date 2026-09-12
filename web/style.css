@@ -741,6 +741,15 @@ input, textarea, select { font: inherit; color: var(--ink); }
 /* ---------- mobile ---------- */
 
 @media (max-width: 720px) {
+  /* iOS/Android auto-zoom on focus triggers below a 16px font-size; bump
+     every text entry point to 16px here (desktop keeps the denser sizes). */
+  .sb-f input, .sb-f input.mono { font-size: 16px; }
+  .cc-editor textarea { font-size: 16px; }
+  .composer textarea { font-size: 16px; }
+  .reason-dialog input { font-size: 16px; }
+  .field input[type='text'], .field select, .field textarea { font-size: 16px; }
+  .labels-input input { font-size: 16px; }
+
   #shell { height: auto; min-height: 100vh; }
   #sidebar { display: none; }
   #view { overflow: visible; padding-bottom: 84px; }
