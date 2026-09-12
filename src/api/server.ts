@@ -23,6 +23,7 @@ import {
 } from '../core/auth.js';
 import {
   addComment,
+  archiveBoard,
   archivedCards,
   boardView,
   cardDetail,
@@ -34,6 +35,8 @@ import {
   listBoards,
   moveCard,
   nextWork,
+  renameBoard,
+  unarchiveBoard,
 } from '../core/cards.js';
 import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
@@ -247,6 +250,31 @@ export function createApp(): Hono {
   app.get('/api/boards/:board', (c) => {
     try {
       return c.json(boardView(c.req.param('board'))[0]);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.patch('/api/boards/:board', async (c) => {
+    try {
+      const body = await c.req.json();
+      return c.json(renameBoard(c.req.param('board'), body.name ?? ''));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.post('/api/boards/:board/archive', (c) => {
+    try {
+      return c.json(archiveBoard(c.req.param('board')));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.post('/api/boards/:board/unarchive', (c) => {
+    try {
+      return c.json(unarchiveBoard(c.req.param('board')));
     } catch (err) {
       return errorResponse(c, err);
     }

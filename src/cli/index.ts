@@ -7,6 +7,7 @@ import {
   Card,
   Comment,
   addComment,
+  archiveBoard,
   boardView,
   cardDetail,
   createBoard,
@@ -18,6 +19,8 @@ import {
   logEvent,
   moveCard,
   nextWork,
+  renameBoard,
+  unarchiveBoard,
 } from '../core/cards.js';
 import {
   getSecret,
@@ -169,10 +172,11 @@ const boards = program.command('boards').description('manage boards');
 boards
   .command('list')
   .description('all boards')
+  .option('--archived', 'only archived boards')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const all = listBoards();
+      const all = listBoards({ includeArchived: true }).filter((b) => (opts.archived ? b.archived_at : !b.archived_at));
       output(opts, all.map((b) => `  ${b.id.padEnd(12)} ${b.name}`).join('\n'), { boards: all });
     })
   );
@@ -186,6 +190,39 @@ boards
     run((opts, id: string) => {
       const b = createBoard(id, opts.name);
       output(opts, `Created board ${b.id} (${b.name})`, b);
+    })
+  );
+
+boards
+  .command('rename <id> <name>')
+  .description('rename a board (display name only, the id stays the same)')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string, name: string) => {
+      const b = renameBoard(id, name);
+      output(opts, `Renamed ${b.id} to ${b.name}`, b);
+    })
+  );
+
+boards
+  .command('archive <id>')
+  .description('hide a board (blocked if it still has open cards); nothing is deleted')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string) => {
+      const b = archiveBoard(id);
+      output(opts, `Archived board ${b.id}`, b);
+    })
+  );
+
+boards
+  .command('unarchive <id>')
+  .description('bring an archived board back')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string) => {
+      const b = unarchiveBoard(id);
+      output(opts, `Unarchived board ${b.id}`, b);
     })
   );
 

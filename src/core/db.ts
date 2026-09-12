@@ -35,9 +35,10 @@ const EVENT_TABLE_BODY = `
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS board (
-  id         TEXT PRIMARY KEY,
-  name       TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  created_at  TEXT NOT NULL,
+  archived_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS card (
@@ -201,6 +202,13 @@ export async function initData(opts?: {
   if (!cardCols.some((c) => c.name === 'routine')) {
     db.exec('ALTER TABLE card ADD COLUMN routine TEXT');
     created.push('card.routine');
+  }
+
+  // Migration: board tables from before board archiving lack archived_at.
+  const boardCols = db.prepare('PRAGMA table_info(board)').all() as { name: string }[];
+  if (!boardCols.some((c) => c.name === 'archived_at')) {
+    db.exec('ALTER TABLE board ADD COLUMN archived_at TEXT');
+    created.push('board.archived_at');
   }
 
   // Migration: comment tables from before comment editing lack updated_at.

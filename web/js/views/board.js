@@ -2,7 +2,7 @@
 import { api, localActivity } from '../api.js';
 import { icons, statusIcon, STATUS_META, STATUSES } from '../icons.js';
 import { esc, relTime } from '../util.js';
-import { cardTile, statusPill, openCreateDialog, crumb, isWaitingExternal } from '../components.js';
+import { cardTile, statusPill, openCreateDialog, openBoardSettingsDialog, crumb, isWaitingExternal } from '../components.js';
 
 export const tabs = (boards, activeId) => `<div class="tabs">
   <a href="#/" class="${activeId == null ? 'active' : ''}">All boards</a>
@@ -68,6 +68,7 @@ export async function renderBoard(root, { boards, boardId }) {
       ${crumb([{ text: 'Agentboard' }, { text: board.name, strong: true }])}
       <div class="toolbar">
         ${tabs(boards, boardId)}
+        <button type="button" class="btn-ghost" data-board-settings title="Board settings">${icons.gear(14)}</button>
         ${
           needYou > 0
             ? `<span class="needsme-chip"><span class="dot"></span>Needs me · ${needYou}</span>`
@@ -102,6 +103,14 @@ export async function renderBoard(root, { boards, boardId }) {
       const chip = root.querySelector('.allclear-chip');
       if (chip) chip.insertAdjacentHTML('beforeend', `<span class="mut-sm">· last change ${esc(relTime(lastMoved))}</span>`);
     }
+    root.querySelector('[data-board-settings]').onclick = () =>
+      openBoardSettingsDialog(board, {
+        onRenamed: (updated) => {
+          board.name = updated.name;
+          draw();
+        },
+        onArchived: () => (location.hash = '#/'),
+      });
     root.querySelectorAll('[data-new]').forEach((b) => {
       b.onclick = () => openCreateDialog({ boards, boardId }, (card) => (location.hash = `#/card/${card.id}`));
     });
