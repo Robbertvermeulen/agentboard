@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.4.0...v0.5.0) (2026-09-12)
+
+
+### Features
+
+* **comments:** render inline markdown (incl. links) in card comments ([#27](https://github.com/Robbertvermeulen/agentboard/issues/27)) ([71e2792](https://github.com/Robbertvermeulen/agentboard/commit/71e2792a0b20ce3f203c2c25f3a7cf8bdcdb49cf)), closes [#10](https://github.com/Robbertvermeulen/agentboard/issues/10) [#10](https://github.com/Robbertvermeulen/agentboard/issues/10)
+
 # [0.4.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.3.0...v0.4.0) (2026-09-12)
 
 
