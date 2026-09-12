@@ -1,3 +1,10 @@
+# [0.9.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.8.0...v0.9.0) (2026-09-12)
+
+
+### Features
+
+* **mobile:** add board option via dropdown on the New button ([#25](https://github.com/Robbertvermeulen/agentboard/issues/25)) ([7121cb3](https://github.com/Robbertvermeulen/agentboard/commit/7121cb333bdf76271620f592c4a91243a50f9b76)), closes [#18](https://github.com/Robbertvermeulen/agentboard/issues/18)
+
 # [0.8.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.7.0...v0.8.0) (2026-09-12)
 
 
