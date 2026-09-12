@@ -1,6 +1,8 @@
 # Deploy on Fly.io
 
-One machine, one volume, one agent. Every command below is real; the
+One machine, one volume, one agent. The image carries git, `gh`, openssh and
+Claude Code, so the agent can clone, open issues and pull requests, and reach
+servers over SSH. Every command below is real; the
 first deploy and the data migration are done once, by hand.
 
 ## First deploy

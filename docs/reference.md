@@ -234,6 +234,12 @@ Unattended operation is three layers: the gate, the runner, and your clock:
    caller's cwd, so a stray project checkout's CLAUDE.md can't leak into
    a session. Dry-run: `agentboard runner --dry-run`.
 
+   **Environment.** The session inherits the runner's environment minus
+   the server-only secrets `FLY_API_TOKEN` and `AGENTBOARD_SESSION_SECRET`:
+   a headless session that runs repo code must not be able to replace the
+   machine or forge cookies. Everything else (`AGENTBOARD_*`, `TZ`, the
+   Claude credentials) passes through.
+
    **Permission mode.** Headless sessions need to act without a human
    at the keyboard. The pragmatic choice is running the session command
    with `--dangerously-skip-permissions`:

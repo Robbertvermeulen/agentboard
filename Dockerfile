@@ -14,11 +14,15 @@ COPY web ./web
 RUN npm run build && npm prune --omit=dev
 
 # Stage 2: runtime. git: the context repo (simple-git). openssh-client: the
-# agent reaches client servers. gosu: drop root in start.sh. Claude Code:
-# the default session command.
+# agent reaches client servers. gh: issues and pull requests on GitHub. gosu:
+# drop root in start.sh. Claude Code: the default session command.
 FROM node:22-bookworm-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git openssh-client ca-certificates curl gosu \
+ && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gh \
  && rm -rf /var/lib/apt/lists/* \
  && npm install -g @anthropic-ai/claude-code@2.1.260
 WORKDIR /app
