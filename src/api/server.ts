@@ -101,7 +101,8 @@ const WEB_TYPES: Record<string, string> = {
 };
 
 // Artifact files: render known-safe types inline, everything else (including
-// svg/html, which could carry scripts) downloads as an attachment.
+// svg, which could carry scripts) downloads as an attachment. .html is inline
+// too, but only ever with the CSP sandbox header below — never on its own.
 const ARTIFACT_INLINE: Record<string, string> = {
   '.pdf': 'application/pdf',
   '.png': 'image/png',
@@ -113,6 +114,7 @@ const ARTIFACT_INLINE: Record<string, string> = {
   '.md': 'text/plain; charset=utf-8',
   '.log': 'text/plain; charset=utf-8',
   '.json': 'application/json',
+  '.html': 'text/html; charset=utf-8',
 };
 
 function webDir(): string {
@@ -345,6 +347,10 @@ export function createApp(): Hono {
     return c.body(new Uint8Array(fs.readFileSync(abs)), 200, {
       'Content-Type': inline ?? 'application/octet-stream',
       'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${path.basename(abs)}"`,
+      // .html is agent/user-authored, so treat it as untrusted: CSP sandbox
+      // forces a unique opaque origin (no scripts, no cookie/storage access,
+      // no top-level navigation) even when opened directly, not just framed.
+      ...(ext === '.html' ? { 'Content-Security-Policy': 'sandbox' } : {}),
     });
   };
 
