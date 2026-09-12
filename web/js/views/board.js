@@ -4,10 +4,15 @@ import { icons, statusIcon, STATUS_META, STATUSES } from '../icons.js';
 import { esc, relTime } from '../util.js';
 import { cardTile, statusPill, openCreateDialog, crumb, isWaitingExternal } from '../components.js';
 
-export const tabs = (boards, activeId) => `<div class="tabs">
-  <a href="#/" class="${activeId == null ? 'active' : ''}">All boards</a>
-  ${boards.map((b) => `<a href="#/board/${esc(b.id)}" class="${b.id === activeId ? 'active' : ''}">${esc(b.name)}</a>`).join('')}
-</div>`;
+export const tabs = (boards, activeId) => `<select class="board-switch" data-board-switch>
+  <option value="" ${activeId == null ? 'selected' : ''}>All boards</option>
+  ${boards.map((b) => `<option value="${esc(b.id)}" ${b.id === activeId ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}
+</select>`;
+
+export function wireTabs(root) {
+  const sel = root.querySelector('[data-board-switch]');
+  if (sel) sel.onchange = () => (location.hash = sel.value ? `#/board/${sel.value}` : '#/');
+}
 
 export const needYouCount = (columns) =>
   (columns.needs_input?.filter((c) => !isWaitingExternal(c)).length ?? 0) + (columns.review?.length ?? 0);
@@ -102,6 +107,7 @@ export async function renderBoard(root, { boards, boardId }) {
       const chip = root.querySelector('.allclear-chip');
       if (chip) chip.insertAdjacentHTML('beforeend', `<span class="mut-sm">· last change ${esc(relTime(lastMoved))}</span>`);
     }
+    wireTabs(root);
     root.querySelectorAll('[data-new]').forEach((b) => {
       b.onclick = () => openCreateDialog({ boards, boardId }, (card) => (location.hash = `#/card/${card.id}`));
     });
