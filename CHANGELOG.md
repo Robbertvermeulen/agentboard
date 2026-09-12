@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.9.0...v0.10.0) (2026-09-12)
+
+
+### Features
+
+* **boards:** rename and archive boards from the UI and CLI ([#35](https://github.com/Robbertvermeulen/agentboard/issues/35)) ([acb9f6b](https://github.com/Robbertvermeulen/agentboard/commit/acb9f6bd00bbc164bc74a0c34bf7f9fb77bfb3ab))
+
 # [0.9.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.8.0...v0.9.0) (2026-09-12)
 
 
