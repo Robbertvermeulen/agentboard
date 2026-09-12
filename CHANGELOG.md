@@ -1,3 +1,10 @@
+# [0.7.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.6.0...v0.7.0) (2026-09-12)
+
+
+### Features
+
+* **links:** auto-link bare http/https urls in descriptions and comments ([#34](https://github.com/Robbertvermeulen/agentboard/issues/34)) ([63130c4](https://github.com/Robbertvermeulen/agentboard/commit/63130c411f17bcb2afb12f9d6c668299794ee8b6))
+
 # [0.6.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.5.1...v0.6.0) (2026-09-12)
 
 
