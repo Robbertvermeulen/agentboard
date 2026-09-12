@@ -564,6 +564,77 @@ export function openBoardDialog(onCreated) {
   name.focus();
 }
 
+/* ---------- board settings dialog: rename + archive ---------- */
+
+export function openBoardSettingsDialog(board, { onRenamed, onArchived }) {
+  const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="Board settings">
+    <div class="create-head"><span class="create-title">Board settings</span></div>
+    <div class="create-body">
+      <div class="field">
+        <span class="field-label">Name</span>
+        <input id="bs-name" type="text" autocomplete="off" value="${esc(board.name)}">
+      </div>
+      <div class="create-actions">
+        <button type="button" id="bs-save" class="btn-dark">Save</button>
+        <button type="button" id="bs-cancel" class="btn-ghost">Cancel</button>
+      </div>
+      <div class="field">
+        <span class="field-label">Remove board</span>
+        <span class="field-hint">Hides it everywhere. Nothing is deleted — its cards and history stay reachable, and it can be brought back with the CLI. Blocked while it still has open cards.</span>
+        <button type="button" id="bs-archive" class="btn-ghost">${icons.archive(13)}Archive board</button>
+      </div>
+    </div>
+  </div>`);
+
+  const name = el.querySelector('#bs-name');
+  el.querySelector('#bs-cancel').onclick = closeOverlay;
+  el.querySelector('#bs-save').onclick = async () => {
+    const value = name.value.trim();
+    if (!value || value === board.name) return closeOverlay();
+    try {
+      const updated = await api.renameBoard(board.id, value);
+      closeOverlay();
+      onRenamed(updated);
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
+  el.querySelector('#bs-archive').onclick = async () => {
+    closeOverlay();
+    const confirmed = await confirmArchiveBoard(board);
+    if (!confirmed) return;
+    try {
+      await api.archiveBoard(board.id);
+      onArchived();
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
+  name.focus();
+  name.select();
+}
+
+function confirmArchiveBoard(board) {
+  return new Promise((resolve) => {
+    const el = openOverlay(`<div class="dialog" role="dialog" aria-label="Archive board">
+      <span class="dialog-title">Archive ${esc(board.name)}?</span>
+      <p class="dialog-sub">It disappears from the board list and switcher. Nothing is deleted — its cards and history stay reachable, and it can be brought back later.</p>
+      <div class="dialog-actions">
+        <button type="button" id="ab-cancel" class="btn-ghost">Cancel</button>
+        <button type="button" id="ab-ok" class="btn-dark">Archive board</button>
+      </div>
+    </div>`);
+    el.querySelector('#ab-cancel').onclick = () => {
+      closeOverlay();
+      resolve(false);
+    };
+    el.querySelector('#ab-ok').onclick = () => {
+      closeOverlay();
+      resolve(true);
+    };
+  });
+}
+
 /* ---------- new card / new board picker: dropdown on desktop, bottom sheet on mobile ---------- */
 
 export function openNewMenu({ onCard, onBoard }, anchor) {

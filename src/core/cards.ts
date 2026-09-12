@@ -16,6 +16,7 @@ export interface Board {
   id: string;
   name: string;
   created_at: string;
+  archived_at: string | null;
 }
 
 export interface Card {
@@ -245,10 +246,13 @@ export function addEventIn(
   );
 }
 
-export function listBoards(): Board[] {
+export function listBoards(opts?: { includeArchived?: boolean }): Board[] {
   const db = openDb();
   try {
-    return db.prepare('SELECT * FROM board ORDER BY created_at').all() as Board[];
+    const sql = opts?.includeArchived
+      ? 'SELECT * FROM board ORDER BY created_at'
+      : 'SELECT * FROM board WHERE archived_at IS NULL ORDER BY created_at';
+    return db.prepare(sql).all() as Board[];
   } finally {
     db.close();
   }
@@ -264,6 +268,54 @@ export function createBoard(id: string, name?: string): Board {
       throw new Error(`Board '${id}' already exists`);
     }
     db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run(id, name ?? id, now());
+    return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
+  } finally {
+    db.close();
+  }
+}
+
+function getBoardOrThrow(db: Database.Database, id: string): Board {
+  const board = db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board | undefined;
+  if (!board) throw new Error(`Unknown board '${id}'`);
+  return board;
+}
+
+export function renameBoard(id: string, name: string): Board {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Name is required');
+  const db = openDb();
+  try {
+    getBoardOrThrow(db, id);
+    db.prepare('UPDATE board SET name = ? WHERE id = ?').run(trimmed, id);
+    return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
+  } finally {
+    db.close();
+  }
+}
+
+export function archiveBoard(id: string): Board {
+  const db = openDb();
+  try {
+    const board = getBoardOrThrow(db, id);
+    if (board.archived_at) return board;
+    const { n: openCards } = db
+      .prepare(`SELECT COUNT(*) AS n FROM card WHERE board_id = ? AND status NOT IN ('done','archived')`)
+      .get(id) as { n: number };
+    if (openCards > 0) {
+      throw new Error(`Board '${id}' still has ${openCards} open card(s). Move or archive them first.`);
+    }
+    db.prepare('UPDATE board SET archived_at = ? WHERE id = ?').run(now(), id);
+    return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
+  } finally {
+    db.close();
+  }
+}
+
+export function unarchiveBoard(id: string): Board {
+  const db = openDb();
+  try {
+    getBoardOrThrow(db, id);
+    db.prepare('UPDATE board SET archived_at = NULL WHERE id = ?').run(id);
     return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
   } finally {
     db.close();
