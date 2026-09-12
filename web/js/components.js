@@ -564,6 +564,28 @@ export function openBoardDialog(onCreated) {
   name.focus();
 }
 
+/* ---------- new card / new board picker (mobile "New" button) ---------- */
+
+export function openNewMenu({ onCard, onBoard }) {
+  const el = openOverlay(
+    `<div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><span>New</span></div>
+      <button type="button" class="status-item sheet-item" data-kind="card">${icons.fileText(16, 'var(--mut)')}<span>New card</span></button>
+      <button type="button" class="status-item sheet-item" data-kind="board">${icons.board(16, 'var(--dark)')}<span>New board</span></button>
+    </div>`,
+    { sheet: true }
+  );
+  el.querySelector('[data-kind="card"]').onclick = () => {
+    closeOverlay();
+    onCard();
+  };
+  el.querySelector('[data-kind="board"]').onclick = () => {
+    closeOverlay();
+    onBoard();
+  };
+}
+
 /* ---------- shared breadcrumb ---------- */
 
 export function crumb(parts) {
