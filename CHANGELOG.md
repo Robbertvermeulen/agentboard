@@ -1,3 +1,10 @@
+## [0.11.5](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.4...v0.11.5) (2026-09-13)
+
+
+### Bug Fixes
+
+* board scroll/badge UX + agent-working indicator ([#46](https://github.com/Robbertvermeulen/agentboard/issues/46), [#47](https://github.com/Robbertvermeulen/agentboard/issues/47), [#48](https://github.com/Robbertvermeulen/agentboard/issues/48)) ([#49](https://github.com/Robbertvermeulen/agentboard/issues/49)) ([f387e62](https://github.com/Robbertvermeulen/agentboard/commit/f387e62d25357d6181bde6e4ace281653ecfe94e))
+
 ## [0.11.4](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.3...v0.11.4) (2026-09-13)
 
 
