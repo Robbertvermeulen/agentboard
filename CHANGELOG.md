@@ -1,3 +1,10 @@
+# [0.14.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.13.0...v0.14.0) (2026-09-13)
+
+
+### Features
+
+* **web:** all-boards mobile view reuses detail-board's collapsed-stage columns ([#64](https://github.com/Robbertvermeulen/agentboard/issues/64)) ([eeb61b6](https://github.com/Robbertvermeulen/agentboard/commit/eeb61b605cf7b48472c0beb4a6cce34acdc8b45e))
+
 # [0.13.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.2...v0.13.0) (2026-09-13)
 
 
