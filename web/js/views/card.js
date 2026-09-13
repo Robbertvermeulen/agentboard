@@ -26,12 +26,12 @@ let retryHook = null;
 // Watches #tl-end (the true bottom of the scrollable pane) to toggle the
 // scroll-down button — torn down here too, since a poll-triggered rerender()
 // calls renderCard again without going through the router's stopCardPolling.
-let scrollObserver = null;
+let stopScrollWatch = null;
 export function stopCardPolling() {
   refreshHook = null;
   retryHook = null;
-  scrollObserver?.disconnect();
-  scrollObserver = null;
+  stopScrollWatch?.();
+  stopScrollWatch = null;
 }
 export function pokeCardRefresh() {
   return refreshHook?.();
@@ -575,17 +575,28 @@ export async function renderCard(root, { boards, cardId }) {
   if (jump) jump.onclick = jumpToRequest;
   // Scroll-down button: hidden while #tl-end (the pane's true bottom) is
   // already on screen, shown once the timeline scrolls it out of view.
-  // root: null still respects .detail-scroll's own overflow clipping on
-  // desktop, and just tracks the page viewport on mobile, where that pane
-  // switches to overflow: visible — one observer, both layouts.
+  // getBoundingClientRect() is relative to the browser viewport regardless
+  // of which ancestor actually scrolls, so the same check works whether
+  // .detail-scroll itself scrolls (desktop) or the document does (mobile,
+  // where that pane switches to overflow: visible) — no need to track which
+  // element owns the scroll, unlike an IntersectionObserver's root.
   const scrollBtn = root.querySelector('#scroll-down');
   const tlEnd = root.querySelector('#tl-end');
-  if (scrollBtn && tlEnd) {
-    scrollObserver?.disconnect();
-    scrollObserver = new IntersectionObserver(([entry]) => {
-      scrollBtn.hidden = entry.isIntersecting;
-    });
-    scrollObserver.observe(tlEnd);
+  const scroller = root.querySelector('.detail-scroll');
+  if (scrollBtn && tlEnd && scroller) {
+    const checkScrollBtn = () => {
+      scrollBtn.hidden = tlEnd.getBoundingClientRect().top < window.innerHeight;
+    };
+    checkScrollBtn();
+    scroller.addEventListener('scroll', checkScrollBtn, { passive: true });
+    window.addEventListener('scroll', checkScrollBtn, { passive: true });
+    window.addEventListener('resize', checkScrollBtn);
+    stopScrollWatch?.();
+    stopScrollWatch = () => {
+      scroller.removeEventListener('scroll', checkScrollBtn);
+      window.removeEventListener('scroll', checkScrollBtn);
+      window.removeEventListener('resize', checkScrollBtn);
+    };
     scrollBtn.onclick = () => tlEnd.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
   // --- card tab (design 2g): Timeline vs Agent activity, lazy-loaded once ---
