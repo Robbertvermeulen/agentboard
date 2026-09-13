@@ -77,7 +77,7 @@ function diffHtml(diff) {
     .join('\n');
 }
 
-function commentCard(c) {
+function commentCard(c, extraHtml = '') {
   const agent = c.author === 'agent';
   // Only the author edits; the UI user is the human, so agent comments get no pencil.
   return `<div class="comment-card${agent ? ' agent' : ''}" data-cid="${c.id}">
@@ -89,6 +89,7 @@ function commentCard(c) {
       ${agent ? '' : `<button type="button" class="cc-edit" title="Edit comment">${icons.pencil(12)}</button>`}
     </div>
     <p class="cc-body">${inline(c.body)}</p>
+    ${extraHtml}
   </div>`;
 }
 
@@ -275,10 +276,11 @@ export async function renderCard(root, { boards, cardId }) {
         // Nested under the newest re-request's own comment entry, so a
         // timeline-filter rerender (which replaces #timeline-list wholesale
         // from these cached html strings) carries the box along with it.
+        // Choices render inside the card (part of the message they answer);
+        // the secret intake stays a distinct nested box below (a form, not a reply).
         html:
-          commentCard(c) +
-          (c === nestedRequest?.comment ? secretBoxHtml(nestedRequest.names, { nested: true }) : '') +
-          choiceBoxHtml(choices, { answered, canAnswer: canAnswerChoices }),
+          commentCard(c, choiceBoxHtml(choices, { answered, canAnswer: canAnswerChoices })) +
+          (c === nestedRequest?.comment ? secretBoxHtml(nestedRequest.names, { nested: true }) : ''),
       };
     }),
     ...events.map((e) => ({ at: e.created_at, kind: 'event', author: e.actor, html: eventLine(e) })),
