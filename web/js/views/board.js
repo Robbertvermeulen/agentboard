@@ -25,26 +25,32 @@ let lastBoard = null;
 
 function column(status, cards, { boardId, archivedCount, showAllDone, sessionStatus }) {
   const meta = STATUS_META[status];
-  const head = `<div class="col-head">
+  // On mobile this same header doubles as an accordion toggle (see
+  // data-toggle-status wiring below); .col-chevron only renders visibly
+  // there, desktop hides it.
+  const head = `<div class="col-head" data-toggle-status="${status}">
     <div class="left">${statusPill(status)}<span class="col-count">${cards.length}</span></div>
-    ${
-      // No create-into-doing shortcut (vision besluit I): the status menu's
-      // confirmed move is the one deliberate escape hatch into doing.
-      status === 'doing' ? '' : `<button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>`
-    }
+    <div class="col-actions">
+      ${
+        // No create-into-doing shortcut (vision besluit I): the status menu's
+        // confirmed move is the one deliberate escape hatch into doing.
+        status === 'doing' ? '' : `<button type="button" class="col-plus" data-new-in="${status}">${icons.plus()}</button>`
+      }
+      <span class="col-chevron">${icons.chevronDown(14, 'currentColor')}</span>
+    </div>
   </div>`;
   if (status !== 'done') {
     // doing is agent territory regardless of who created the card (cards.ts
     // nextWork/gateWork comments) — owner only records the creator, so
     // gating on it here hid the heartbeat on every human-created card.
     const tile = (c) => (status === 'doing' ? cardTile(c, { presence: sessionStatus.running ? 'live' : 'dormant' }) : cardTile(c));
-    return `<div class="column ${meta.chip !== 'neutral' ? status : ''} ${status}" data-status="${status}">${head}
-      <div class="col-cards">${cards.map(tile).join('')}</div>
+    return `<div class="column ${meta.chip !== 'neutral' ? status : ''} ${status}${cards.length ? '' : ' empty'}" data-status="${status}">${head}
+      <div class="col-cards">${cards.length ? cards.map(tile).join('') : `<p class="col-empty-msg">No cards in ${esc(status)}</p>`}</div>
     </div>`;
   }
   const recent = cards.filter((c) => Date.now() - new Date(c.updated_at).getTime() < 7 * DAY);
   const shown = showAllDone ? cards : recent;
-  return `<div class="column done" data-status="done">${head}
+  return `<div class="column done${cards.length ? '' : ' empty'}" data-status="done">${head}
     ${!showAllDone ? '<div class="col-caption">last 7 days</div>' : ''}
     <div class="col-cards done-cards">${shown.map((c) => cardTile(c)).join('')}</div>
     ${!showAllDone && cards.length > shown.length ? `<button type="button" class="show-all-done" data-show-done>${icons.chevronDown(13)}Show all ${cards.length} done</button>` : ''}
@@ -86,14 +92,10 @@ export async function renderBoard(root, { boards, boardId }) {
       <div class="m-head">
         <div class="row">
           <span class="title">${esc(board.name)}</span>
-          ${needYou > 0 ? `<span class="m-need"><span class="dot"></span>${needYou} need you</span>` : ''}
-        </div>
-        <div class="m-chips">
-          ${['needs_input', 'review', 'doing', 'inbox', 'ready']
-            .filter((s) => columns[s]?.length)
-            .map((s) => `<span class="m-chip ${STATUS_META[s].chip !== 'neutral' ? s : ''}">${esc(s)} ${columns[s].length}</span>`)
-            .join('')}
-          <button type="button" class="m-new" data-new>${icons.plus(13, '#fff')}New</button>
+          <div class="row-actions">
+            ${needYou > 0 ? `<span class="m-need"><span class="dot"></span>${needYou} need you</span>` : ''}
+            <button type="button" class="m-new" data-new>${icons.plus(13, '#fff')}New</button>
+          </div>
         </div>
       </div>
       ${
@@ -123,6 +125,18 @@ export async function renderBoard(root, { boards, boardId }) {
     root.querySelectorAll('[data-new-in]').forEach((b) => {
       b.onclick = () =>
         openCreateDialog({ boards, boardId, targetStatus: b.dataset.newIn }, (card) => (location.hash = `#/card/${card.id}`));
+    });
+    // Mobile accordion: tapping a section header opens it and closes
+    // whichever other one was open (harmless no-op on desktop, where CSS
+    // keeps every column expanded regardless of .open).
+    root.querySelectorAll('[data-toggle-status]').forEach((h) => {
+      h.onclick = (e) => {
+        if (e.target.closest('.col-plus')) return;
+        const col = h.closest('.column');
+        const wasOpen = col.classList.contains('open');
+        root.querySelectorAll('.column.open').forEach((c) => c.classList.remove('open'));
+        if (!wasOpen) col.classList.add('open');
+      };
     });
     const showDone = root.querySelector('[data-show-done]');
     if (showDone)
