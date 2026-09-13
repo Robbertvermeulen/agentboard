@@ -693,10 +693,20 @@ export async function renderCard(root, { boards, cardId }) {
       posted.classList.add('flash');
     }
   };
+  // rerender() wipes root.innerHTML, which resets .detail-scroll to the top —
+  // without restoring it first, the smooth-scroll below always animates from
+  // the top instead of from wherever the reader already was.
+  const rerenderKeepingScroll = async () => {
+    const scroller = root.querySelector('.detail-scroll');
+    const savedScroll = scroller?.scrollTop ?? 0;
+    await rerender();
+    const freshScroller = root.querySelector('.detail-scroll');
+    if (freshScroller) freshScroller.scrollTop = savedScroll;
+  };
   root.querySelector('#comment-send').onclick = async () => {
     if (!input.value.trim()) return;
     await api.comment(card.id, input.value.trim());
-    await rerender();
+    await rerenderKeepingScroll();
     scrollToLastComment();
   };
   const composerError = root.querySelector('#composer-error');
@@ -712,7 +722,7 @@ export async function renderCard(root, { boards, cardId }) {
       await api.comment(card.id, text);
       await api.move(card.id, 'ready', reason);
       input.value = '';
-      await rerender();
+      await rerenderKeepingScroll();
       scrollToLastComment();
     } catch (err) {
       showComposerError(err.message);
