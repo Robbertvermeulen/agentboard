@@ -23,9 +23,15 @@ let refreshHook = null;
 // Local retry for a change a dirty-guard held back without a blur (e.g.
 // cancelling the comment editor) — no fetch, just re-tries the pending refresh.
 let retryHook = null;
+// Watches #tl-end (the true bottom of the scrollable pane) to toggle the
+// scroll-down button — torn down here too, since a poll-triggered rerender()
+// calls renderCard again without going through the router's stopCardPolling.
+let scrollObserver = null;
 export function stopCardPolling() {
   refreshHook = null;
   retryHook = null;
+  scrollObserver?.disconnect();
+  scrollObserver = null;
 }
 export function pokeCardRefresh() {
   return refreshHook?.();
@@ -449,6 +455,7 @@ export async function renderCard(root, { boards, cardId }) {
               : ''
           }
         </div>
+        <button type="button" class="scroll-down-btn" id="scroll-down" title="Scroll to latest" hidden>${icons.arrowDown(16, '#fff')}</button>
         <div class="composer-wrap">
           <div class="composer">
             <textarea id="comment-input" rows="2" placeholder="${card.status === 'needs_input' ? 'Answer the agent…' : 'Add a comment…'}"></textarea>
@@ -473,6 +480,7 @@ export async function renderCard(root, { boards, cardId }) {
               : 'Every status change asks for a short reason — it is written to the timeline as an event.'
           }</p>
         </div>
+        <div id="tl-end"></div>
         </div>
       </div>
       <div class="props">
@@ -565,6 +573,21 @@ export async function renderCard(root, { boards, cardId }) {
   };
   const jump = root.querySelector('#openreq-jump');
   if (jump) jump.onclick = jumpToRequest;
+  // Scroll-down button: hidden while #tl-end (the pane's true bottom) is
+  // already on screen, shown once the timeline scrolls it out of view.
+  // root: null still respects .detail-scroll's own overflow clipping on
+  // desktop, and just tracks the page viewport on mobile, where that pane
+  // switches to overflow: visible — one observer, both layouts.
+  const scrollBtn = root.querySelector('#scroll-down');
+  const tlEnd = root.querySelector('#tl-end');
+  if (scrollBtn && tlEnd) {
+    scrollObserver?.disconnect();
+    scrollObserver = new IntersectionObserver(([entry]) => {
+      scrollBtn.hidden = entry.isIntersecting;
+    });
+    scrollObserver.observe(tlEnd);
+    scrollBtn.onclick = () => tlEnd.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
   // --- card tab (design 2g): Timeline vs Agent activity, lazy-loaded once ---
   const activityPane = root.querySelector('#activity-pane');
   const tlFilters = root.querySelector('.tl-filters');
