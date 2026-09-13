@@ -111,7 +111,7 @@ function choiceBoxHtml(options, { answered, canAnswer }) {
       .map((o) => {
         const selected = answered === o;
         const disabled = !canAnswer || !!answered;
-        return `<button type="button" class="choice-btn${selected ? ' selected' : ''}" data-choice="${esc(o)}" ${disabled ? 'disabled' : ''}>${selected ? icons.check(12) : ''}${esc(o)}</button>`;
+        return `<button type="button" class="choice-btn${selected ? ' selected' : ''}" data-choice="${esc(o)}" ${disabled ? 'disabled' : ''}>${selected ? icons.check(12, 'currentColor') : ''}${esc(o)}</button>`;
       })
       .join('')}
   </div>`;
