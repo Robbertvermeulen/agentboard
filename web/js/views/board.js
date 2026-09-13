@@ -34,10 +34,10 @@ function column(status, cards, { boardId, archivedCount, showAllDone, sessionSta
     }
   </div>`;
   if (status !== 'done') {
-    const tile = (c) =>
-      status === 'doing' && c.owner === 'agent'
-        ? cardTile(c, { presence: sessionStatus.running ? 'live' : 'dormant' })
-        : cardTile(c);
+    // doing is agent territory regardless of who created the card (cards.ts
+    // nextWork/gateWork comments) — owner only records the creator, so
+    // gating on it here hid the heartbeat on every human-created card.
+    const tile = (c) => (status === 'doing' ? cardTile(c, { presence: sessionStatus.running ? 'live' : 'dormant' }) : cardTile(c));
     return `<div class="column ${meta.chip !== 'neutral' ? status : ''} ${status}" data-status="${status}">${head}
       <div class="col-cards">${cards.map(tile).join('')}</div>
     </div>`;
