@@ -1,3 +1,10 @@
+## [0.14.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.0...v0.14.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **web:** context tree scales (real collapse, filter, breadcrumb, ellipsis) ([#66](https://github.com/Robbertvermeulen/agentboard/issues/66)) ([94cc027](https://github.com/Robbertvermeulen/agentboard/commit/94cc0274782ee444cc8a80c2a370703167a3fcfa)), closes [#59](https://github.com/Robbertvermeulen/agentboard/issues/59)
+
 # [0.14.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.13.0...v0.14.0) (2026-09-13)
 
 
