@@ -1,3 +1,10 @@
+## [0.11.3](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.2...v0.11.3) (2026-09-13)
+
+
+### Bug Fixes
+
+* artifact CSS MIME type + allow scripts in sandboxed HTML ([#52](https://github.com/Robbertvermeulen/agentboard/issues/52)) ([7711ea8](https://github.com/Robbertvermeulen/agentboard/commit/7711ea85a43eaf9226c1656bdbf9aab18deb8467)), closes [#26](https://github.com/Robbertvermeulen/agentboard/issues/26)
+
 ## [0.11.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.1...v0.11.2) (2026-09-13)
 
 
