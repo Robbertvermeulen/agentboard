@@ -156,7 +156,7 @@ function openMoreSheet(route) {
       <a class="more-row" href="#/board/${esc(boardId)}/archived">${icons.archive(18)}<span class="t">Archive</span><span class="meta">searchable</span></a>
       <div class="sheet-head"><span>Switch board</span></div>
       ${boards.map((b) => `<a class="more-row board" href="#/board/${esc(b.id)}"><span class="dot" style="background:${boardDot(boards.indexOf(b))}"></span><span class="t">${esc(b.name)}</span>${route.boardId === b.id ? `<span class="meta">current</span>` : ''}</a>`).join('')}
-      ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-signout">${icons.user(18)}<span class="t">Sign out</span></button>` : ''}
+      ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-signout">${icons.user(18, 'var(--mut)')}<span class="t">Sign out</span></button>` : ''}
       <div class="sheet-head"><span>About</span></div><div class="more-row">${versionLabel('more-version')}</div>
     </div>`,
     { sheet: true }
