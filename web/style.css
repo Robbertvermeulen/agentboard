@@ -137,6 +137,9 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .column.needs_input .col-count { color: var(--amber-text); font-weight: 500; }
 .column.review .col-count { color: var(--green-text); font-weight: 500; }
 .col-cards { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
+/* Room for the "just moved here" badge's negative top offset, which otherwise
+   clips against the scroll box when its tile sits at the top of the column (#47). */
+.column .col-cards { padding-top: 8px; }
 .col-plus { display: inline-flex; padding: 2px; border-radius: 6px; }
 .col-plus:hover { background: var(--hover-bg); }
 .col-caption { font-size: 11px; color: var(--mut-2); padding: 0 6px 6px; flex: none; }
