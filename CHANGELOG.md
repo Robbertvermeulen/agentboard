@@ -1,3 +1,10 @@
+## [0.11.4](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.3...v0.11.4) (2026-09-13)
+
+
+### Bug Fixes
+
+* **cards:** render choice buttons inside the comment card ([#53](https://github.com/Robbertvermeulen/agentboard/issues/53)) ([6a61907](https://github.com/Robbertvermeulen/agentboard/commit/6a619074e1d6255555860f6e72c49874c29d7475)), closes [#23](https://github.com/Robbertvermeulen/agentboard/issues/23)
+
 ## [0.11.3](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.2...v0.11.3) (2026-09-13)
 
 
