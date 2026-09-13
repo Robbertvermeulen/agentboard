@@ -1,3 +1,10 @@
+## [0.11.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.1...v0.11.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* prevent mobile zoom on form field focus ([#40](https://github.com/Robbertvermeulen/agentboard/issues/40)) ([6307863](https://github.com/Robbertvermeulen/agentboard/commit/6307863ecbf334fd259d218fa6f1107d0f730f48))
+
 ## [0.11.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.0...v0.11.1) (2026-09-13)
 
 
