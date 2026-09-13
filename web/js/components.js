@@ -290,19 +290,28 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
   // Cards always land in inbox (core rule); a non-inbox target column means
   // the dialog also asks the move reason and the UI moves right after create.
   const needsReason = targetStatus && targetStatus !== 'inbox';
-  const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="New card">
-    <div class="create-head"><span class="create-title">New card</span><span class="mut-sm">lands in ${needsReason ? esc(targetStatus) : 'inbox'}</span></div>
-    <div class="create-body">
+  const mobile = isMobile();
+
+  const typeCards = `
+        <div class="type-cards">
+          <button type="button" class="type-card active" data-type="task">
+            <span class="tc-icon task">${icons.fileText(14, 'currentColor')}</span>
+            <span class="tc-text"><span class="tc-title">Task</span><span class="tc-sub">Work to be done: code, an email, a post</span></span>
+          </button>
+          <button type="button" class="type-card" data-type="ops">
+            <span class="tc-icon ops">${icons.sliders(14, 'currentColor')}</span>
+            <span class="tc-text"><span class="tc-title">Ops</span><span class="tc-sub">Something the system needs: access, a decision</span></span>
+          </button>
+        </div>`;
+
+  const fields = `
       <div class="field">
         <span class="field-label">Type</span>
-        <div class="type-toggle">
-          <button type="button" class="type-btn active" data-type="task">${icons.fileText(13, 'currentColor')}task</button>
-          <button type="button" class="type-btn" data-type="ops">${icons.sliders(13, 'var(--brand-stroke)')}ops</button>
-        </div>
+        ${typeCards}
       </div>
       <div class="field">
         <span class="field-label">Title</span>
-        <input id="nc-title" type="text" placeholder="What needs to happen?" autocomplete="off">
+        <input id="nc-title" class="nc-title-input" type="text" placeholder="What needs to happen?" autocomplete="off">
         <span id="nc-title-error" class="field-error" hidden>${icons.alert()}<span></span></span>
       </div>
       <div class="field">
@@ -315,7 +324,18 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       </div>
       <div class="field">
         <span class="field-label">Body <span class="field-hint-inline">· optional, markdown</span></span>
-        <textarea id="nc-body" rows="3" placeholder="Context the agent needs before starting…"></textarea>
+        <div class="body-field" id="nc-body-field">
+          <textarea id="nc-body" class="nc-body-input" rows="1" placeholder="Context the agent needs before starting…"></textarea>
+          <div class="body-toolbar">
+            <button type="button" class="tb-btn" data-md="bold" title="Bold"><b>B</b></button>
+            <button type="button" class="tb-btn" data-md="italic" title="Italic"><i>i</i></button>
+            <button type="button" class="tb-btn mono" data-md="code" title="Code">&lt;/&gt;</button>
+            <span class="tb-sep"></span>
+            <button type="button" class="tb-btn" data-md="list" title="Bulleted list">${icons.list(14, 'currentColor')}</button>
+            <button type="button" class="tb-btn" data-md="link" title="Link">${icons.link(14, 'currentColor')}</button>
+            <span class="tb-hint">Markdown supported</span>
+          </div>
+        </div>
       </div>
       <div class="field">
         <span class="field-label">Uploads <span class="field-hint-inline">· optional, what the agent starts from</span></span>
@@ -333,6 +353,7 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       <div class="field">
         <span class="field-label">Labels <span class="field-hint-inline">· optional</span></span>
         <div class="labels-input" id="nc-labels"><input id="nc-label-entry" type="text" placeholder="add label…" autocomplete="off"></div>
+        <span class="field-hint">Press Enter to add</span>
       </div>
       ${
         needsReason
@@ -342,7 +363,27 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
               <span id="nc-reason-error" class="field-error" hidden>${icons.alert()}<span></span></span>
             </div>`
           : ''
-      }
+      }`;
+
+  const el = mobile
+    ? openOverlay(
+        `<div class="sheet create-dialog" role="dialog" aria-label="New card">
+          <div class="sheet-handle"></div>
+          <div class="sheet-head">
+            <span>New card</span>
+            <button type="button" id="nc-close" class="sheet-close" aria-label="Close">${icons.x(16)}</button>
+          </div>
+          <div class="create-body">${fields}</div>
+          <div class="create-actions">
+            <button type="button" id="nc-create" class="btn-dark" disabled>Create card</button>
+          </div>
+        </div>`,
+        { sheet: true }
+      )
+    : openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="New card">
+    <div class="create-head"><span class="create-title">New card</span></div>
+    <div class="create-body">
+      ${fields}
       <div class="create-actions">
         <button type="button" id="nc-create" class="btn-dark" disabled>Create card</button>
         <button type="button" id="nc-cancel" class="btn-ghost">Cancel</button>
@@ -350,6 +391,8 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       </div>
     </div>
   </div>`);
+
+  if (mobile) el.querySelector('#nc-close').onclick = closeOverlay;
 
   let type = 'task';
   const labels = [];
@@ -370,7 +413,7 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
     labels.forEach((l, i) => {
       const chip = document.createElement('span');
       chip.className = 'label-chip removable';
-      chip.innerHTML = `${esc(l)}<button type="button" data-i="${i}">${icons.x()}</button>`;
+      chip.innerHTML = `${esc(l)}<button type="button" class="rm" data-i="${i}" aria-label="Remove label">${icons.x()}</button>`;
       chip.querySelector('button').onclick = () => {
         labels.splice(i, 1);
         renderLabels();
@@ -379,12 +422,62 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
     });
   };
 
-  el.querySelectorAll('.type-btn').forEach((b) => {
+  el.querySelectorAll('.type-card').forEach((b) => {
     b.onclick = () => {
       type = b.dataset.type;
-      el.querySelectorAll('.type-btn').forEach((x) => x.classList.toggle('active', x === b));
+      el.querySelectorAll('.type-card').forEach((x) => x.classList.toggle('active', x === b));
     };
   });
+
+  // Body: auto-grows with content (same idea as the timeline comment box)
+  // instead of a fixed 3-row box, and the formatting toolbar stays out of
+  // the way until the field is actually focused.
+  const bodyField = el.querySelector('#nc-body-field');
+  const bodyInput = el.querySelector('#nc-body');
+  const autogrowBody = () => {
+    bodyInput.style.height = 'auto';
+    bodyInput.style.height = `${bodyInput.scrollHeight}px`;
+  };
+  autogrowBody();
+  bodyInput.addEventListener('input', autogrowBody);
+  bodyInput.addEventListener('focus', () => bodyField.classList.add('focused'));
+  bodyInput.addEventListener('blur', () => bodyField.classList.remove('focused'));
+  const wrapSelection = (before, after = before) => {
+    const start = bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd;
+    const sel = bodyInput.value.slice(start, end) || 'text';
+    bodyInput.value = bodyInput.value.slice(0, start) + before + sel + after + bodyInput.value.slice(end);
+    bodyInput.selectionStart = start + before.length;
+    bodyInput.selectionEnd = start + before.length + sel.length;
+    bodyInput.dispatchEvent(new Event('input'));
+    bodyInput.focus();
+  };
+  const listifySelection = () => {
+    const start = bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd;
+    const sel = bodyInput.value.slice(start, end) || 'item';
+    const out = sel
+      .split('\n')
+      .map((l) => (/^-\s/.test(l) ? l : `- ${l}`))
+      .join('\n');
+    bodyInput.value = bodyInput.value.slice(0, start) + out + bodyInput.value.slice(end);
+    bodyInput.dispatchEvent(new Event('input'));
+    bodyInput.focus();
+  };
+  bodyField.querySelectorAll('.tb-btn').forEach((btn) => {
+    // mousedown (not click) fires first — preventDefault so the textarea
+    // never blurs, or the toolbar would vanish before the click lands.
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.onclick = () => {
+      const md = btn.dataset.md;
+      if (md === 'bold') wrapSelection('**');
+      else if (md === 'italic') wrapSelection('*');
+      else if (md === 'code') wrapSelection('`');
+      else if (md === 'link') wrapSelection('[', '](url)');
+      else if (md === 'list') listifySelection();
+    };
+  });
+
   title.oninput = () => {
     titleError.hidden = true;
     title.classList.remove('invalid');
@@ -454,7 +547,7 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
     stage(await filesFromDrop(e.dataTransfer));
   };
 
-  el.querySelector('#nc-cancel').onclick = closeOverlay;
+  el.querySelector('#nc-cancel')?.addEventListener('click', closeOverlay);
   create.onclick = async () => {
     if (staged.reduce((n, f) => n + f.size, 0) > 50 * 1024 * 1024) {
       renderStaged('Too large: max 50 MB per upload batch');
@@ -465,7 +558,7 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       card = await api.createCard(board.value, {
         type,
         title: title.value,
-        body: el.querySelector('#nc-body').value.trim() || undefined,
+        body: bodyInput.value.trim() || undefined,
         labels: labels.length ? labels : undefined,
       });
     } catch (err) {
