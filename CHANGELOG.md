@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.6...v0.12.0) (2026-09-13)
+
+
+### Features
+
+* collapsible mobile board sections, drop dead status pills ([#58](https://github.com/Robbertvermeulen/agentboard/issues/58)) ([0a071f8](https://github.com/Robbertvermeulen/agentboard/commit/0a071f82008273d88c2d6e4ae388022d13300047))
+
 ## [0.11.6](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.5...v0.11.6) (2026-09-13)
 
 
