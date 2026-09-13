@@ -1,11 +1,13 @@
 // All boards, stacked. Desktop: mini columns styled exactly like the
 // single-board view, tinted even when empty.
-// Mobile: per board only the cards that need you, the rest counted as quiet.
+// Mobile: the same collapsed-stage columns as the single-board view, one
+// accordion per board (opening a column in one board doesn't close another
+// board's open column).
 import { api } from '../api.js';
 import { icons, STATUS_META, STATUSES } from '../icons.js';
 import { esc } from '../util.js';
 import { cardTile, statusPill, openCreateDialog, openBoardDialog, openNewMenu, crumb } from '../components.js';
-import { tabs, wireTabs, needYouCount, openCount } from './board.js';
+import { tabs, wireTabs, needYouCount, openCount, column } from './board.js';
 
 export const boardDot = (i) => (i === 0 ? 'var(--brand)' : 'var(--mut-2)');
 
@@ -26,7 +28,11 @@ function miniColumn(status, cards, boardId) {
 }
 
 export async function renderAllBoards(root, { boards }) {
-  const views = await Promise.all(boards.map((b) => api.board(b.id)));
+  const [views, archivedCounts, sessionStatus] = await Promise.all([
+    Promise.all(boards.map((b) => api.board(b.id))),
+    Promise.all(boards.map((b) => api.archived(b.id).then((r) => r.cards.length))),
+    api.sessionStatus().catch(() => ({ running: false })),
+  ]);
   const totalNeed = views.reduce((n, v) => n + needYouCount(v.columns), 0);
   const totalOpen = views.reduce((n, v) => n + openCount(v.columns), 0);
   const boardsWithNeed = views.filter((v) => needYouCount(v.columns) > 0).length;
@@ -47,8 +53,8 @@ export async function renderAllBoards(root, { boards }) {
         .map(({ board, columns }, i) => {
           const need = needYouCount(columns);
           const open = openCount(columns);
-          const needCards = [...(columns.needs_input ?? []), ...(columns.review ?? [])];
-          return `<div class="ab-board">
+          const colOpts = { boardId: board.id, archivedCount: archivedCounts[i], showAllDone: true, sessionStatus };
+          return `<div class="ab-board" data-board-id="${esc(board.id)}">
             <div class="ab-head">
               <span class="dot" style="background:${boardDot(i)}"></span>
               <a class="bname" href="#/board/${esc(board.id)}">${esc(board.name)}</a>
@@ -57,10 +63,7 @@ export async function renderAllBoards(root, { boards }) {
               ${need > 0 ? `<span class="needyou">${need} need${need === 1 ? 's' : ''} you</span>` : ''}
             </div>
             <div class="ab-cols">${STATUSES.map((s) => miniColumn(s, columns[s] ?? [], board.id)).join('')}</div>
-            <div class="m-sections">
-              ${needCards.map((c) => cardTile(c)).join('')}
-              ${open - needCards.length > 0 ? `<div class="m-quiet">${needCards.length ? '' : ''}${open - needCards.length} quiet card${open - needCards.length === 1 ? '' : 's'}</div>` : ''}
-            </div>
+            <div class="ab-columns">${STATUSES.map((s) => column(s, columns[s] ?? [], colOpts)).join('')}</div>
           </div>`;
         })
         .join('')}
@@ -69,6 +72,23 @@ export async function renderAllBoards(root, { boards }) {
   wireTabs(root);
   const goToCard = (card) => (location.hash = `#/card/${card.id}`);
   const goToBoard = (board) => (location.hash = `#/board/${board.id}`);
+  // Mobile accordion, same behaviour as the single-board view, but scoped to
+  // each board's own section — opening a column in one board leaves another
+  // board's open column alone.
+  root.querySelectorAll('[data-toggle-status]').forEach((h) => {
+    h.onclick = (e) => {
+      if (e.target.closest('.col-plus')) return;
+      const col = h.closest('.column');
+      const section = h.closest('.ab-columns');
+      const wasOpen = col.classList.contains('open');
+      section.querySelectorAll('.column.open').forEach((c) => c.classList.remove('open'));
+      if (!wasOpen) col.classList.add('open');
+    };
+  });
+  root.querySelectorAll('[data-new-in]').forEach((b) => {
+    const boardId = b.closest('.ab-board').dataset.boardId;
+    b.onclick = () => openCreateDialog({ boards, boardId, targetStatus: b.dataset.newIn }, goToCard);
+  });
   root.querySelectorAll('[data-new-menu]').forEach((b) => {
     b.onclick = () =>
       openNewMenu(

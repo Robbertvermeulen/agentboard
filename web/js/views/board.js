@@ -23,7 +23,7 @@ const DAY = 24 * 60 * 60 * 1000;
 let lastSeen = new Map(); // card id -> status, van de vorige render
 let lastBoard = null;
 
-function column(status, cards, { boardId, archivedCount, showAllDone, sessionStatus }) {
+export function column(status, cards, { boardId, archivedCount, showAllDone, sessionStatus }) {
   const meta = STATUS_META[status];
   // On mobile this same header doubles as an accordion toggle (see
   // data-toggle-status wiring below); .col-chevron only renders visibly
