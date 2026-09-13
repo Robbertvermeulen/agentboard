@@ -135,10 +135,11 @@ function relStatusNote(card) {
 
 export async function renderCard(root, { boards, cardId }) {
   const rerender = () => renderCard(root, { boards, cardId });
-  const [{ card, comments, events, blockers = [], blocks = [] }, { artifacts }, { uploads }] = await Promise.all([
+  const [{ card, comments, events, blockers = [], blocks = [] }, { artifacts }, { uploads }, sessionStatus] = await Promise.all([
     api.card(cardId),
     api.artifacts(cardId),
     api.uploads(cardId),
+    api.sessionStatus().catch(() => ({ running: false })),
   ]);
   card.blockers = blockers;
   const board = boards.find((b) => b.id === card.board_id);
@@ -294,6 +295,11 @@ export async function renderCard(root, { boards, cardId }) {
     card.status !== 'archived' &&
     (card.status === 'ready' || (last?.kind === 'comment' && last.author === 'human'));
 
+  // Same live/dormant presence already shown on doing-column board tiles
+  // (board.js) — doing is agent territory regardless of owner, so this
+  // isn't gated on card.owner either.
+  const agentPresence = card.status === 'doing';
+
   // Vision besluit I: quick actions never target doing — the human always
   // hands back to ready; doing is exclusively the agent's claim.
   const quick = [];
@@ -433,6 +439,13 @@ export async function renderCard(root, { boards, cardId }) {
           ${
             queued
               ? `<div class="event-row queued-line">${statusIcon('ready', 14, 'var(--mut-2)')}${icons.bot(14, 'var(--mut-2)')}<p>Queued for the agent — picked up at the next agent session.</p></div>`
+              : ''
+          }
+          ${
+            agentPresence
+              ? sessionStatus.running
+                ? `<div class="event-row queued-line agent-live"><span class="live-dot"></span><p>Agent is working on this now — live session</p></div>`
+                : `<div class="event-row queued-line agent-dormant">${statusIcon('ready', 14, 'var(--mut-2)')}<p>No live session — resumes at the next run</p></div>`
               : ''
           }
         </div>

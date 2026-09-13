@@ -244,6 +244,24 @@ setInterval(async () => {
 }, 60 * 60 * 1000);
 
 // --- realtime (vision besluit K): one cheap poll drives every view ---
+// route() rebuilds the view from scratch (view.innerHTML = ''), which drops
+// scroll position. card.js's own poll-refresh saves/restores its scroll
+// around that rebuild (see tryRefresh); do the same here for the board route,
+// whose columns each scroll independently (#48).
+function captureScroll() {
+  return {
+    win: window.scrollY,
+    cols: [...document.querySelectorAll('.column[data-status]')].map((el) => [el.dataset.status, el.querySelector('.col-cards')?.scrollTop ?? 0]),
+  };
+}
+function restoreScroll(saved) {
+  window.scrollTo(0, saved.win);
+  for (const [status, top] of saved.cols) {
+    const el = document.querySelector(`.column[data-status="${status}"] .col-cards`);
+    if (el) el.scrollTop = top;
+  }
+}
+
 let cursor = null;
 let ticking = false;
 async function tick() {
@@ -265,7 +283,11 @@ async function tick() {
     cursor = res.cursor;
     if (name === 'card') await pokeCardRefresh();
     else if (name === 'session') await pokeSessionRefresh(); // live tail: append-only, no rerender (4b)
-    else await route(); // cheap full re-render; overlay is closed, so no loss
+    else {
+      const saved = captureScroll();
+      await route(); // cheap full re-render; overlay is closed, so no loss
+      restoreScroll(saved);
+    }
   } catch {
     /* server hiccup — next tick retries */
   } finally {
