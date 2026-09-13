@@ -1,3 +1,11 @@
+## [0.11.6](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.5...v0.11.6) (2026-09-13)
+
+
+### Bug Fixes
+
+* darker checkmark on selected choice buttons ([#57](https://github.com/Robbertvermeulen/agentboard/issues/57)) ([afdbfe4](https://github.com/Robbertvermeulen/agentboard/commit/afdbfe4343b492ed754ff3da723686ed8ac9f580))
+* redesign the new-card modal per issue [#50](https://github.com/Robbertvermeulen/agentboard/issues/50) ([#56](https://github.com/Robbertvermeulen/agentboard/issues/56)) ([2a49b9c](https://github.com/Robbertvermeulen/agentboard/commit/2a49b9ca51eada14cf3cb2a50773bae7358dc49e))
+
 ## [0.11.5](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.4...v0.11.5) (2026-09-13)
 
 
