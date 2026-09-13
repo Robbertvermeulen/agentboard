@@ -273,7 +273,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 
 /* mobile all-boards + board header (hidden on desktop) */
 .m-head { display: none; }
-.m-sections { display: none; }
+.ab-columns { display: none; }
 
 /* ---------- card detail ---------- */
 
@@ -907,11 +907,10 @@ input, textarea, select { font: inherit; color: var(--ink); }
   .column.ready { order: 5; }
   .column.done { order: 6; }
 
-  /* all boards: stacked need-you sections */
+  /* all boards: same collapsed-stage columns as the single-board view */
   .ab-cols { display: none; }
   .ab-board { padding: 14px 16px 18px; }
-  .m-sections { display: flex; flex-direction: column; gap: 10px; }
-  .m-quiet { font-size: 12px; color: var(--mut); padding: 0 2px; }
+  .ab-columns { display: flex; flex-direction: column; gap: 0; }
 
   /* card detail */
   .detail { flex-direction: column; }
