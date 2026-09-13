@@ -118,6 +118,7 @@ const ARTIFACT_INLINE: Record<string, string> = {
   '.log': 'text/plain; charset=utf-8',
   '.json': 'application/json',
   '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
 };
 
 function webDir(): string {
