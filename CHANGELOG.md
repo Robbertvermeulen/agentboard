@@ -1,3 +1,10 @@
+## [0.12.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.0...v0.12.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* comment scroll always jumps from the top ([#61](https://github.com/Robbertvermeulen/agentboard/issues/61)) ([85205d0](https://github.com/Robbertvermeulen/agentboard/commit/85205d043b8b50b698d45dc4b0da17e8d73e9b9f))
+
 # [0.12.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.11.6...v0.12.0) (2026-09-13)
 
 
