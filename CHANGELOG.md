@@ -1,3 +1,10 @@
+## [0.12.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.1...v0.12.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* **web:** mobile more-sheet icon and section spacing ([#62](https://github.com/Robbertvermeulen/agentboard/issues/62)) ([35e2b15](https://github.com/Robbertvermeulen/agentboard/commit/35e2b15a0eebf62d7a8b6fed6357e8768e6abfd1))
+
 ## [0.12.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.0...v0.12.1) (2026-09-13)
 
 
