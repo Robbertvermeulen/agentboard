@@ -142,6 +142,10 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .column .col-cards { padding-top: 8px; }
 .col-plus { display: inline-flex; padding: 2px; border-radius: 6px; }
 .col-plus:hover { background: var(--hover-bg); }
+.col-actions { display: flex; align-items: center; gap: 2px; }
+/* Accordion chevron: only meaningful on mobile, where the header doubles
+   as a collapse toggle (#54) — desktop always shows every column. */
+.col-chevron { display: none; }
 .col-caption { font-size: 11px; color: var(--mut-2); padding: 0 6px 6px; flex: none; }
 .done-cards { opacity: 0.72; }
 .show-all-done {
@@ -783,27 +787,36 @@ input, textarea, select { font: inherit; color: var(--ink); }
   .crumb-bar { display: none; }
   .toolbar { display: none; }
 
-  .m-head { display: block; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+  .m-head { display: block; padding: 14px 16px; border-bottom: 1px solid var(--line); }
   .m-head .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .m-head .title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .row-actions { display: flex; align-items: center; gap: 8px; }
   .m-need {
     display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--amber-text);
-    background: color-mix(in oklch, var(--amber) 14%, #fff); border-radius: 999px; padding: 4px 10px;
+    background: color-mix(in oklch, var(--amber) 14%, #fff); border-radius: 999px; padding: 4px 10px; white-space: nowrap;
   }
   .m-need .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--amber-strong); }
   .m-sub { margin: 4px 0 0; font-size: 13px; color: var(--mut); }
-  .m-chips { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; }
-  .m-chip { font-size: 13px; color: var(--ink-3); background: var(--chip-bg); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
-  .m-chip.needs_input { color: #fff; background: var(--amber-strong); font-weight: 600; }
-  .m-chip.review { color: #fff; background: var(--green); font-weight: 600; }
-  .m-chip.doing { color: #fff; background: var(--brand); font-weight: 600; }
-  .m-new { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #fff; background: var(--dark); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+  .m-new { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #fff; background: var(--dark); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
 
-  /* board columns become vertical sections, attention first */
-  .columns { flex-direction: column; overflow: visible; padding: 14px 16px 16px; gap: 14px; }
-  .column { width: 100%; background: none !important; border: none !important; padding: 0; max-height: none; }
-  .col-head { padding: 0; }
-  .col-cards { overflow: visible; }
+  /* board columns become a collapsible accordion, one section open at a
+     time. Previously every column stayed permanently expanded with only
+     an 8px gap between them, so an empty stage (0 cards, ~32px tall)
+     nearly fused with the next header (#54). Now each section is a fixed
+     divider-separated row (pill + count + chevron) whether it has cards
+     or not, closed by default; tapping opens it and closes the other. */
+  .columns { flex-direction: column; overflow: visible; padding: 0 16px 16px; gap: 0; }
+  .column { width: 100%; background: none !important; border: none !important; border-bottom: 1px solid var(--line) !important; border-radius: 0; padding: 0; max-height: none; }
+  .column:last-child { border-bottom: none !important; }
+  .col-head { padding: 15px 2px; margin-bottom: 0; height: auto; cursor: pointer; }
+  .col-chevron { display: inline-flex; margin-left: 2px; color: var(--mut-2); transition: transform 0.2s ease; }
+  .column.open .col-chevron { transform: rotate(180deg); color: var(--ink-3); }
+  .column.empty .col-head .status-pill, .column.empty .col-head .col-count { opacity: 0.55; }
+  .column:not(.open) .col-cards, .column:not(.open) .col-caption, .column:not(.open) .show-all-done, .column:not(.open) .archived-link {
+    display: none;
+  }
+  .col-cards { overflow: visible; padding: 2px 2px 16px; }
+  .col-empty-msg { font-size: 13px; color: var(--mut); margin: 0; padding: 0 2px 16px; }
   .card-tile { border-radius: 12px; padding: 14px; }
   .tile-title { font-size: 15px; }
   .waiting-line { font-size: 13px; }
