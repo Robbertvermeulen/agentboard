@@ -377,9 +377,15 @@ export function createApp(): Hono {
       'Content-Type': inline ?? 'application/octet-stream',
       'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${path.basename(abs)}"`,
       // .html is agent/user-authored, so treat it as untrusted: CSP sandbox
-      // forces a unique opaque origin (no scripts, no cookie/storage access,
-      // no top-level navigation) even when opened directly, not just framed.
-      ...(ext === '.html' ? { 'Content-Security-Policy': 'sandbox' } : {}),
+      // forces a unique opaque origin (no cookie/storage access, no
+      // same-origin requests to the app, no top-level navigation, no
+      // popups) even when opened directly, not just framed. allow-scripts
+      // is deliberately included without allow-same-origin: design mockups
+      // rely on real JS (accordions, auto-grow fields, live previews), and
+      // that combination is the standard safe pattern for running untrusted
+      // script in an isolated document — the null origin still blocks it
+      // from ever touching the app's cookies or session.
+      ...(ext === '.html' ? { 'Content-Security-Policy': 'sandbox allow-scripts' } : {}),
     });
   };
 
