@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.2...v0.13.0) (2026-09-13)
+
+
+### Features
+
+* **web:** floating scroll-down button on card pages ([#63](https://github.com/Robbertvermeulen/agentboard/issues/63)) ([a043763](https://github.com/Robbertvermeulen/agentboard/commit/a04376304635a85fa2f2a35f747c0fab1bc69798))
+
 ## [0.12.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.12.1...v0.12.2) (2026-09-13)
 
 
