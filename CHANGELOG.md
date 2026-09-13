@@ -1,3 +1,10 @@
+## [0.14.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.1...v0.14.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* **web:** scroll-down button reliably toggles on mobile ([#68](https://github.com/Robbertvermeulen/agentboard/issues/68)) ([3e1bc27](https://github.com/Robbertvermeulen/agentboard/commit/3e1bc2765c8437d64b48a9bd91df822ca7ab1b79)), closes [#63](https://github.com/Robbertvermeulen/agentboard/issues/63)
+
 ## [0.14.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.0...v0.14.1) (2026-09-13)
 
 
