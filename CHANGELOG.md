@@ -1,3 +1,5 @@
+## [0.14.6](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.5...v0.14.6) (2026-09-14)
+
 ## [0.14.5](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.4...v0.14.5) (2026-09-14)
 
 
