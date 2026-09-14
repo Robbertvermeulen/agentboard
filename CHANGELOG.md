@@ -1,3 +1,10 @@
+## [0.14.4](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.3...v0.14.4) (2026-09-14)
+
+
+### Bug Fixes
+
+* **release:** give style commits a patch release ([#81](https://github.com/Robbertvermeulen/agentboard/issues/81)) ([21d4538](https://github.com/Robbertvermeulen/agentboard/commit/21d4538519ae70fbcd1a251d0876efffe6627c67)), closes [#73](https://github.com/Robbertvermeulen/agentboard/issues/73) [#76](https://github.com/Robbertvermeulen/agentboard/issues/76) [#74](https://github.com/Robbertvermeulen/agentboard/issues/74) [#79](https://github.com/Robbertvermeulen/agentboard/issues/79)
+
 ## [0.14.3](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.2...v0.14.3) (2026-09-14)
 
 
