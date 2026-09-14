@@ -262,6 +262,25 @@ function restoreScroll(saved) {
   }
 }
 
+// Mobile accordion: route()'s full rerender drops which column was open,
+// collapsing it back under the visitor and shrinking the page, which then
+// throws off restoreScroll above (#69). Capture/restore alongside scroll,
+// and restore the open column *before* scroll so the page height is right
+// by the time scrollTo runs.
+function captureOpenColumns() {
+  return [...document.querySelectorAll('.column.open[data-status]')].map((el) => ({
+    boardId: el.closest('.ab-board')?.dataset.boardId ?? null,
+    status: el.dataset.status,
+  }));
+}
+function restoreOpenColumns(saved) {
+  for (const { boardId, status } of saved) {
+    const scope = boardId ? document.querySelector(`.ab-board[data-board-id="${CSS.escape(boardId)}"]`) : document;
+    const el = scope?.querySelector(`.column[data-status="${status}"]`);
+    if (el) el.classList.add('open');
+  }
+}
+
 let cursor = null;
 let ticking = false;
 async function tick() {
@@ -285,7 +304,9 @@ async function tick() {
     else if (name === 'session') await pokeSessionRefresh(); // live tail: append-only, no rerender (4b)
     else {
       const saved = captureScroll();
+      const savedOpen = captureOpenColumns();
       await route(); // cheap full re-render; overlay is closed, so no loss
+      restoreOpenColumns(savedOpen); // before scroll: page height must be final first
       restoreScroll(saved);
     }
   } catch {
