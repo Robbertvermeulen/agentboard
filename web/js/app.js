@@ -248,16 +248,37 @@ setInterval(async () => {
 // scroll position. card.js's own poll-refresh saves/restores its scroll
 // around that rebuild (see tryRefresh); do the same here for the board route,
 // whose columns each scroll independently (#48).
+//
+// On desktop the All Boards page (the default `#/` route) doesn't scroll the
+// window at all: #view is clipped (overflow: hidden) and .ab-scroll is the
+// actual scroll container. That container was never captured here, so every
+// realtime tick reset it to the top.
+//
+// Per-column scrollTop is also scoped by board (like restoreOpenColumns
+// below): the All Boards accordion renders one .column per status per
+// board, and a bare querySelector only ever finds the first match, silently
+// restoring the wrong board's scroll position when more than one board has
+// scroll in the same status column.
 function captureScroll() {
   return {
     win: window.scrollY,
-    cols: [...document.querySelectorAll('.column[data-status]')].map((el) => [el.dataset.status, el.querySelector('.col-cards')?.scrollTop ?? 0]),
+    ab: document.querySelector('.ab-scroll')?.scrollTop ?? null,
+    cols: [...document.querySelectorAll('.column[data-status]')].map((el) => ({
+      boardId: el.closest('.ab-board')?.dataset.boardId ?? null,
+      status: el.dataset.status,
+      top: el.querySelector('.col-cards')?.scrollTop ?? 0,
+    })),
   };
 }
 function restoreScroll(saved) {
   window.scrollTo(0, saved.win);
-  for (const [status, top] of saved.cols) {
-    const el = document.querySelector(`.column[data-status="${status}"] .col-cards`);
+  if (saved.ab != null) {
+    const ab = document.querySelector('.ab-scroll');
+    if (ab) ab.scrollTop = saved.ab;
+  }
+  for (const { boardId, status, top } of saved.cols) {
+    const scope = boardId ? document.querySelector(`.ab-board[data-board-id="${CSS.escape(boardId)}"]`) : document;
+    const el = scope?.querySelector(`.column[data-status="${status}"] .col-cards`);
     if (el) el.scrollTop = top;
   }
 }
