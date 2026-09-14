@@ -60,8 +60,7 @@ export function cardRefChip(ref) {
 }
 
 export function cardTile(card, { presence } = {}) {
-  const amber = card.status === 'needs_input' ? 'amber-border' : '';
-  const cls = ['card-tile', amber, card.status === 'done' ? 'done-tile' : ''].filter(Boolean).join(' ');
+  const cls = ['card-tile', card.status === 'done' ? 'done-tile' : ''].filter(Boolean).join(' ');
   const linked = cardRefs(card)[0];
   const openBlockers = (card.blockers ?? []).filter((b) => b.status !== 'done' && b.status !== 'archived').length;
   return `<a class="${cls}" href="#/card/${esc(card.id)}" data-id="${esc(card.id)}">
