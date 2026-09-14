@@ -1,3 +1,10 @@
+## [0.14.7](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.6...v0.14.7) (2026-09-14)
+
+
+### Bug Fixes
+
+* mark agent sessions with AGENTBOARD_ACTOR so --as/--owner default correctly ([#45](https://github.com/Robbertvermeulen/agentboard/issues/45)) ([68cd41f](https://github.com/Robbertvermeulen/agentboard/commit/68cd41fbb206a4981374df10f4827eeeb33d4443)), closes [#42](https://github.com/Robbertvermeulen/agentboard/issues/42) [#42](https://github.com/Robbertvermeulen/agentboard/issues/42)
+
 ## [0.14.6](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.5...v0.14.6) (2026-09-14)
 
 ## [0.14.5](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.4...v0.14.5) (2026-09-14)
