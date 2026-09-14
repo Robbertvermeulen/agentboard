@@ -22,7 +22,7 @@ function miniColumn(status, cards, boardId) {
   const body =
     cards.length === 0
       ? `<div class="ab-empty">—</div>`
-      : `${cards.slice(0, 3).map((c) => cardTile(c, { compact: true })).join('')}
+      : `${cards.slice(0, 3).map((c) => cardTile(c)).join('')}
     ${rest > 0 ? `<a class="ab-more" href="#/board/${esc(boardId)}">+${rest} more</a>` : ''}`;
   return `<div class="ab-col ${tint}">${head}${body}</div>`;
 }

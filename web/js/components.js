@@ -59,30 +59,26 @@ export function cardRefChip(ref) {
   return `<a class="cardref-chip" href="#/card/${esc(target)}">${icons.link(10, 'var(--brand-stroke)')}${esc(ref.label)}</a>`;
 }
 
-// One card tile on a board column. compact = the all-boards mini variant.
-export function cardTile(card, { compact = false, presence } = {}) {
+export function cardTile(card, { presence } = {}) {
   const amber = card.status === 'needs_input' ? 'amber-border' : '';
-  const cls = ['card-tile', card.type === 'ops' ? 'ops-border' : amber, compact ? 'compact' : '', card.status === 'done' ? 'done-tile' : '']
-    .filter(Boolean)
-    .join(' ');
+  const cls = ['card-tile', amber, card.status === 'done' ? 'done-tile' : ''].filter(Boolean).join(' ');
   const linked = cardRefs(card)[0];
   const openBlockers = (card.blockers ?? []).filter((b) => b.status !== 'done' && b.status !== 'archived').length;
   return `<a class="${cls}" href="#/card/${esc(card.id)}" data-id="${esc(card.id)}">
     <div class="tile-top">
-      <span class="tile-id">${idChip(card, { size: compact ? 'sm' : 'md' })}${ageChip(card)}${
+      <span class="tile-id">${idChip(card)}${ageChip(card)}${
         openBlockers ? `<span class="blocked-chip" title="${openBlockers} open blocker${openBlockers === 1 ? '' : 's'}">${icons.block(10)}${openBlockers}</span>` : ''
       }${card.open_requests ? `<span class="req-chip" title="${card.open_requests} open secret request${card.open_requests === 1 ? '' : 's'}">${icons.lock(10)}${card.open_requests} request${card.open_requests === 1 ? '' : 's'}</span>` : ''}${card.routine ? `<span class="routine-chip" title="${esc(card.routine)}">${icons.history(10)}routine</span>` : ''}${
         isWaitingExternal(card) ? `<span class="wait-chip" title="waiting on external — not in 'needs me'${card.wait_check ? ` · check ${esc(card.wait_check)}` : ''}">${icons.clock(10, 'var(--mut)')}waiting</span>` : ''
       }</span>
-      ${card.owner === 'agent' && !compact ? agentChip() : ''}
-      ${card.owner === 'agent' && compact ? '<span class="agent-mini">@agent</span>' : ''}
+      ${card.owner === 'agent' ? agentChip() : ''}
     </div>
     <p class="tile-title">${esc(card.title)}</p>
     ${reasonLine(card)}
     ${presence === 'live' ? '<p class="presence live"><span class="live-dot"></span>live session</p>' : ''}
     ${presence === 'dormant' ? '<p class="presence">no live session — resumes at the next run</p>' : ''}
     ${
-      !compact && (card.labels?.length || linked)
+      card.labels?.length || linked
         ? `<div class="tile-foot">${labelChips(card.labels)}${linked ? `<span class="tile-link">${icons.link()}${esc(linked.label.match(CARD_ID_RE)[0])}</span>` : ''}</div>`
         : ''
     }
