@@ -186,7 +186,7 @@ function renderError(err) {
   </div>`;
 }
 
-async function route() {
+async function route({ tick = false } = {}) {
   closeOverlay();
   stopCardPolling();
   stopSessionPolling();
@@ -203,11 +203,16 @@ async function route() {
   try {
     boards = (await api.boards()).boards;
     renderSidebar(r);
-    // The sessions overview preserves its own scroll position across the
-    // blind rerenders route() does on every changed tick — it needs the OLD
-    // .page-scroll still in the DOM to read scrollTop from before it
-    // overwrites it, so it alone is exempted from the blank-first below.
-    if (r.name !== 'sessions') view.innerHTML = '';
+    // Every view function below fetches its own data first and only then
+    // does one atomic `root.innerHTML = ...` write, so it never needs an
+    // empty view to render into. On a real navigation we still blank ahead
+    // of time so the old route's content doesn't hang around while the new
+    // one loads; on a tick (same route, just re-fetched — #1246) we leave
+    // the current content in place until the new content is ready, so the
+    // view never sits visibly blank while ticks poll every 2.5s. The
+    // sessions overview additionally relies on the OLD .page-scroll still
+    // being in the DOM to read scrollTop from before it overwrites it.
+    if (!tick && r.name !== 'sessions') view.innerHTML = '';
     if (r.name === 'all') await renderAllBoards(view, { boards });
     else if (r.name === 'board') await renderBoard(view, { boards, boardId: r.boardId });
     else if (r.name === 'archive') await renderArchive(view, { boards, boardId: r.boardId });
@@ -326,7 +331,7 @@ async function tick() {
     else {
       const saved = captureScroll();
       const savedOpen = captureOpenColumns();
-      await route(); // cheap full re-render; overlay is closed, so no loss
+      await route({ tick: true }); // cheap full re-render; overlay is closed, so no loss
       restoreOpenColumns(savedOpen); // before scroll: page height must be final first
       restoreScroll(saved);
     }
