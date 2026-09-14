@@ -1,3 +1,10 @@
+## [0.14.5](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.4...v0.14.5) (2026-09-14)
+
+
+### Bug Fixes
+
+* **web:** stop blanking the view on realtime ticks ([#78](https://github.com/Robbertvermeulen/agentboard/issues/78)) ([b6231ab](https://github.com/Robbertvermeulen/agentboard/commit/b6231ab6a280bbc585909c26cc65a80dcb77db54)), closes [#77](https://github.com/Robbertvermeulen/agentboard/issues/77) [69/#71](https://github.com/Robbertvermeulen/agentboard/issues/71) [#70](https://github.com/Robbertvermeulen/agentboard/issues/70) [#70](https://github.com/Robbertvermeulen/agentboard/issues/70)
+
 ## [0.14.4](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.3...v0.14.4) (2026-09-14)
 
 
