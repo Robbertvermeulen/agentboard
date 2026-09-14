@@ -169,11 +169,10 @@ input, textarea, select { font: inherit; color: var(--ink); }
 
 /* card tile */
 .card-tile {
-  display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column; gap: 5px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
   padding: 15px; box-shadow: var(--shadow-card); color: inherit; flex: none;
 }
 .card-tile:hover { text-decoration: none; border-color: color-mix(in oklch, var(--ink) 18%, var(--line)); }
-.card-tile.amber-border { border-color: color-mix(in oklch, var(--amber-strong) 28%, #fff); }
 .tile-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tile-id { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .id-chip { font-family: var(--mono); font-size: 12px; color: var(--mut); display: inline-flex; align-items: center; gap: 5px; }
