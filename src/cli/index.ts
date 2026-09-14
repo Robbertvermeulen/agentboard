@@ -37,6 +37,11 @@ import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js'
 import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
 import { performUpdate, versionInfo } from '../core/update.js';
 
+// An agent session sets AGENTBOARD_ACTOR=agent (see runner.ts sessionEnv());
+// a plain interactive terminal has no such marker and keeps defaulting to
+// human. An explicit --as/--owner on the command line still overrides this.
+const DEFAULT_ACTOR = process.env.AGENTBOARD_ACTOR ?? 'human';
+
 interface OutputOpts {
   json?: boolean;
 }
@@ -409,11 +414,11 @@ card
   .requiredOption('--type <type>', 'task | ops')
   .requiredOption('--title <title>', 'card title')
   .option('--body <body>', 'card body')
-  .option('--owner <owner>', 'human | agent', 'human')
+  .option('--owner <owner>', 'human | agent', DEFAULT_ACTOR)
   .option('--board <id>', 'board (required when more than one board exists)')
   .option('--blocks <id>', 'link this new card as a blocker of <id> (writes blocker_added on that card)')
   .option('--routine <pad>', 'routine that spawned this card; the card starts in ready')
-  .option('--as <actor>', 'human | agent — actor of the blocker_added event', 'human')
+  .option('--as <actor>', 'human | agent — actor of the blocker_added event', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
@@ -478,7 +483,7 @@ card
   .command('move <id> <status>')
   .description('change status (writes an event)')
   .requiredOption('--reason <reason>', 'why this status change')
-  .option('--as <actor>', 'human | agent', 'human')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--from <status>', 'only move when the card is still in this status (the claim)')
   .option('--json', 'JSON output')
   .action(
@@ -491,7 +496,7 @@ card
 card
   .command('comment <id> <text>')
   .description("add a comment ('-' reads stdin, e.g. to pipe a diff)")
-  .option('--as <author>', 'human | agent', 'human')
+  .option('--as <author>', 'human | agent', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
     run(async (opts, id: string, text: string) => {
@@ -505,7 +510,7 @@ card
   .command('log <id> <text>')
   .description('log an event on a card (action_taken or error)')
   .option('--kind <kind>', 'action_taken | error', 'action_taken')
-  .option('--as <actor>', 'human | agent', 'human')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--check-after <when>', 'wait-state: when the scheduler should bring this card back (30m/6h/2d or ISO)')
   .option('--json', 'JSON output')
   .action(
@@ -594,7 +599,7 @@ ctx
   .requiredOption('--content <content>', "file content, '-' reads stdin")
   .requiredOption('--card <id>', 'card this write belongs to (goes in commit message + event)')
   .option('--message <message>', 'commit message override')
-  .option('--as <actor>', 'human | agent', 'human')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
     run(async (opts, pad: string) => {

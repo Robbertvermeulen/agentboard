@@ -111,7 +111,7 @@ function workDir(): string {
 const SESSION_ENV_STRIP = ['FLY_API_TOKEN', 'AGENTBOARD_SESSION_SECRET'];
 
 function sessionEnv(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env };
+  const env: NodeJS.ProcessEnv = { ...process.env, AGENTBOARD_ACTOR: 'agent' };
   for (const key of SESSION_ENV_STRIP) delete env[key];
   return env;
 }
