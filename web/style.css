@@ -169,7 +169,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 
 /* card tile */
 .card-tile {
-  display: block; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
   padding: 15px; box-shadow: var(--shadow-card); color: inherit; flex: none;
 }
 .card-tile:hover { text-decoration: none; border-color: color-mix(in oklch, var(--ink) 18%, var(--line)); }
@@ -210,17 +210,18 @@ input, textarea, select { font: inherit; color: var(--ink); }
   border: 1px solid var(--line, #e5e7eb);
 }
 .req-chip { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:600; color:oklch(0.44 0.13 45); background:color-mix(in oklch, oklch(0.44 0.13 45) 10%, transparent); border-radius:999px; padding:1px 7px; }
-.tile-title { margin: 4px 0 0; font-size: 14px; font-weight: 500; line-height: 1.35; text-wrap: pretty; color: var(--ink); }
+.tile-title { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.35; text-wrap: pretty; color: var(--ink); }
 .done-tile .tile-title { color: var(--ink-3); }
-.waiting-line { margin: 5px 0 0; display: flex; align-items: flex-start; gap: 5px; font-size: 12px; color: var(--amber-text); line-height: 1.4; }
+.tile-status-line { font-size: 10px; line-height: 1.4; }
+.waiting-line { margin: 0; display: flex; align-items: flex-start; gap: 5px; color: var(--amber-text); }
 .waiting-line svg { margin-top: 2px; }
-.review-line { margin: 4px 0 0; font-size: 12px; color: var(--mut); line-height: 1.4; }
-.tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.review-line { margin: 0; color: var(--mut); }
+.tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 0; flex-wrap: wrap; }
 .label-chip { font-size: 11px; color: var(--mut); background: var(--chip-bg); border-radius: 999px; padding: 1px 8px; }
 .tile-link { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 11px; color: var(--mut); margin-left: auto; }
 
 /* doing-column heartbeat: live vs dormant agent session (design 2a) */
-.presence { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--mut); margin: 4px 0 0; }
+.presence { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--mut); margin: 0; }
 .presence.live { color: var(--brand-deep); }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); animation: ab-pulse 1.6s infinite; }
 @keyframes ab-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }

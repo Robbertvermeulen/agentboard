@@ -41,10 +41,10 @@ export function statusPill(status, { chevron = false, id = '' } = {}) {
 export function reasonLine(card) {
   if (!card.status_reason) return '';
   if (card.status === 'needs_input') {
-    return `<p class="waiting-line">${icons.clock()}waiting: ${esc(card.status_reason)}</p>`;
+    return `<p class="waiting-line tile-status-line">${icons.clock()}waiting: ${esc(card.status_reason)}</p>`;
   }
   if (card.status === 'review') {
-    return `<p class="review-line">${esc(card.status_reason)}</p>`;
+    return `<p class="review-line tile-status-line">${esc(card.status_reason)}</p>`;
   }
   return '';
 }
