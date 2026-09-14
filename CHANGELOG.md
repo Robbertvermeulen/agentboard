@@ -1,3 +1,10 @@
+## [0.14.3](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.2...v0.14.3) (2026-09-14)
+
+
+### Bug Fixes
+
+* **web:** preserve scroll position and open column across realtime rerenders ([#70](https://github.com/Robbertvermeulen/agentboard/issues/70)) ([1ff7c94](https://github.com/Robbertvermeulen/agentboard/commit/1ff7c94f1db75abc02d9f0aca75fb806c5a69f8b)), closes [#69](https://github.com/Robbertvermeulen/agentboard/issues/69) [#69](https://github.com/Robbertvermeulen/agentboard/issues/69) [#71](https://github.com/Robbertvermeulen/agentboard/issues/71)
+
 ## [0.14.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.1...v0.14.2) (2026-09-13)
 
 
