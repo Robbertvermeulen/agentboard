@@ -60,7 +60,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 
 #sidebar {
   width: 240px; flex: none; display: flex; flex-direction: column; gap: 2px;
-  padding: 10px 8px; border-right: 1px solid var(--line); background: var(--surface);
+  padding: 20px; border-right: 1px solid var(--line); background: var(--surface);
 }
 .side-logo { display: flex; align-items: center; gap: 8px; padding: 6px 8px 10px; }
 .side-logo .mark {
@@ -588,7 +588,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 }
 
 /* properties panel */
-.props { width: 300px; flex: none; border-left: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); overflow-y: auto; }
+.props { width: 300px; flex: none; border-left: 1px solid var(--line); padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); overflow-y: auto; }
 .props .p-title { font-size: 14px; font-weight: 600; }
 .prop-row { display: flex; align-items: center; gap: 12px; }
 .prop-row.top { align-items: flex-start; }
