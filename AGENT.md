@@ -54,7 +54,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    something outside the board (a Trello card, a server, a file), you hit
    a dead end, you made a judgement call. One line, with enough context
    (what, where, link) to reconstruct it later. Comments are for talking
-   to the user.
+   to the user. A reference to another card, in a comment or an event, is
+   always a markdown link (`[task_xxxx](${AGENTBOARD_ORIGIN}/#/card/task_xxxx)`),
+   never a bare card id.
 7. A ref on a card says *what* (a Trello card, an email, a repo). *How* to
    reach it runs through the card's context refs: resource file →
    `connection` file → `secret_ref` → secrets.env. Follow that chain before
