@@ -1,3 +1,10 @@
+# [0.15.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.8...v0.15.0) (2026-09-15)
+
+
+### Features
+
+* add open-cards dialog when archiving a blocked board ([#85](https://github.com/Robbertvermeulen/agentboard/issues/85)) ([7ec7737](https://github.com/Robbertvermeulen/agentboard/commit/7ec77372e96c15c2654c45f5b7ee6324042647c8))
+
 ## [0.14.8](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.7...v0.14.8) (2026-09-15)
 
 ## [0.14.7](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.6...v0.14.7) (2026-09-14)
