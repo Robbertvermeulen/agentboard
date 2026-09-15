@@ -89,7 +89,7 @@ function renderSidebar(route, views) {
     <div class="side-logo"><span class="mark">A</span><span class="name">Agentboard</span></div>
     <a class="side-item ${onBoards && route.name !== 'archive' ? 'active' : ''}" href="#/">
       ${icons.board(16, onBoards ? 'var(--dark)' : 'var(--mut)')}
-      <span>Board</span>
+      <span>Boards</span>
       ${totalNeed ? `<span class="count">${totalNeed}</span>` : ''}
     </a>
     <a class="side-item ${route.name === 'ctx' ? 'active' : ''}" href="#/ctx">
@@ -128,7 +128,7 @@ function renderSidebar(route, views) {
 function renderTabbar(route) {
   const onBoard = route.name === 'all' || route.name === 'board' || route.name === 'archive' || route.name === 'card';
   tabbar.innerHTML = `
-    <a class="tab-item ${onBoard ? 'active' : ''}" href="#/">${icons.board(22, onBoard ? 'var(--dark)' : 'var(--mut-2)')}<span>Board</span></a>
+    <a class="tab-item ${onBoard ? 'active' : ''}" href="#/">${icons.board(22, onBoard ? 'var(--dark)' : 'var(--mut-2)')}<span>Boards</span></a>
     <a class="tab-item ${route.name === 'ctx' ? 'active' : ''}" href="#/ctx">${icons.fileText(22, route.name === 'ctx' ? 'var(--dark)' : 'var(--mut-2)')}<span>Context</span></a>
     <a class="tab-item ${route.name === 'sessions' || route.name === 'session' ? 'active' : ''}" href="#/sessions">${icons.bot(22, route.name === 'sessions' || route.name === 'session' ? 'var(--dark)' : 'var(--mut-2)')}<span>Agent log</span></a>
     <button type="button" class="tab-item" id="tab-more">${icons.chevronDown(22, 'var(--mut-2)')}<span>More</span><span class="tab-badge" id="more-badge" hidden></span></button>
