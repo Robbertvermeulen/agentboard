@@ -140,6 +140,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 /* Room for the "just moved here" badge's negative top offset, which otherwise
    clips against the scroll box when its tile sits at the top of the column (#47). */
 .column .col-cards { padding-top: 8px; }
+.col-empty-msg { margin: 0; padding: 0 6px 8px; font-size: 13px; color: var(--mut); }
 .col-plus { display: inline-flex; padding: 2px; border-radius: 6px; }
 .col-plus:hover { background: var(--hover-bg); }
 .col-actions { display: flex; align-items: center; gap: 2px; }
