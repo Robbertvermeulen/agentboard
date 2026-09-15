@@ -691,12 +691,7 @@ export function openBoardSettingsDialog(board, { onRenamed, onArchived }) {
     closeOverlay();
     const confirmed = await confirmArchiveBoard(board);
     if (!confirmed) return;
-    try {
-      await api.archiveBoard(board.id);
-      onArchived();
-    } catch (err) {
-      alertError(err.message);
-    }
+    tryArchiveBoard(board, onArchived);
   };
   name.focus();
   name.select();
@@ -721,6 +716,64 @@ function confirmArchiveBoard(board) {
       resolve(true);
     };
   });
+}
+
+// Blocked on open cards: offer to archive them right here instead of just
+// reporting the count and sending the user off to find them one by one.
+async function tryArchiveBoard(board, onArchived) {
+  try {
+    await api.archiveBoard(board.id);
+    onArchived();
+  } catch (err) {
+    if (/still has \d+ open card/.test(err.message)) {
+      const { columns } = await api.board(board.id);
+      const openCards = ALL_STATUSES.filter((s) => s !== 'done' && s !== 'archived').flatMap((s) => columns[s] ?? []);
+      openOpenCardsDialog(board, openCards, () => tryArchiveBoard(board, onArchived));
+    } else {
+      alertError(err.message);
+    }
+  }
+}
+
+function openOpenCardsDialog(board, cards, onCleared) {
+  const reason = `Archived to clear board '${board.name}' for archiving`;
+  const row = (c) => `<div class="open-cards-row" data-id="${esc(c.id)}">
+    <a href="#/card/${esc(c.id)}">${esc(c.title)}</a>
+    ${statusPill(c.status)}
+    <button type="button" class="btn-ghost" data-archive-one="${esc(c.id)}">${icons.archive(12)}Archive</button>
+  </div>`;
+  const el = openOverlay(`<div class="dialog open-cards-dialog" role="dialog" aria-label="Open cards">
+    <span class="dialog-title">Board '${esc(board.name)}' still has ${cards.length} open card${cards.length === 1 ? '' : 's'}</span>
+    <p class="dialog-sub">Archive them here, or open one to move it elsewhere first.</p>
+    <div class="open-cards-list">${cards.map(row).join('')}</div>
+    <div class="dialog-actions">
+      <button type="button" id="oc-cancel" class="btn-ghost">Cancel</button>
+      <button type="button" id="oc-archive-all" class="btn-dark">${icons.archive(13)}Archive all</button>
+    </div>
+  </div>`);
+
+  const archiveOne = async (id) => {
+    await api.move(id, 'archived', reason);
+    el.querySelector(`.open-cards-row[data-id="${CSS.escape(id)}"]`)?.remove();
+    if (!el.querySelector('.open-cards-row')) {
+      closeOverlay();
+      onCleared();
+    }
+  };
+  el.querySelectorAll('[data-archive-one]').forEach((b) => {
+    b.onclick = () => archiveOne(b.dataset.archiveOne).catch((err) => alertError(err.message));
+  });
+  el.querySelector('#oc-cancel').onclick = closeOverlay;
+  el.querySelector('#oc-archive-all').onclick = async () => {
+    const ids = [...el.querySelectorAll('.open-cards-row')].map((r) => r.dataset.id);
+    try {
+      for (const id of ids) await api.move(id, 'archived', reason);
+      closeOverlay();
+      onCleared();
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
 }
 
 /* ---------- new card / new board picker: dropdown on desktop, bottom sheet on mobile ---------- */

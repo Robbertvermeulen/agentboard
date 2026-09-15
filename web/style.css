@@ -630,6 +630,13 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .dialog:not(.create-dialog):not(.status-menu) { padding: 20px; }
 
+.open-cards-dialog { width: 480px; }
+.open-cards-list { max-height: 320px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--line-soft); border-radius: 8px; }
+.open-cards-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+.open-cards-row:last-child { border-bottom: none; }
+.open-cards-row a { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.open-cards-row .btn-ghost { height: 26px; padding: 0 8px; font-size: 12px; }
+
 .status-menu { width: 196px; padding: 4px; }
 .status-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; width: 100%; font-size: 13px; text-align: left; }
 .status-item:hover { background: var(--chip-bg); }
