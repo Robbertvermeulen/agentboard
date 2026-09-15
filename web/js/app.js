@@ -89,7 +89,7 @@ function renderSidebar(route, views) {
     <div class="side-logo"><span class="mark">A</span><span class="name">Agentboard</span></div>
     <a class="side-item ${onBoards && route.name !== 'archive' ? 'active' : ''}" href="#/">
       ${icons.board(16, onBoards ? 'var(--dark)' : 'var(--mut)')}
-      <span>Board</span>
+      <span>Boards</span>
       ${totalNeed ? `<span class="count">${totalNeed}</span>` : ''}
     </a>
     <a class="side-item ${route.name === 'ctx' ? 'active' : ''}" href="#/ctx">
