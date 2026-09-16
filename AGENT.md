@@ -58,7 +58,10 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 7. A ref on a card says *what* (a Trello card, an email, a repo). *How* to
    reach it runs through the card's context refs: resource file →
    `connection` file → `secret_ref` → secrets.env. Follow that chain before
-   asking for credentials.
+   asking for credentials. The moment an external issue, ticket or card is
+   created or linked for this work (a GitHub issue, a PR, a support ticket,
+   a Trello card), add it as a ref (`card edit <id> --refs`) right away,
+   not only a link in a comment or event.
 8. The card's timeline is your memory between sessions. When you wait on
    something external (a reply, a deploy, a person), log exactly what to
    check and where ("check thread X in gmail-zakelijk for a reply from
