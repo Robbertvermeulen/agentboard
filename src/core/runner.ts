@@ -122,10 +122,12 @@ function agentMdPath(): string {
   );
 }
 
-export function buildPrompt(due: RoutineInfo[]): string {
+export type DueRoutine = RoutineInfo & { checkOutput?: string };
+
+export function buildPrompt(due: DueRoutine[]): string {
   const routineBlock = due.length
     ? `Due routines this run — read each with \`agentboard ctx show <path>\` and act per rule 16:\n${due
-        .map((r) => `- ${r.path}`)
+        .map((r) => `- ${r.path}${r.checkOutput ? ` (check found:\n${r.checkOutput})` : ''}`)
         .join('\n')}\n\n`
     : '';
   return (
@@ -133,6 +135,48 @@ export function buildPrompt(due: RoutineInfo[]): string {
     routineBlock +
     'Then work the board: run `agentboard next` and handle what it lists.'
   );
+}
+
+// A routine's `check` runs before its session: empty stdout means nothing
+// actionable, so the routine is skipped this run (but still marked run, like
+// every due routine). A failing or timed-out check counts as "found"
+// (fail-open) with the error surfaced instead — a broken check must never
+// make a routine silently vanish.
+function runRoutineCheck(check: string): { output: string; failed: boolean } {
+  const result = spawnSync('sh', ['-c', check], {
+    cwd: workDir(),
+    env: sessionEnv(),
+    timeout: 30_000,
+    encoding: 'utf8',
+  });
+  if (result.error) return { output: `check errored: ${result.error.message}`, failed: true };
+  if (result.signal) return { output: `check killed by ${result.signal} (timeout?)`, failed: true };
+  if (result.status !== 0) return { output: `check exited ${result.status}: ${(result.stderr ?? '').trim()}`, failed: true };
+  return { output: (result.stdout ?? '').trim(), failed: false };
+}
+
+// Runs each due routine's check (if it has one) and keeps only the routines
+// with something to act on: no check, non-empty stdout, or a failed check
+// (fail-open). Every due routine still gets marked run by the caller,
+// whether or not it survives this filter.
+function checkDueRoutines(due: RoutineInfo[]): DueRoutine[] {
+  const active: DueRoutine[] = [];
+  for (const r of due) {
+    if (!r.check) {
+      active.push(r);
+      continue;
+    }
+    const { output, failed } = runRoutineCheck(r.check);
+    if (failed) {
+      console.error(`runner: check failed for ${r.path}: ${output}`);
+      active.push({ ...r, checkOutput: output });
+    } else if (output) {
+      active.push({ ...r, checkOutput: output });
+    } else {
+      console.error(`runner: check for ${r.path} found nothing`);
+    }
+  }
+  return active;
 }
 
 // Turn handovers to the human into one line for AGENTBOARD_NOTIFY_CMD:
@@ -217,12 +261,13 @@ export function runSession(
     const cards = promptOverride ? [] : gateWork();
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
     console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
-    if (!promptOverride && cards.length === 0 && due.routines.length === 0) {
+    const active = promptOverride ? [] : checkDueRoutines(due.routines);
+    for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
+    console.error(`runner: marked ${due.routines.length} routines`);
+    if (!promptOverride && cards.length === 0 && active.length === 0) {
       return { started: false, reason: 'gate empty' };
     }
     const sessionStart = now();
-    for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute
-    console.error(`runner: marked ${due.routines.length} routines`);
     const rec = startSessionRecord(trigger);
     console.error(`runner: session #${rec.id} -> ${rec.jsonl}`);
     const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(
@@ -236,7 +281,7 @@ export function runSession(
       try {
         // stdout is the JSONL transcript; stderr goes to its own file so a
         // stray warning can never corrupt a transcript line.
-        status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(due.routines)], {
+        status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active)], {
           stdio: ['ignore', out, err],
           cwd: workDir(),
           env: sessionEnv(),
