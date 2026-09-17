@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.16.0...v0.17.0) (2026-09-17)
+
+
+### Features
+
+* **routines:** optional check command, run before spawning a session ([#96](https://github.com/Robbertvermeulen/agentboard/issues/96)) ([4f1dfab](https://github.com/Robbertvermeulen/agentboard/commit/4f1dfab57302dce2fceb4aa0a886018d8463c2a2))
+
 # [0.16.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.15.0...v0.16.0) (2026-09-17)
 
 
