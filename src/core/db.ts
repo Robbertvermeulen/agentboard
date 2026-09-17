@@ -246,6 +246,25 @@ export async function initData(opts?: {
     );
     created.push(`board '${boardId}'`);
   }
+
+  // Migration: the base board is always present, for cards and context that
+  // aren't specific to any one business board. Never archived (cards.ts
+  // rejects archiving it), name is free to change.
+  if (!db.prepare('SELECT 1 FROM board WHERE id = ?').get('base')) {
+    db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run('base', 'Base', now());
+    created.push("board 'base'");
+  }
+
+  // Migration: cards left pointing at a board that no longer exists (e.g.
+  // legacy board_id 'main' from before boards were their own table) move to
+  // base, the catch-all for cards without a specific board.
+  const { changes: orphanedCards } = db
+    .prepare("UPDATE card SET board_id = 'base' WHERE board_id NOT IN (SELECT id FROM board)")
+    .run();
+  if (orphanedCards > 0) {
+    created.push(`${orphanedCards} orphaned card(s) -> board 'base'`);
+  }
+
   db.close();
 
   if (!fs.existsSync(secretsPath())) {

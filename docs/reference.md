@@ -29,6 +29,11 @@ business). Identity, secrets and context are shared across boards; the
 card streams are separated. The profile chain user → board → client is
 read top-down; the most specific file wins.
 
+`base` is a board that always exists (created on `init`, never archivable):
+the catch-all for cards and changes that aren't specific to any one
+business — general fixes, connections or context shared by every board.
+`card new` without `--board` lands there.
+
 ## Run
 
 ```
