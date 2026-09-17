@@ -19,6 +19,17 @@ const durText = (s) =>
     ? ''
     : `${Math.max(1, Math.round((new Date(s.ended_at) - new Date(s.started_at)) / 1000))}s`;
 
+// Cache hit rate: the share of input tokens served from cache rather than
+// paid at full price. Missing usage (crashed session, pre-migration row) ->
+// no badge rather than a misleading 0%.
+export const usageText = (s) => {
+  if (s.total_cost_usd === null || s.total_cost_usd === undefined) return null;
+  const read = s.cache_read_input_tokens ?? 0;
+  const total = read + (s.cache_creation_input_tokens ?? 0) + (s.input_tokens ?? 0);
+  const hitRate = total > 0 ? Math.round((read / total) * 100) : null;
+  return `$${s.total_cost_usd.toFixed(4)}${hitRate !== null ? ` · ${hitRate}% cached` : ''}`;
+};
+
 const tile = (n, label) => `<div class="al-tile"><span class="n">${n}</span><span class="lbl">${label}</span></div>`;
 
 export async function renderSessions(root) {
@@ -36,12 +47,13 @@ export async function renderSessions(root) {
   const early = week.length - completed - week.filter((s) => s.live).length;
   // touched stays literal: the observer only read about those cards.
   const cards = new Set(week.filter((s) => s.trigger !== 'observe').flatMap((s) => s.cards)).size;
+  const cost = week.reduce((n, s) => n + (s.total_cost_usd ?? 0), 0);
   root.innerHTML = `
     ${crumb([{ text: 'Agentboard', href: '#/' }, { text: 'Agent log', strong: true }])}
     <div class="page-scroll">
     <div class="al-head"><h2>Agent log</h2><span class="mut-sm">last 7 days</span></div>
     <p class="al-summary">Ran <strong>${week.length}</strong> session${week.length === 1 ? '' : 's'} and touched <strong>${cards}</strong> card${cards === 1 ? '' : 's'} this week. ${completed} completed, ${handed} handed back, ${early} ended early.</p>
-    <div class="al-tiles">${tile(week.length, 'sessions')}${tile(completed, 'completed')}${tile(handed, 'handed back')}${tile(early, 'ended early')}</div>
+    <div class="al-tiles">${tile(week.length, 'sessions')}${tile(completed, 'completed')}${tile(handed, 'handed back')}${tile(early, 'ended early')}${tile(`$${cost.toFixed(2)}`, 'cost')}</div>
     <div class="al-list">
       ${sessions
         .map((s) => {
@@ -59,6 +71,7 @@ export async function renderSessions(root) {
             <span class="al-cards">${s.cards.length ? s.cards.map((c) => `<a class="cardref-chip" href="#/card/${esc(c)}">${esc(c)}</a>`).join(' ') : '—'}</span>
             ${s.handed_back.length ? `<span class="al-handed">${s.handed_back.length} handed back</span>` : ''}
             <span class="al-outcome ${o.cls}">${esc(o.text)}</span>
+            ${usageText(s) ? `<span class="mut-sm">${esc(usageText(s))}</span>` : ''}
             ${s.observed ? `<span class="al-eye" title="observed">${icons.check(12, 'var(--mut)')}</span>` : ''}
             <span class="mut-sm" title="${esc(absTime(s.started_at))}">${esc(relTime(s.started_at))}</span>
           </div>`;

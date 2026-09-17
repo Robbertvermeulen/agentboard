@@ -749,9 +749,10 @@ function sessionLine(s: any, liveId: number | null): string {
         ? 'completed'
         : `ended early (${s.exit_status ?? 'crash'})`;
   const handed = s.handed_back.length ? `  handed back: ${s.handed_back.map((h: any) => h.id).join(', ')}` : '';
+  const cost = typeof s.total_cost_usd === 'number' ? `  $${s.total_cost_usd.toFixed(4)}` : '';
   return `  #${String(s.id).padEnd(4)} ${s.trigger.padEnd(7)} ${s.started_at}  ${dur.padEnd(8)} ${outcome}${
     s.cards.length ? `  [${s.cards.join(', ')}]` : ''
-  }${handed}`;
+  }${handed}${cost}`;
 }
 
 sessions
