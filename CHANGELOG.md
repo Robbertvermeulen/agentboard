@@ -1,3 +1,10 @@
+# [0.16.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.15.0...v0.16.0) (2026-09-17)
+
+
+### Features
+
+* **boards:** always-present base board, fallback for card new ([#91](https://github.com/Robbertvermeulen/agentboard/issues/91)) ([d14f4d1](https://github.com/Robbertvermeulen/agentboard/commit/d14f4d1c623cc68640e906f744e5e8e84f931003))
+
 # [0.15.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.8...v0.15.0) (2026-09-15)
 
 
