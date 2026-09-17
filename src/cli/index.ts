@@ -157,7 +157,9 @@ program
       const views = boardView(id);
       const lines: string[] = [];
       for (const view of views) {
-        if (views.length > 1) lines.push(`=== ${view.board.name} (${view.board.id}) ===`);
+        const lang = view.board.language ? ` [language: ${view.board.language}]` : '';
+        if (views.length > 1) lines.push(`=== ${view.board.name} (${view.board.id})${lang} ===`);
+        else if (lang) lines.push(`${view.board.name} (${view.board.id})${lang}`);
         let any = false;
         for (const [status, cards] of Object.entries(view.columns)) {
           if (!cards.length) continue;
@@ -182,7 +184,11 @@ boards
   .action(
     run((opts) => {
       const all = listBoards({ includeArchived: true }).filter((b) => (opts.archived ? b.archived_at : !b.archived_at));
-      output(opts, all.map((b) => `  ${b.id.padEnd(12)} ${b.name}`).join('\n'), { boards: all });
+      output(
+        opts,
+        all.map((b) => `  ${b.id.padEnd(12)} ${b.name}${b.language ? ` [language: ${b.language}]` : ''}`).join('\n'),
+        { boards: all }
+      );
     })
   );
 

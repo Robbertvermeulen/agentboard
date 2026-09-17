@@ -74,6 +74,11 @@ CREATE TABLE IF NOT EXISTS routine_run (
   last_run_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  id       INTEGER PRIMARY KEY CHECK (id = 1),
+  language TEXT
+);
+
 CREATE TABLE IF NOT EXISTS session (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   started_at  TEXT NOT NULL,
@@ -209,6 +214,18 @@ export async function initData(opts?: {
   if (!boardCols.some((c) => c.name === 'archived_at')) {
     db.exec('ALTER TABLE board ADD COLUMN archived_at TEXT');
     created.push('board.archived_at');
+  }
+
+  // Migration: board tables from before per-board language overrides.
+  if (!boardCols.some((c) => c.name === 'language')) {
+    db.exec('ALTER TABLE board ADD COLUMN language TEXT');
+    created.push('board.language');
+  }
+
+  // Migration: the singleton settings row (account-level preferences).
+  if (!db.prepare('SELECT 1 FROM settings WHERE id = 1').get()) {
+    db.prepare('INSERT INTO settings (id, language) VALUES (1, NULL)').run();
+    created.push('settings row');
   }
 
   // Migration: comment tables from before comment editing lack updated_at.

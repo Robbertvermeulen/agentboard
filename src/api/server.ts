@@ -36,8 +36,10 @@ import {
   moveCard,
   nextWork,
   renameBoard,
+  setBoardLanguage,
   unarchiveBoard,
 } from '../core/cards.js';
+import { getSettings, updateSettings } from '../core/settings.js';
 import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
@@ -260,6 +262,32 @@ export function createApp(): Hono {
     try {
       const body = await c.req.json();
       return c.json(renameBoard(c.req.param('board'), body.name ?? ''));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.patch('/api/boards/:board/language', async (c) => {
+    try {
+      const body = await c.req.json();
+      return c.json(setBoardLanguage(c.req.param('board'), body.language));
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.get('/api/settings', (c) => {
+    try {
+      return c.json(getSettings());
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  app.patch('/api/settings', async (c) => {
+    try {
+      const body = await c.req.json();
+      return c.json(updateSettings(body.language));
     } catch (err) {
       return errorResponse(c, err);
     }

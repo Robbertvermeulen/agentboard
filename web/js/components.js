@@ -1,6 +1,6 @@
 // Shared UI vocabulary: chips, card tiles, status menu, reason + create dialogs.
 import { api } from './api.js';
-import { icons, statusIcon, STATUS_META, ALL_STATUSES } from './icons.js';
+import { icons, statusIcon, STATUS_META, ALL_STATUSES, LANGUAGES } from './icons.js';
 import { esc, absTime, ageShort, fmtBytes, filesFromDrop, CARD_ID_RE, isMobile } from './util.js';
 
 export function idChip(card, { size = 'md' } = {}) {
@@ -654,13 +654,29 @@ export function openBoardDialog(onCreated) {
 
 /* ---------- board settings dialog: rename + archive ---------- */
 
-export function openBoardSettingsDialog(board, { onRenamed, onArchived }) {
+export async function openBoardSettingsDialog(board, { onSaved, onArchived }) {
+  let accountLanguage = null;
+  try {
+    accountLanguage = (await api.settings()).language;
+  } catch {
+    /* dialog still works, falls back to "English" as the shown default */
+  }
+  const accountLabel = accountLanguage ? LANGUAGES.find((l) => l.code === accountLanguage)?.label ?? accountLanguage : 'English';
+
   const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="Board settings">
     <div class="create-head"><span class="create-title">Board settings</span></div>
     <div class="create-body">
       <div class="field">
         <span class="field-label">Name</span>
         <input id="bs-name" type="text" autocomplete="off" value="${esc(board.name)}">
+      </div>
+      <div class="field">
+        <span class="field-label">Preferred language</span>
+        <select id="bs-language">
+          <option value="">Use account default (${esc(accountLabel)})</option>
+          ${LANGUAGES.map((l) => `<option value="${l.code}" ${board.language === l.code ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}
+        </select>
+        <span class="field-hint">Leave on "Use account default" unless this board should work in a different language than the rest.</span>
       </div>
       <div class="create-actions">
         <button type="button" id="bs-save" class="btn-dark">Save</button>
@@ -675,14 +691,19 @@ export function openBoardSettingsDialog(board, { onRenamed, onArchived }) {
   </div>`);
 
   const name = el.querySelector('#bs-name');
+  const language = el.querySelector('#bs-language');
   el.querySelector('#bs-cancel').onclick = closeOverlay;
   el.querySelector('#bs-save').onclick = async () => {
     const value = name.value.trim();
-    if (!value || value === board.name) return closeOverlay();
+    const newLanguage = language.value || null;
+    const nameChanged = value && value !== board.name;
+    const languageChanged = newLanguage !== (board.language ?? null);
+    if (!nameChanged && !languageChanged) return closeOverlay();
     try {
-      const updated = await api.renameBoard(board.id, value);
+      const updated = nameChanged ? await api.renameBoard(board.id, value) : board;
+      const final = languageChanged ? await api.setBoardLanguage(board.id, newLanguage) : updated;
       closeOverlay();
-      onRenamed(updated);
+      onSaved({ ...updated, ...final });
     } catch (err) {
       alertError(err.message);
     }
@@ -695,6 +716,47 @@ export function openBoardSettingsDialog(board, { onRenamed, onArchived }) {
   };
   name.focus();
   name.select();
+}
+
+/* ---------- account settings dialog: preferred language ---------- */
+
+export async function openAccountSettingsDialog() {
+  let language = null;
+  try {
+    language = (await api.settings()).language;
+  } catch (err) {
+    return alertError(err.message);
+  }
+
+  const el = openOverlay(`<div class="dialog create-dialog" role="dialog" aria-label="Account settings">
+    <div class="create-head"><span class="create-title">Account settings</span></div>
+    <div class="create-body">
+      <div class="field">
+        <span class="field-label">Preferred language</span>
+        <select id="as-language">
+          <option value="" ${!language ? 'selected' : ''}>English (default)</option>
+          ${LANGUAGES.map((l) => `<option value="${l.code}" ${language === l.code ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}
+        </select>
+        <span class="field-hint">Default language for agent comments and messages on every board, unless a board sets its own language.</span>
+      </div>
+      <div class="create-actions">
+        <button type="button" id="as-save" class="btn-dark">Save</button>
+        <button type="button" id="as-cancel" class="btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>`);
+
+  el.querySelector('#as-cancel').onclick = closeOverlay;
+  el.querySelector('#as-save').onclick = async () => {
+    const value = el.querySelector('#as-language').value || null;
+    if (value === language) return closeOverlay();
+    try {
+      await api.updateSettings(value);
+      closeOverlay();
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
 }
 
 function confirmArchiveBoard(board) {

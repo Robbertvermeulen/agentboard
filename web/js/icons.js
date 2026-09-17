@@ -100,3 +100,12 @@ export const STATUS_META = {
 
 export const STATUSES = ['inbox', 'ready', 'doing', 'needs_input', 'review', 'done'];
 export const ALL_STATUSES = [...STATUSES, 'archived'];
+
+// English is the implicit default (no stored value, no prompt line) — kept
+// in sync by hand with src/core/settings.ts's LANGUAGES.
+export const LANGUAGES = [
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Français' },
+  { code: 'es', label: 'Español' },
+];

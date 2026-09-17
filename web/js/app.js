@@ -2,7 +2,7 @@
 import { api } from './api.js';
 import { icons } from './icons.js';
 import { esc } from './util.js';
-import { closeOverlay, openOverlay } from './components.js';
+import { closeOverlay, openAccountSettingsDialog, openOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
 import { renderCard, stopCardPolling, pokeCardRefresh, retryCardRefresh } from './views/card.js';
@@ -115,11 +115,13 @@ function renderSidebar(route, views) {
         </a>`
       )
       .join('')}
-    ${authState.auth ? `<div class="side-sep"></div><button type="button" class="side-item" id="side-signout">${icons.user(16, 'var(--mut)')}<span>Sign out</span></button>` : ''}
+    ${authState.auth ? `<div class="side-sep"></div><button type="button" class="side-item" id="side-settings">${icons.gear(16, 'var(--mut)')}<span>Settings</span></button><button type="button" class="side-item" id="side-signout">${icons.user(16, 'var(--mut)')}<span>Sign out</span></button>` : ''}
     ${versionLabel('side-version')}
   `;
   const rt = sidebar.querySelector('#side-routines');
   if (rt) rt.onclick = () => openRoutinesModal({ boards, boardId: route.boardId ?? null });
+  const st = sidebar.querySelector('#side-settings');
+  if (st) st.onclick = () => openAccountSettingsDialog();
   const so = sidebar.querySelector('#side-signout');
   if (so) so.onclick = signOut;
   wireVersion(sidebar, 'side-version');
@@ -156,7 +158,7 @@ function openMoreSheet(route) {
       <a class="more-row" href="#/board/${esc(boardId)}/archived">${icons.archive(18)}<span class="t">Archive</span><span class="meta">searchable</span></a>
       <div class="sheet-head"><span>Switch board</span></div>
       ${boards.map((b) => `<a class="more-row board" href="#/board/${esc(b.id)}"><span class="dot" style="background:${boardDot(boards.indexOf(b))}"></span><span class="t">${esc(b.name)}</span>${route.boardId === b.id ? `<span class="meta">current</span>` : ''}</a>`).join('')}
-      ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-signout">${icons.user(18, 'var(--mut)')}<span class="t">Sign out</span></button>` : ''}
+      ${authState.auth ? `<div class="sheet-head"><span>Account</span></div><button type="button" class="more-row" id="more-settings">${icons.gear(18, 'var(--mut)')}<span class="t">Settings</span></button><button type="button" class="more-row" id="more-signout">${icons.user(18, 'var(--mut)')}<span class="t">Sign out</span></button>` : ''}
       <div class="sheet-head"><span>About</span></div><div class="more-row">${versionLabel('more-version')}</div>
     </div>`,
     { sheet: true }
@@ -172,6 +174,11 @@ function openMoreSheet(route) {
       if (meta) meta.textContent = `${routines.length}${paused ? ` · ${paused} paused` : ''}`;
     })
     .catch(() => {});
+  const ms = el.querySelector('#more-settings');
+  if (ms) ms.onclick = () => {
+    closeOverlay();
+    openAccountSettingsDialog();
+  };
   const so = el.querySelector('#more-signout');
   if (so) so.onclick = signOut;
   wireVersion(el, 'more-version');

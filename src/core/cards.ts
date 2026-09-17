@@ -11,12 +11,14 @@ import {
   now,
   openDb,
 } from './db.js';
+import { assertLanguage } from './settings.js';
 
 export interface Board {
   id: string;
   name: string;
   created_at: string;
   archived_at: string | null;
+  language: string | null;
 }
 
 export interface Card {
@@ -287,6 +289,18 @@ export function renameBoard(id: string, name: string): Board {
   try {
     getBoardOrThrow(db, id);
     db.prepare('UPDATE board SET name = ? WHERE id = ?').run(trimmed, id);
+    return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
+  } finally {
+    db.close();
+  }
+}
+
+export function setBoardLanguage(id: string, language: unknown): Board {
+  const value = assertLanguage(language);
+  const db = openDb();
+  try {
+    getBoardOrThrow(db, id);
+    db.prepare('UPDATE board SET language = ? WHERE id = ?').run(value, id);
     return db.prepare('SELECT * FROM board WHERE id = ?').get(id) as Board;
   } finally {
     db.close();
