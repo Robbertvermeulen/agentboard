@@ -113,8 +113,9 @@ export async function renderBoard(root, { boards, boardId }) {
     wireTabs(root);
     root.querySelector('[data-board-settings]').onclick = () =>
       openBoardSettingsDialog(board, {
-        onRenamed: (updated) => {
+        onSaved: (updated) => {
           board.name = updated.name;
+          board.language = updated.language;
           draw();
         },
         onArchived: () => (location.hash = '#/'),

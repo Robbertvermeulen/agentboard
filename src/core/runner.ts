@@ -7,6 +7,7 @@ import { dataDir, now, openDb } from './db.js';
 import { gateWork } from './cards.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
+import { getSettings, languageLabel } from './settings.js';
 
 // One numbered lock file per slot ('session.lock' for slot 0, matching the
 // pre-pool name so existing boot cleanup keeps working at the default N=1).
@@ -158,8 +159,16 @@ export function buildPrompt(due: DueRoutine[]): string {
         .map((r) => `- ${r.path}${r.checkOutput ? ` (check found:\n${r.checkOutput})` : ''}`)
         .join('\n')}\n\n`
     : '';
+  const accountLanguage = getSettings().language;
+  const languageLine = accountLanguage
+    ? `Preferred language for this session: ${languageLabel(accountLanguage)}. Write all card comments, log ` +
+      `lines and drafted external messages in this language, unless the profile chain (_global/user.md -> ` +
+      `_board.md -> _client.md) or a board's own preferred language (\`agentboard board <id>\`) explicitly ` +
+      `overrides it for a specific piece of writing.\n\n`
+    : '';
   return (
     `You are the agentboard agent. Read and follow every rule in ${agentMdPath()} before doing anything else.\n\n` +
+    languageLine +
     routineBlock +
     'Then work the board: run `agentboard next` and handle what it lists.'
   );
