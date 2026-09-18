@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.17.0...v0.18.0) (2026-09-18)
+
+
+### Features
+
+* **sessions:** store per-session usage/cost, replace lock with a pool ([#95](https://github.com/Robbertvermeulen/agentboard/issues/95)) ([3b1bf66](https://github.com/Robbertvermeulen/agentboard/commit/3b1bf66ff8c773cd5d227fa26ddc48b1a71c6b5e)), closes [#1](https://github.com/Robbertvermeulen/agentboard/issues/1)
+
 # [0.17.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.16.0...v0.17.0) (2026-09-17)
 
 
