@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.18.0...v0.19.0) (2026-09-18)
+
+
+### Features
+
+* **settings:** agent preferred language, account + board level ([#92](https://github.com/Robbertvermeulen/agentboard/issues/92)) ([a161352](https://github.com/Robbertvermeulen/agentboard/commit/a1613520483fcfd0a55d1df45cac1a97bc866779)), closes [#95](https://github.com/Robbertvermeulen/agentboard/issues/95) [pre-#95](https://github.com/pre-/issues/95)
+
 # [0.18.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.17.0...v0.18.0) (2026-09-18)
 
 
