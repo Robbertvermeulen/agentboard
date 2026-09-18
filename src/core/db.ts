@@ -75,12 +75,17 @@ CREATE TABLE IF NOT EXISTS routine_run (
 );
 
 CREATE TABLE IF NOT EXISTS session (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  started_at  TEXT NOT NULL,
-  ended_at    TEXT,
-  "trigger"   TEXT NOT NULL,
-  exit_status INTEGER,
-  handed_back TEXT NOT NULL DEFAULT '[]'
+  id                           INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at                   TEXT NOT NULL,
+  ended_at                     TEXT,
+  "trigger"                    TEXT NOT NULL,
+  exit_status                  INTEGER,
+  handed_back                  TEXT NOT NULL DEFAULT '[]',
+  input_tokens                 INTEGER,
+  output_tokens                INTEGER,
+  cache_read_input_tokens      INTEGER,
+  cache_creation_input_tokens  INTEGER,
+  total_cost_usd               REAL
 );
 
 CREATE TABLE IF NOT EXISTS session_card (
@@ -209,6 +214,19 @@ export async function initData(opts?: {
   if (!boardCols.some((c) => c.name === 'archived_at')) {
     db.exec('ALTER TABLE board ADD COLUMN archived_at TEXT');
     created.push('board.archived_at');
+  }
+
+  // Migration: session tables from before per-session usage/cost tracking.
+  const sessionCols = db.prepare('PRAGMA table_info(session)').all() as { name: string }[];
+  if (!sessionCols.some((c) => c.name === 'total_cost_usd')) {
+    db.exec(`
+      ALTER TABLE session ADD COLUMN input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN output_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN cache_read_input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN cache_creation_input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN total_cost_usd REAL;
+    `);
+    created.push('session usage/cost columns');
   }
 
   // Migration: comment tables from before comment editing lack updated_at.

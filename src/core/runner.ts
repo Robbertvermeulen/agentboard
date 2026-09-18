@@ -8,7 +8,20 @@ import { gateWork } from './cards.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
 
-const lockPath = () => path.join(dataDir(), 'session.lock');
+// One numbered lock file per slot ('session.lock' for slot 0, matching the
+// pre-pool name so existing boot cleanup keeps working at the default N=1).
+const lockPath = (slot: number) => path.join(dataDir(), slot === 0 ? 'session.lock' : `session.lock.${slot}`);
+
+// How many sessions may run at once. Default 1 keeps today's single-flight
+// behavior; raising it only widens the pool acquireLock draws from — nothing
+// yet launches more than one runSession concurrently (that's issue #1).
+const maxSessions = () => Math.max(1, Number(process.env.AGENTBOARD_MAX_SESSIONS ?? 1));
+
+function anyLockHeld(): boolean {
+  const slots = maxSessions();
+  for (let slot = 0; slot < slots; slot++) if (fs.existsSync(lockPath(slot))) return true;
+  return false;
+}
 
 interface SessionLock {
   pid: number;
@@ -25,51 +38,60 @@ function processAlive(pid: number): boolean {
   }
 }
 
-// Single-flight (vision Concurrency): one agent session per data dir. A lock
+// A pool of N lock slots (vision Concurrency; N=1 is single-flight). A lock
 // is stale when its process is dead or it outlived the max-age safety net —
 // a crash may never wedge the scheduler shut. A foreign hostname is a hard
 // error: agentboard assumes ONE machine per data dir; synced SQLite plus
 // PID locks across machines is silent corruption.
 export function acquireLock(): 'acquired' | 'held' {
   const maxAgeMs = Number(process.env.AGENTBOARD_LOCK_MAX_AGE ?? 120) * 60_000;
-  const file = lockPath();
-  if (fs.existsSync(file)) {
-    let lock: SessionLock | null = null;
+  const slots = maxSessions();
+  for (let slot = 0; slot < slots; slot++) {
+    const file = lockPath(slot);
+    if (fs.existsSync(file)) {
+      let lock: SessionLock | null = null;
+      try {
+        lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+      } catch {
+        lock = null; // unreadable lock = stale
+      }
+      if (lock && lock.hostname !== os.hostname()) {
+        throw new Error(
+          `${file} is owned by host '${lock.hostname}' (this is '${os.hostname()}') — one machine per data dir`
+        );
+      }
+      const fresh = lock ? Date.now() - new Date(lock.started_at).getTime() < maxAgeMs : false;
+      if (lock && fresh && processAlive(lock.pid)) continue; // slot busy, try the next one
+      fs.rmSync(file, { force: true });
+    }
     try {
-      lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+      fs.writeFileSync(file, JSON.stringify({ pid: process.pid, hostname: os.hostname(), started_at: now() }), {
+        flag: 'wx',
+      });
     } catch {
-      lock = null; // unreadable lock = stale
+      continue; // lost the write race on this slot to a concurrent runner — try the next
     }
-    if (lock && lock.hostname !== os.hostname()) {
-      throw new Error(
-        `session.lock is owned by host '${lock.hostname}' (this is '${os.hostname()}') — one machine per data dir`
-      );
-    }
-    const fresh = lock ? Date.now() - new Date(lock.started_at).getTime() < maxAgeMs : false;
-    if (lock && fresh && processAlive(lock.pid)) return 'held';
-    fs.rmSync(file, { force: true });
+    return 'acquired';
   }
-  try {
-    fs.writeFileSync(file, JSON.stringify({ pid: process.pid, hostname: os.hostname(), started_at: now() }), {
-      flag: 'wx',
-    });
-  } catch {
-    return 'held'; // lost the write race to a concurrent runner
-  }
-  return 'acquired';
+  return 'held'; // every slot busy
 }
 
 // Only remove a lock this process owns. After a max-age steal, the old
 // (hung-but-alive) session's finally-block must not delete the successor's
-// fresh lock — that would reopen the single-flight window.
+// fresh lock — that would reopen the slot it just reclaimed. Scans every
+// slot since this process doesn't track which one it claimed.
 export function releaseLock(): void {
-  const file = lockPath();
-  try {
-    const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
-    if (lock.pid !== process.pid) return; // stolen by a successor — not ours to remove
-    fs.rmSync(file, { force: true });
-  } catch {
-    // missing or unreadable: nothing safe to remove
+  const slots = maxSessions();
+  for (let slot = 0; slot < slots; slot++) {
+    const file = lockPath(slot);
+    try {
+      const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+      if (lock.pid !== process.pid) continue; // not ours (stolen by a successor, or a different slot)
+      fs.rmSync(file, { force: true });
+      return;
+    } catch {
+      // missing or unreadable: nothing safe to remove at this slot
+    }
   }
 }
 
@@ -77,12 +99,18 @@ export function releaseLock(): void {
 // live process; the open session row names it. Both required — a stale row
 // after a crash must not read as "live".
 export function sessionStatus(): { running: boolean; session_id: number | null } {
+  const slots = maxSessions();
   let alive = false;
-  try {
-    const lock = JSON.parse(fs.readFileSync(lockPath(), 'utf8')) as SessionLock;
-    alive = lock.hostname === os.hostname() && processAlive(lock.pid);
-  } catch {
-    alive = false;
+  for (let slot = 0; slot < slots; slot++) {
+    try {
+      const lock = JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
+      if (lock.hostname === os.hostname() && processAlive(lock.pid)) {
+        alive = true;
+        break;
+      }
+    } catch {
+      // no live lock at this slot
+    }
   }
   const db = openDb();
   try {
@@ -247,7 +275,7 @@ export function runSession(
     const due = dueRoutines();
     return {
       started: false,
-      reason: fs.existsSync(lockPath()) ? 'dry-run (lock file present)' : 'dry-run',
+      reason: anyLockHeld() ? 'dry-run (lock file present)' : 'dry-run',
       gate: { cards: cards.length, routines: due.routines.length },
       prompt: buildPrompt(due.routines),
     };

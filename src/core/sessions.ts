@@ -11,6 +11,11 @@ export interface SessionMeta {
   exit_status: number | null;
   handed_back: { id: string; to: string }[];
   cards: string[];
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cache_read_input_tokens: number | null;
+  cache_creation_input_tokens: number | null;
+  total_cost_usd: number | null;
 }
 
 const sessionsDir = () => path.join(dataDir(), 'sessions');
@@ -32,17 +37,70 @@ export function startSessionRecord(trigger: string): { id: number; jsonl: string
   }
 }
 
+interface ResultUsage {
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cache_read_input_tokens: number | null;
+  cache_creation_input_tokens: number | null;
+  total_cost_usd: number | null;
+}
+
+const NO_USAGE: ResultUsage = {
+  input_tokens: null,
+  output_tokens: null,
+  cache_read_input_tokens: null,
+  cache_creation_input_tokens: null,
+  total_cost_usd: null,
+};
+
+// The final `type:"result"` line of a stream-json transcript carries the
+// session's cumulative usage and cost in one place — no need to sum every
+// line. A crashed session may never write one, so this is best-effort.
+function parseResultUsage(id: number): ResultUsage {
+  const file = sessionJsonlPath(id);
+  if (!fs.existsSync(file)) return NO_USAGE;
+  const lines = fs.readFileSync(file, 'utf8').split('\n').filter((l) => l.trim());
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let msg: any;
+    try {
+      msg = JSON.parse(lines[i]);
+    } catch {
+      continue;
+    }
+    if (msg?.type !== 'result') continue;
+    const usage = msg.usage ?? {};
+    return {
+      input_tokens: usage.input_tokens ?? null,
+      output_tokens: usage.output_tokens ?? null,
+      cache_read_input_tokens: usage.cache_read_input_tokens ?? null,
+      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? null,
+      total_cost_usd: msg.total_cost_usd ?? null,
+    };
+  }
+  return NO_USAGE;
+}
+
 export function finishSessionRecord(
   id: number,
   exitStatus: number | null,
   handedBack: { id: string; to: string }[]
 ): void {
+  const usage = parseResultUsage(id);
   const db = openDb();
   try {
-    db.prepare('UPDATE session SET ended_at = ?, exit_status = ?, handed_back = ? WHERE id = ?').run(
+    db.prepare(
+      `UPDATE session SET ended_at = ?, exit_status = ?, handed_back = ?,
+       input_tokens = ?, output_tokens = ?, cache_read_input_tokens = ?,
+       cache_creation_input_tokens = ?, total_cost_usd = ? WHERE id = ?`
+    ).run(
       now(),
       exitStatus,
       JSON.stringify(handedBack),
+      usage.input_tokens,
+      usage.output_tokens,
+      usage.cache_read_input_tokens,
+      usage.cache_creation_input_tokens,
+      usage.total_cost_usd,
       id
     );
   } finally {
