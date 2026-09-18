@@ -80,12 +80,17 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS session (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  started_at  TEXT NOT NULL,
-  ended_at    TEXT,
-  "trigger"   TEXT NOT NULL,
-  exit_status INTEGER,
-  handed_back TEXT NOT NULL DEFAULT '[]'
+  id                           INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at                   TEXT NOT NULL,
+  ended_at                     TEXT,
+  "trigger"                    TEXT NOT NULL,
+  exit_status                  INTEGER,
+  handed_back                  TEXT NOT NULL DEFAULT '[]',
+  input_tokens                 INTEGER,
+  output_tokens                INTEGER,
+  cache_read_input_tokens      INTEGER,
+  cache_creation_input_tokens  INTEGER,
+  total_cost_usd               REAL
 );
 
 CREATE TABLE IF NOT EXISTS session_card (
@@ -228,6 +233,19 @@ export async function initData(opts?: {
     created.push('settings row');
   }
 
+  // Migration: session tables from before per-session usage/cost tracking.
+  const sessionCols = db.prepare('PRAGMA table_info(session)').all() as { name: string }[];
+  if (!sessionCols.some((c) => c.name === 'total_cost_usd')) {
+    db.exec(`
+      ALTER TABLE session ADD COLUMN input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN output_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN cache_read_input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN cache_creation_input_tokens INTEGER;
+      ALTER TABLE session ADD COLUMN total_cost_usd REAL;
+    `);
+    created.push('session usage/cost columns');
+  }
+
   // Migration: comment tables from before comment editing lack updated_at.
   const commentCols = db.prepare('PRAGMA table_info(comment)').all() as { name: string }[];
   if (!commentCols.some((c) => c.name === 'updated_at')) {
@@ -263,6 +281,25 @@ export async function initData(opts?: {
     );
     created.push(`board '${boardId}'`);
   }
+
+  // Migration: the base board is always present, for cards and context that
+  // aren't specific to any one business board. Never archived (cards.ts
+  // rejects archiving it), name is free to change.
+  if (!db.prepare('SELECT 1 FROM board WHERE id = ?').get('base')) {
+    db.prepare('INSERT INTO board (id, name, created_at) VALUES (?, ?, ?)').run('base', 'Base', now());
+    created.push("board 'base'");
+  }
+
+  // Migration: cards left pointing at a board that no longer exists (e.g.
+  // legacy board_id 'main' from before boards were their own table) move to
+  // base, the catch-all for cards without a specific board.
+  const { changes: orphanedCards } = db
+    .prepare("UPDATE card SET board_id = 'base' WHERE board_id NOT IN (SELECT id FROM board)")
+    .run();
+  if (orphanedCards > 0) {
+    created.push(`${orphanedCards} orphaned card(s) -> board 'base'`);
+  }
+
   db.close();
 
   if (!fs.existsSync(secretsPath())) {

@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { icons } from '../icons.js';
 import { esc, relTime, absTime } from '../util.js';
 import { crumb } from '../components.js';
-import { triggerLabel } from './sessions.js';
+import { triggerLabel, usageText } from './sessions.js';
 
 const STEP_ICON = { text: 'fileText', tool: 'sliders', result: 'arrowDown', raw: 'alert' };
 
@@ -49,7 +49,7 @@ export async function renderSession(root, { id }) {
     <div class="page-scroll">
     <div class="session-head">
       <span class="rt-sched">${esc(triggerLabel(session.trigger))}</span>
-      <span class="mut-sm" title="${esc(absTime(session.started_at))}">${esc(relTime(session.started_at))}${dur ? ` · ${esc(dur)}` : ''} · <span id="s-outcome">${esc(outcome)}</span></span>
+      <span class="mut-sm" title="${esc(absTime(session.started_at))}">${esc(relTime(session.started_at))}${dur ? ` · ${esc(dur)}` : ''} · <span id="s-outcome">${esc(outcome)}</span>${usageText(session) ? ` · ${esc(usageText(session))}` : ''}</span>
       ${session.cards.map((c) => `<a class="cardref-chip" href="#/card/${esc(c)}">${esc(c)}</a>`).join('')}
       ${live ? `<span class="al-live" id="s-live"><span class="live-dot"></span><span id="s-beat">live</span></span>
       <button type="button" class="follow-btn on" id="s-follow">follow</button>` : ''}

@@ -1,3 +1,24 @@
+# [0.18.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.17.0...v0.18.0) (2026-09-18)
+
+
+### Features
+
+* **sessions:** store per-session usage/cost, replace lock with a pool ([#95](https://github.com/Robbertvermeulen/agentboard/issues/95)) ([3b1bf66](https://github.com/Robbertvermeulen/agentboard/commit/3b1bf66ff8c773cd5d227fa26ddc48b1a71c6b5e)), closes [#1](https://github.com/Robbertvermeulen/agentboard/issues/1)
+
+# [0.17.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.16.0...v0.17.0) (2026-09-17)
+
+
+### Features
+
+* **routines:** optional check command, run before spawning a session ([#96](https://github.com/Robbertvermeulen/agentboard/issues/96)) ([4f1dfab](https://github.com/Robbertvermeulen/agentboard/commit/4f1dfab57302dce2fceb4aa0a886018d8463c2a2))
+
+# [0.16.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.15.0...v0.16.0) (2026-09-17)
+
+
+### Features
+
+* **boards:** always-present base board, fallback for card new ([#91](https://github.com/Robbertvermeulen/agentboard/issues/91)) ([d14f4d1](https://github.com/Robbertvermeulen/agentboard/commit/d14f4d1c623cc68640e906f744e5e8e84f931003))
+
 # [0.15.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.14.8...v0.15.0) (2026-09-15)
 
 

@@ -308,6 +308,7 @@ export function setBoardLanguage(id: string, language: unknown): Board {
 }
 
 export function archiveBoard(id: string): Board {
+  if (id === 'base') throw new Error("Board 'base' cannot be archived");
   const db = openDb();
   try {
     const board = getBoardOrThrow(db, id);
@@ -336,7 +337,8 @@ export function unarchiveBoard(id: string): Board {
   }
 }
 
-// No board given: unambiguous with one board, an error with more.
+// No board given: falls back to the always-present 'base' board, else
+// unambiguous with one board, an error with more.
 function resolveBoardIn(db: Database.Database, boardId?: string): string {
   const boards = db.prepare('SELECT id FROM board ORDER BY created_at').all() as { id: string }[];
   if (boards.length === 0) throw new Error("No boards yet. Run 'agentboard init' first.");
@@ -346,6 +348,7 @@ function resolveBoardIn(db: Database.Database, boardId?: string): string {
     }
     return boardId;
   }
+  if (boards.some((b) => b.id === 'base')) return 'base';
   if (boards.length === 1) return boards[0].id;
   throw new Error(`Multiple boards (${boards.map((b) => b.id).join(', ')}). Pass --board`);
 }

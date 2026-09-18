@@ -12,6 +12,7 @@ export interface RoutineInfo {
   schedule: string; // 5-field cron, local machine time
   enabled: boolean; // frontmatter enabled, default true
   card: string; // the ops card the routine was approved on
+  check?: string; // optional shell command; empty stdout means nothing to do this run
   last_run_at: string;
   next_run: string | null; // ISO; null if the pattern never fires again
   last_card: { id: string; status: string } | null; // youngest card with this routine path
@@ -113,6 +114,7 @@ function toInfo(db: Database.Database, relPath: string, data: Record<string, unk
     schedule: data.schedule as string,
     enabled: data.enabled !== false,
     card: data.card as string,
+    check: typeof data.check === 'string' && data.check.trim() ? data.check : undefined,
     last_run_at: last,
     next_run: next ? next.toISOString() : null,
     last_card: lastCard,
