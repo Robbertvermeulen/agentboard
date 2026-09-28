@@ -8,6 +8,11 @@ board always shows whose move it is.
 
 ![Board: one glance shows what runs, what waits, and what needs you](docs/readme/board.png)
 
+[![Video: an AI agent kanban board that works while you're away](https://img.youtube.com/vi/rfFJf4d1OC4/maxresdefault.jpg)](https://youtu.be/rfFJf4d1OC4)
+
+Watch the walkthrough: the board, ops cards, and the agent taking a real
+issue from ready to pull request.
+
 ## Why not just chat?
 
 Chat works for one task. It breaks down when the work is your whole week.
