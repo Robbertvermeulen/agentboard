@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.19.0...v0.19.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **web:** reset scroll to top on real navigation ([#98](https://github.com/Robbertvermeulen/agentboard/issues/98)) ([92612e7](https://github.com/Robbertvermeulen/agentboard/commit/92612e7274767f9eab78685e3c4c3200a7f7423f)), closes [#97](https://github.com/Robbertvermeulen/agentboard/issues/97)
+
 # [0.19.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.18.0...v0.19.0) (2026-09-18)
 
 
