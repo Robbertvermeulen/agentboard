@@ -227,6 +227,11 @@ async function route({ tick = false } = {}) {
     else if (r.name === 'session') await renderSession(view, { id: r.id });
     else if (r.name === 'sessions') await renderSessions(view);
     else if (r.name === 'ctx') await renderCtx(view, { path: r.path });
+    // A real navigation starts at the top (mobile scrolls the document itself,
+    // unlike desktop where #view is clipped and the panes scroll internally —
+    // #97). Ticks re-render the same route and restore their own captured
+    // scroll (see captureScroll/restoreScroll below), so they're excluded here.
+    if (!tick) window.scrollTo(0, 0);
     // Sidebar counts arrive after the view; cheap against the local API.
     const views = await Promise.all(boards.map((b) => api.board(b.id)));
     renderSidebar(r, views);
