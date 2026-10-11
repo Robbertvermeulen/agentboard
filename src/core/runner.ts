@@ -14,8 +14,9 @@ import { getSettings, languageLabel } from './settings.js';
 const lockPath = (slot: number) => path.join(dataDir(), slot === 0 ? 'session.lock' : `session.lock.${slot}`);
 
 // How many sessions may run at once. Default 1 keeps today's single-flight
-// behavior; raising it only widens the pool acquireLock draws from — nothing
-// yet launches more than one runSession concurrently (that's issue #1).
+// behavior; raising it widens the pool acquireLock draws from, and the
+// bin/run.sh tick loop fires a new `runner --trigger cron` without waiting
+// for the previous one, so up to this many can genuinely run in parallel.
 const maxSessions = () => Math.max(1, Number(process.env.AGENTBOARD_MAX_SESSIONS ?? 1));
 
 function anyLockHeld(): boolean {
@@ -43,8 +44,10 @@ function processAlive(pid: number): boolean {
 // is stale when its process is dead or it outlived the max-age safety net —
 // a crash may never wedge the scheduler shut. A foreign hostname is a hard
 // error: agentboard assumes ONE machine per data dir; synced SQLite plus
-// PID locks across machines is silent corruption.
-export function acquireLock(): 'acquired' | 'held' {
+// PID locks across machines is silent corruption. Returns the slot number
+// claimed so the caller can give that slot its own workdir (two concurrent
+// sessions must never share a repo checkout).
+export function acquireLock(): number | 'held' {
   const maxAgeMs = Number(process.env.AGENTBOARD_LOCK_MAX_AGE ?? 120) * 60_000;
   const slots = maxSessions();
   for (let slot = 0; slot < slots; slot++) {
@@ -72,7 +75,7 @@ export function acquireLock(): 'acquired' | 'held' {
     } catch {
       continue; // lost the write race on this slot to a concurrent runner — try the next
     }
-    return 'acquired';
+    return slot;
   }
   return 'held'; // every slot busy
 }
@@ -127,8 +130,12 @@ export function sessionStatus(): { running: boolean; session_id: number | null }
 // Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
 // any stray project context) would leak into the session. The runner owns
 // its workspace — AGENTBOARD_WORK overrides, <data>/work is the default.
-function workDir(): string {
-  const dir = process.env.AGENTBOARD_WORK ?? path.join(dataDir(), 'work');
+// Slot 0 keeps that exact path (today's layout stays valid at the default
+// N=1); every other slot gets its own suffixed directory, since two
+// sessions running at once must never race on the same repo checkout.
+function workDir(slot: number): string {
+  const base = process.env.AGENTBOARD_WORK ?? path.join(dataDir(), 'work');
+  const dir = slot === 0 ? base : `${base}-slot-${slot}`;
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -179,9 +186,9 @@ export function buildPrompt(due: DueRoutine[]): string {
 // every due routine). A failing or timed-out check counts as "found"
 // (fail-open) with the error surfaced instead — a broken check must never
 // make a routine silently vanish.
-function runRoutineCheck(check: string): { output: string; failed: boolean } {
+function runRoutineCheck(check: string, slot: number): { output: string; failed: boolean } {
   const result = spawnSync('sh', ['-c', check], {
-    cwd: workDir(),
+    cwd: workDir(slot),
     env: sessionEnv(),
     timeout: 30_000,
     encoding: 'utf8',
@@ -196,14 +203,14 @@ function runRoutineCheck(check: string): { output: string; failed: boolean } {
 // with something to act on: no check, non-empty stdout, or a failed check
 // (fail-open). Every due routine still gets marked run by the caller,
 // whether or not it survives this filter.
-function checkDueRoutines(due: RoutineInfo[]): DueRoutine[] {
+function checkDueRoutines(due: RoutineInfo[], slot: number): DueRoutine[] {
   const active: DueRoutine[] = [];
   for (const r of due) {
     if (!r.check) {
       active.push(r);
       continue;
     }
-    const { output, failed } = runRoutineCheck(r.check);
+    const { output, failed } = runRoutineCheck(r.check, slot);
     if (failed) {
       console.error(`runner: check failed for ${r.path}: ${output}`);
       active.push({ ...r, checkOutput: output });
@@ -289,16 +296,17 @@ export function runSession(
       prompt: buildPrompt(due.routines),
     };
   }
-  if (acquireLock() === 'held') {
+  const slot = acquireLock();
+  if (slot === 'held') {
     console.error('runner: lock held');
     return { started: false, reason: 'session already running' };
   }
-  console.error('runner: lock acquired');
+  console.error(`runner: lock acquired (slot ${slot})`);
   try {
     const cards = promptOverride ? [] : gateWork();
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
     console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
-    const active = promptOverride ? [] : checkDueRoutines(due.routines);
+    const active = promptOverride ? [] : checkDueRoutines(due.routines, slot);
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
     console.error(`runner: marked ${due.routines.length} routines`);
     if (!promptOverride && cards.length === 0 && active.length === 0) {
@@ -320,7 +328,7 @@ export function runSession(
         // stray warning can never corrupt a transcript line.
         status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active)], {
           stdio: ['ignore', out, err],
-          cwd: workDir(),
+          cwd: workDir(slot),
           env: sessionEnv(),
         }).status;
       } finally {
