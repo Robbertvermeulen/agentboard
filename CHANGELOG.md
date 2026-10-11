@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.19.1...v0.20.0) (2026-10-11)
+
+
+### Features
+
+* **runner:** run N sessions concurrently, isolate workdir per slot ([#102](https://github.com/Robbertvermeulen/agentboard/issues/102)) ([2623af8](https://github.com/Robbertvermeulen/agentboard/commit/2623af8f09f6d5fedaff5da513f0b3df9a2a8bd4)), closes [#1](https://github.com/Robbertvermeulen/agentboard/issues/1)
+
 ## [0.19.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.19.0...v0.19.1) (2026-09-28)
 
 
