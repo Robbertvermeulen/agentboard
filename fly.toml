@@ -12,6 +12,7 @@ swap_size_mb = 512
   AGENTBOARD_AUTORUN = "1"
   AGENTBOARD_ORIGIN = "https://agentboard-app.fly.dev"
   AGENTBOARD_SESSION_CMD = "claude -p --output-format stream-json --verbose --dangerously-skip-permissions"
+  AGENTBOARD_MAX_SESSIONS = "3"
   TZ = "Europe/Amsterdam"
   DISABLE_AUTOUPDATER = "1"
 
