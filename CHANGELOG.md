@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.20.0...v0.21.0) (2026-10-14)
+
+
+### Features
+
+* **cards:** change a card's type via CLI and UI ([#106](https://github.com/Robbertvermeulen/agentboard/issues/106)) ([6d4ed21](https://github.com/Robbertvermeulen/agentboard/commit/6d4ed217d2ac508f1d59d59973791e3de9c85e0e))
+
 # [0.20.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.19.1...v0.20.0) (2026-10-11)
 
 
