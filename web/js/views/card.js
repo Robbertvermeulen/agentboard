@@ -11,6 +11,7 @@ import {
   cardRefChip,
   moveWithReason,
   openStatusMenu,
+  openTypeMenu,
   crumb,
 } from '../components.js';
 import { triggerLabel } from './sessions.js';
@@ -485,7 +486,7 @@ export async function renderCard(root, { boards, cardId }) {
       </div>
       <div class="props">
         <span class="p-title">Properties</span>
-        <div class="prop-row"><span class="k">Type</span><span class="v">${card.type === 'ops' ? icons.sliders(14) : icons.fileText(14)}${esc(card.type)}</span></div>
+        <div class="prop-row"><span class="k">Type</span><span class="v clickable" id="type-pill-wrap">${card.type === 'ops' ? icons.sliders(14) : icons.fileText(14)}${esc(card.type)}${icons.chevronDown(11)}</span></div>
         <div class="prop-row"><span class="k">Status</span><span class="v" id="status-pill-wrap">${statusPill(card.status, { chevron: true })}</span></div>
         <div class="prop-row"><span class="k">Owner</span><span class="v">${card.owner === 'agent' ? icons.bot(14) : icons.user(14, 'var(--mut)')}${esc(card.owner)}</span></div>
         <div class="prop-row"><span class="k">Board</span><span class="v">${esc(board?.name ?? card.board_id)}</span></div>
@@ -708,6 +709,8 @@ export async function renderCard(root, { boards, cardId }) {
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
   if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);
+  const typePill = root.querySelector('#type-pill-wrap');
+  if (typePill) typePill.onclick = () => openTypeMenu(card, rerender, typePill);
   const mPill = root.querySelector('#m-status-pill');
   if (mPill) mPill.onclick = () => openStatusMenu(card, rerender);
   const mChange = root.querySelector('#m-change-status');

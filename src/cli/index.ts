@@ -116,7 +116,9 @@ function renderTimeline(comments: Comment[], events: BoardEvent[]): string[] {
       const detail =
         e.kind === 'status_changed'
           ? `${e.payload.from} -> ${e.payload.to} (${e.payload.reason})`
-          : e.kind === 'context_written'
+          : e.kind === 'type_changed'
+            ? `${e.payload.from} -> ${e.payload.to}`
+            : e.kind === 'context_written'
             ? `${e.payload.path} (${e.payload.message})`
             : typeof e.payload.note === 'string'
               ? e.payload.note
@@ -536,18 +538,25 @@ card
   .option('--context-refs <paths>', 'comma-separated context paths, empty string clears')
   .option('--blocked-by <ids>', 'comma-separated card ids that block this card, empty string clears')
   .option('--board <id>', 'move card to another board')
+  .option('--type <type>', 'task | ops — writes a type_changed event')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string) => {
-      const c = editCard(id, {
-        title: opts.title,
-        body: opts.body,
-        labels: opts.labels !== undefined ? splitList(opts.labels) : undefined,
-        refs: opts.refs !== undefined ? parseJsonArray(opts.refs, 'refs') : undefined,
-        contextRefs: opts.contextRefs !== undefined ? splitList(opts.contextRefs) : undefined,
-        blockedBy: opts.blockedBy !== undefined ? splitList(opts.blockedBy) : undefined,
-        board: opts.board,
-      });
+      const c = editCard(
+        id,
+        {
+          title: opts.title,
+          body: opts.body,
+          labels: opts.labels !== undefined ? splitList(opts.labels) : undefined,
+          refs: opts.refs !== undefined ? parseJsonArray(opts.refs, 'refs') : undefined,
+          contextRefs: opts.contextRefs !== undefined ? splitList(opts.contextRefs) : undefined,
+          blockedBy: opts.blockedBy !== undefined ? splitList(opts.blockedBy) : undefined,
+          board: opts.board,
+          type: opts.type,
+        },
+        opts.as
+      );
       output(opts, `Updated ${c.id}`, c);
     })
   );

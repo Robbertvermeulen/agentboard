@@ -276,6 +276,56 @@ export function openStatusMenu(card, onDone, anchor) {
   }
 }
 
+/* ---------- type menu: change an existing card's type ---------- */
+
+function typeMenuItems(current) {
+  return ['task', 'ops'].map((t) => {
+    const active = t === current;
+    return `<button type="button" class="status-item${active ? ' active' : ''}" data-type="${t}">
+      ${t === 'ops' ? icons.sliders(13) : icons.fileText(13)}
+      <span>${t}</span>
+      ${active ? `<span class="item-check">${icons.check(13, 'var(--dark)')}</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
+export function openTypeMenu(card, onDone, anchor) {
+  const pick = async (type) => {
+    closeOverlay();
+    if (type === card.type) return;
+    try {
+      await api.edit(card.id, { type });
+      onDone();
+    } catch (err) {
+      alertError(err.message);
+    }
+  };
+  if (isMobile()) {
+    const el = openOverlay(
+      `<div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><span>Change type</span></div>
+        ${typeMenuItems(card.type).replaceAll('class="status-item', 'class="status-item sheet-item')}
+      </div>`,
+      { sheet: true }
+    );
+    el.querySelectorAll('.status-item').forEach((b) => (b.onclick = () => pick(b.dataset.type)));
+  } else {
+    const el = openOverlay(`<div class="dialog status-menu">
+      ${typeMenuItems(card.type)}
+    </div>`);
+    if (anchor) {
+      el.classList.add('anchored');
+      const menu = el.querySelector('.status-menu');
+      const rect = anchor.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 216)}px`;
+      menu.style.top = rect.bottom + 100 < window.innerHeight ? `${rect.bottom + 6}px` : `${Math.max(rect.top - 100, 8)}px`;
+    }
+    el.querySelectorAll('.status-item').forEach((b) => (b.onclick = () => pick(b.dataset.type)));
+  }
+}
+
 /* ---------- create card dialog ---------- */
 
 export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
