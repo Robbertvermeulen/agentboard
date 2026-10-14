@@ -376,14 +376,19 @@ export function createApp(): Hono {
     try {
       const body = await c.req.json();
       return c.json(
-        editCard(c.req.param('id'), {
-          title: body.title,
-          body: body.body,
-          labels: body.labels,
-          refs: body.refs,
-          contextRefs: body.contextRefs,
-          board: body.board,
-        })
+        editCard(
+          c.req.param('id'),
+          {
+            title: body.title,
+            body: body.body,
+            labels: body.labels,
+            refs: body.refs,
+            contextRefs: body.contextRefs,
+            board: body.board,
+            type: body.type,
+          },
+          ACTOR
+        )
       );
     } catch (err) {
       return errorResponse(c, err);

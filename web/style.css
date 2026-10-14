@@ -595,6 +595,7 @@ input, textarea, select { font: inherit; color: var(--ink); }
 .prop-row .k { width: 76px; flex: none; font-size: 13px; color: var(--mut); }
 .prop-row .v { font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
 .prop-row .v.plain { font-weight: 400; color: var(--ink-3); }
+.prop-row .v.clickable { cursor: pointer; }
 .props .sep { height: 1px; background: var(--line); }
 .props .rel-heading { font-size: 12px; font-weight: 600; color: var(--mut); letter-spacing: 0.02em; }
 .rel-card { display: block; background: #fff; border: 1px solid color-mix(in oklch, var(--brand) 24%, #fff); border-radius: 10px; padding: 10px; color: inherit; }

@@ -9,6 +9,7 @@ export const TYPES = ['task', 'ops'] as const;
 export const ACTORS = ['human', 'agent'] as const;
 export const EVENT_KINDS = [
   'status_changed',
+  'type_changed',
   'action_taken',
   'context_written',
   'error',

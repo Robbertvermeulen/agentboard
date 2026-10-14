@@ -580,8 +580,11 @@ export function editCard(
     contextRefs?: string[];
     blockedBy?: string[];
     board?: string;
-  }
+    type?: string;
+  },
+  actor: string
 ): Card {
+  const a = assertActor(actor);
   const sets: string[] = [];
   const values: unknown[] = [];
   if (fields.title !== undefined) {
@@ -610,8 +613,14 @@ export function editCard(
     sets.push('blocked_by = ?');
     values.push(JSON.stringify(fields.blockedBy));
   }
+  if (fields.type !== undefined) {
+    sets.push('type = ?');
+    values.push(assertType(fields.type));
+  }
   if (sets.length === 0 && fields.board === undefined) {
-    throw new Error('Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs, --blocked-by or --board');
+    throw new Error(
+      'Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs, --blocked-by, --type or --board'
+    );
   }
 
   const db = openDb();
@@ -619,7 +628,7 @@ export function editCard(
     // Validation + UPDATE in one transaction: concurrent edits cannot each
     // pass the cycle check against a stale blocked_by and jointly commit one.
     const edit = db.transaction(() => {
-      getCardIn(db, id);
+      const card = getCardIn(db, id);
       if (fields.blockedBy !== undefined) {
         for (const bid of fields.blockedBy) {
           if (bid === id) throw new Error(`Card ${id} cannot block itself`);
@@ -634,6 +643,12 @@ export function editCard(
       sets.push('updated_at = ?');
       values.push(now(), id);
       db.prepare(`UPDATE card SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+      // A type change is a structural reclassification (unlike title/label
+      // edits, which stay silent): it gets the same from/to event trail as
+      // a status change.
+      if (fields.type !== undefined && fields.type !== card.type) {
+        addEventIn(db, id, 'type_changed', a, { from: card.type, to: fields.type });
+      }
     });
     edit.immediate();
     return getCardIn(db, id);
