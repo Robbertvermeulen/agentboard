@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.2...v0.23.0) (2026-10-15)
+
+
+### Features
+
+* **cards:** let the human unblock a card, with a guarded re-block ([#112](https://github.com/Robbertvermeulen/agentboard/issues/112)) ([bd0a953](https://github.com/Robbertvermeulen/agentboard/commit/bd0a953eb580b65c5418a0bbad4adc0cdeedf15d)), closes [#token](https://github.com/Robbertvermeulen/agentboard/issues/token)
+
 ## [0.22.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.1...v0.22.2) (2026-10-15)
 
 
