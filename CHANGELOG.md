@@ -1,3 +1,10 @@
+## [0.22.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.0...v0.22.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **runner:** give each concurrent session its own cards and workdir ([#110](https://github.com/Robbertvermeulen/agentboard/issues/110)) ([0100b9d](https://github.com/Robbertvermeulen/agentboard/commit/0100b9d827db867f55827dc5d67cf0aa1a506226)), closes [#102](https://github.com/Robbertvermeulen/agentboard/issues/102) [#324](https://github.com/Robbertvermeulen/agentboard/issues/324) [#321](https://github.com/Robbertvermeulen/agentboard/issues/321) [#322](https://github.com/Robbertvermeulen/agentboard/issues/322) [#322](https://github.com/Robbertvermeulen/agentboard/issues/322) [#323](https://github.com/Robbertvermeulen/agentboard/issues/323) [#102](https://github.com/Robbertvermeulen/agentboard/issues/102)
+
 # [0.22.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.21.0...v0.22.0) (2026-10-15)
 
 
