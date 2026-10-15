@@ -12,6 +12,7 @@ import {
   moveWithReason,
   openStatusMenu,
   openTypeMenu,
+  unblockWithReason,
   crumb,
 } from '../components.js';
 import { triggerLabel } from './sessions.js';
@@ -62,7 +63,11 @@ function eventLine(e) {
   } else if (e.kind === 'blocker_added') {
     icon = icons.block(14);
     const b = String(e.payload.blocker ?? '');
-    text = `<span class="kind">blocker_added</span> by ${esc(e.actor)}: blocked by <a href="#/card/${esc(b)}">${esc(b)}</a>`;
+    text = `<span class="kind">blocker_added</span> by ${esc(e.actor)}: blocked by <a href="#/card/${esc(b)}">${esc(b)}</a>${e.payload.reason ? ` ${soft(`(${esc(e.payload.reason)})`)}` : ''}`;
+  } else if (e.kind === 'blocker_removed') {
+    icon = icons.check(14, 'var(--green-icon)');
+    const b = String(e.payload.blocker ?? '');
+    text = `<span class="kind">blocker_removed</span> by ${esc(e.actor)}: no longer blocked by <a href="#/card/${esc(b)}">${esc(b)}</a>${e.payload.reason ? ` ${soft(`(${esc(e.payload.reason)})`)}` : ''}`;
   } else {
     const note = String(e.payload.note ?? JSON.stringify(e.payload));
     const m = note.match(/^(.*?)(WAITING:.*)$/s);
@@ -353,9 +358,12 @@ export async function renderCard(root, { boards, cardId }) {
                   ${blockers
                     .map((b) => {
                       const open = b.status !== 'done' && b.status !== 'archived';
-                      return `<a class="blocker-chip${open ? '' : ' resolved'}" href="#/card/${esc(b.id)}">${
+                      const chip = `<a class="blocker-chip${open ? '' : ' resolved'}" href="#/card/${esc(b.id)}">${
                         open ? icons.block(11) : icons.check(11, 'var(--green-icon)')
                       }${esc(b.id)}${open && blockedSince.has(b.id) ? `<span class="blocked-age">blocked ${esc(ageShort(blockedSince.get(b.id)))}</span>` : ''}</a>`;
+                      return open
+                        ? `<span class="blocker-wrap">${chip}<button type="button" class="blocker-x" data-unblock="${esc(b.id)}" title="Unblock: ${esc(b.id)} no longer blocks this card" aria-label="Unblock ${esc(b.id)}">×</button></span>`
+                        : chip;
                     })
                     .join('')}
                   ${(card.context_refs ?? []).map((p) => `<a class="ctx-chip" href="#/ctx/${esc(p)}">${icons.file()}${esc(p)}</a>`).join('')}
@@ -707,6 +715,7 @@ export async function renderCard(root, { boards, cardId }) {
     row.insertAdjacentHTML('afterend', `<pre class="diff-block">${body}</pre>`);
   });
   root.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => moveWithReason(card, b.dataset.move, rerender)));
+  root.querySelectorAll('[data-unblock]').forEach((b) => (b.onclick = () => unblockWithReason(card, b.dataset.unblock, rerender)));
   const pill = root.querySelector('#status-pill-wrap .status-pill');
   if (pill) pill.onclick = () => openStatusMenu(card, rerender, pill);
   const typePill = root.querySelector('#type-pill-wrap');

@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { serve } from '@hono/node-server';
@@ -35,6 +34,7 @@ import {
   listBoards,
   moveCard,
   nextWork,
+  removeBlocker,
   renameBoard,
   setBoardLanguage,
   unarchiveBoard,
@@ -44,7 +44,7 @@ import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
-import { sessionStatus } from '../core/runner.js';
+import { pokeRunner, sessionStatus } from '../core/runner.js';
 import { cardSessions, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
 import { performUpdate, versionInfo } from '../core/update.js';
 
@@ -131,10 +131,7 @@ function webDir(): string {
 // uses; the single-flight lock arbitrates. Opt-in via AGENTBOARD_AUTORUN=1
 // so dev servers and UI tests never start real sessions by accident.
 function maybeAutorun(): void {
-  if (process.env.AGENTBOARD_AUTORUN !== '1') return;
-  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
-  const child = spawn(process.execPath, [cli, 'runner', '--trigger', 'serve'], { detached: true, stdio: 'ignore' });
-  child.unref();
+  pokeRunner('serve');
 }
 
 export function createApp(): Hono {
@@ -368,6 +365,18 @@ export function createApp(): Hono {
     }
   });
 
+  // A human unblock is a poke like move/comment: the card may be workable now.
+  app.post('/api/cards/:id/unblock', async (c) => {
+    try {
+      const body = await c.req.json();
+      const result = removeBlocker(c.req.param('id'), String(body.blocker ?? ''), ACTOR, body.reason);
+      maybeAutorun();
+      return c.json(result);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
   app.post('/api/comments/:id', async (c) => {
     try {
       const body = await c.req.json();
@@ -527,7 +536,7 @@ export function createApp(): Hono {
       const status = sessionStatus();
       const sessions = listSessions().map((s) => ({
         ...s,
-        live: s.ended_at === null && status.running && status.session_id === s.id,
+        live: s.ended_at === null && status.session_ids.includes(s.id),
         observed: fs.existsSync(observationPath(s.id)),
       }));
       return c.json({ sessions });
@@ -541,7 +550,7 @@ export function createApp(): Hono {
       const id = Number(c.req.param('id'));
       const r = sessionStepsSince(id, Number(c.req.query('offset') ?? 0), Number(c.req.query('n') ?? 0));
       const status = sessionStatus();
-      return c.json({ ...r, live: status.running && status.session_id === id });
+      return c.json({ ...r, live: status.session_ids.includes(id) });
     } catch (err) {
       return errorResponse(c, err);
     }
@@ -551,7 +560,7 @@ export function createApp(): Hono {
     try {
       const d = sessionDetail(Number(c.req.param('id')));
       const status = sessionStatus();
-      const live = d.session.ended_at === null && status.running && status.session_id === d.session.id;
+      const live = d.session.ended_at === null && status.session_ids.includes(d.session.id);
       return c.json({ ...d, session: { ...d.session, live } });
     } catch (err) {
       return errorResponse(c, err);

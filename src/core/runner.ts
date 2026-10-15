@@ -1,43 +1,21 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { dataDir, now, openDb } from './db.js';
-import { gateWork } from './cards.js';
+import { now, openDb } from './db.js';
+import { Card, gateWork, pickAndClaimIn, returnUnreadCard } from './cards.js';
+import { releaseSessionClaims } from './claims.js';
+import { checkWorkDir, pruneWorkdirs, removeTmpDir, sessionTmpDir, sessionWorkDir } from './workdirs.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
-import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
+import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecordIn } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
-
-// One numbered lock file per slot ('session.lock' for slot 0, matching the
-// pre-pool name so existing boot cleanup keeps working at the default N=1).
-const lockPath = (slot: number) => path.join(dataDir(), slot === 0 ? 'session.lock' : `session.lock.${slot}`);
-
-// How many sessions may run at once. Default 1 keeps today's single-flight
-// behavior; raising it widens the pool acquireLock draws from, and the
-// bin/run.sh tick loop fires a new `runner --trigger cron` without waiting
-// for the previous one, so up to this many can genuinely run in parallel.
-const maxSessions = () => Math.max(1, Number(process.env.AGENTBOARD_MAX_SESSIONS ?? 1));
+import { SessionLock, liveSessionIdsIn, lockPath, maxSessions, processAlive } from './slots.js';
 
 function anyLockHeld(): boolean {
   const slots = maxSessions();
   for (let slot = 0; slot < slots; slot++) if (fs.existsSync(lockPath(slot))) return true;
   return false;
-}
-
-interface SessionLock {
-  pid: number;
-  hostname: string;
-  started_at: string;
-}
-
-function processAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // A pool of N lock slots (vision Concurrency; N=1 is single-flight). A lock
@@ -99,46 +77,87 @@ export function releaseLock(): void {
   }
 }
 
-// Heartbeat: is a runner-started session alive right now? The lock proves a
-// live process; the open session row names it. Both required — a stale row
-// after a crash must not read as "live".
-export function sessionStatus(): { running: boolean; session_id: number | null } {
-  const slots = maxSessions();
-  let alive = false;
-  for (let slot = 0; slot < slots; slot++) {
-    try {
-      const lock = JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
-      if (lock.hostname === os.hostname() && processAlive(lock.pid)) {
-        alive = true;
-        break;
-      }
-    } catch {
-      // no live lock at this slot
-    }
-  }
+// Name the session in this process's lock, so liveSessionIds can map every
+// held slot to the session it runs (several can be live at N>1).
+function markLockSession(slot: number, sessionId: number): void {
+  const file = lockPath(slot);
+  const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+  if (lock.pid !== process.pid) return; // not ours anymore (max-age steal)
+  fs.writeFileSync(file, JSON.stringify({ ...lock, session_id: sessionId }));
+}
+
+const resumeLimit = () => Math.max(1, Number(process.env.AGENTBOARD_RESUME_LIMIT ?? 2));
+// spawnSync throws on a non-integer or NaN timeout, after the card is claimed:
+// a bad env value must fall back instead of stranding healthy cards.
+const sessionTimeoutMs = () => {
+  const minutes = Number(process.env.AGENTBOARD_SESSION_TIMEOUT_MIN ?? 45);
+  return Math.max(1, Math.round((Number.isFinite(minutes) && minutes > 0 ? minutes : 45) * 60_000));
+};
+
+// One immediate transaction makes the session row, names it in this slot's
+// lock and claims the first gate card, so a concurrent runner either sees
+// all of it or none. The lock write happens inside the transaction on
+// purpose: a runner that commits after us reads the lock as live. With no
+// card and nothing else to do, the row is deleted again (begun is null),
+// while a crash-loop park made during the pick still commits and comes back
+// in `parked` either way.
+function beginSession(
+  slot: number,
+  trigger: string,
+  opts: { assign: boolean; allowEmpty: boolean }
+): { begun: { rec: { id: number; jsonl: string; stderr: string }; card: Card | null } | null; parked: string[] } {
   const db = openDb();
   try {
-    const row = db.prepare('SELECT id FROM session WHERE ended_at IS NULL ORDER BY id DESC LIMIT 1').get() as
-      | { id: number }
-      | undefined;
-    return { running: alive && row !== undefined, session_id: alive && row ? row.id : null };
+    return db
+      .transaction(() => {
+        const live = new Set(liveSessionIdsIn(db));
+        const rec = startSessionRecordIn(db, trigger);
+        markLockSession(slot, rec.id);
+        const { card, parked } = opts.assign ? pickAndClaimIn(db, rec.id, live, resumeLimit()) : { card: null, parked: [] };
+        if (!card && !opts.allowEmpty) {
+          db.prepare('DELETE FROM session WHERE id = ?').run(rec.id);
+          return { begun: null, parked };
+        }
+        if (card) db.prepare('UPDATE session SET card_id = ? WHERE id = ?').run(card.id, rec.id);
+        return { begun: { rec, card }, parked };
+      })
+      .immediate();
   } finally {
     db.close();
   }
 }
 
-// Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
-// any stray project context) would leak into the session. The runner owns
-// its workspace — AGENTBOARD_WORK overrides, <data>/work is the default.
-// Slot 0 keeps that exact path (today's layout stays valid at the default
-// N=1); every other slot gets its own suffixed directory, since two
-// sessions running at once must never race on the same repo checkout.
-function workDir(slot: number): string {
-  const base = process.env.AGENTBOARD_WORK ?? path.join(dataDir(), 'work');
-  const dir = slot === 0 ? base : `${base}-slot-${slot}`;
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
+// Start the next runner the way the server's autorun does: detached, opt-in.
+// A finished session uses it so a waiting card does not wait for the cron.
+export function pokeRunner(trigger: string): void {
+  if (process.env.AGENTBOARD_AUTORUN !== '1') return;
+  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
+  const child = spawn(process.execPath, [cli, 'runner', '--trigger', trigger], { detached: true, stdio: 'ignore' });
+  child.unref();
 }
+
+// Heartbeat: which runner-started sessions are alive right now? A lock with
+// a live process proves it; the open session row confirms it. Both required —
+// a stale row after a crash must not read as "live".
+export function liveSessionIds(): number[] {
+  const db = openDb();
+  try {
+    return liveSessionIdsIn(db);
+  } finally {
+    db.close();
+  }
+}
+
+// session_id stays the newest live session for existing callers; session_ids
+// lists every live one.
+export function sessionStatus(): { running: boolean; session_id: number | null; session_ids: number[] } {
+  const ids = liveSessionIds();
+  return { running: ids.length > 0, session_id: ids.length ? ids[ids.length - 1] : null, session_ids: ids };
+}
+
+// Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
+// any stray project context) would leak into the session. Workdirs come
+// from workdirs.ts.
 
 // The session gets the environment minus the secrets only the server
 // process needs: the Fly deploy token (it can replace this machine) and the
@@ -146,9 +165,16 @@ function workDir(slot: number): string {
 // --dangerously-skip-permissions must not be able to read either.
 const SESSION_ENV_STRIP = ['FLY_API_TOKEN', 'AGENTBOARD_SESSION_SECRET'];
 
-function sessionEnv(): NodeJS.ProcessEnv {
+// AGENT.md rule 12 derives repo paths from $AGENTBOARD_WORK, so it points at
+// this card's workdir; TMPDIR is per session so two sessions never share
+// scratch files. With a session id, the session stamps its claims (moveCard)
+// and finds its own id among the live ones.
+function sessionEnv(work?: string, tmp?: string, sessionId?: number): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, AGENTBOARD_ACTOR: 'agent' };
   for (const key of SESSION_ENV_STRIP) delete env[key];
+  if (work !== undefined) env.AGENTBOARD_WORK = work;
+  if (tmp !== undefined) Object.assign(env, { TMPDIR: tmp, TMP: tmp, TEMP: tmp });
+  if (sessionId !== undefined) env.AGENTBOARD_SESSION_ID = String(sessionId);
   return env;
 }
 
@@ -174,7 +200,7 @@ function mcpConfigArg(): string {
 
 export type DueRoutine = RoutineInfo & { checkOutput?: string };
 
-export function buildPrompt(due: DueRoutine[]): string {
+export function buildPrompt(due: DueRoutine[], cardId: string | null): string {
   const routineBlock = due.length
     ? `Due routines this run — read each with \`agentboard ctx show <path>\` and act per rule 16:\n${due
         .map((r) => `- ${r.path}${r.checkOutput ? ` (check found:\n${r.checkOutput})` : ''}`)
@@ -191,7 +217,11 @@ export function buildPrompt(due: DueRoutine[]): string {
     `You are the agentboard agent. Read and follow every rule in ${agentMdPath()} before doing anything else.\n\n` +
     languageLine +
     routineBlock +
-    'Then work the board: run `agentboard next` and handle what it lists.'
+    (cardId
+      ? `Your card this session: ${cardId}. Start with \`agentboard card show ${cardId}\`. Work only this card; ` +
+        'touching another card needs `agentboard card claim <id>` first (AGENT.md rule 15). Handing the card ' +
+        'back is your last step.'
+      : 'You hold no card this session; touching a card needs `agentboard card claim <id>` first (AGENT.md rule 15).')
   );
 }
 
@@ -200,9 +230,9 @@ export function buildPrompt(due: DueRoutine[]): string {
 // every due routine). A failing or timed-out check counts as "found"
 // (fail-open) with the error surfaced instead — a broken check must never
 // make a routine silently vanish.
-function runRoutineCheck(check: string, slot: number): { output: string; failed: boolean } {
+function runRoutineCheck(check: string): { output: string; failed: boolean } {
   const result = spawnSync('sh', ['-c', check], {
-    cwd: workDir(slot),
+    cwd: checkWorkDir(),
     env: sessionEnv(),
     timeout: 30_000,
     encoding: 'utf8',
@@ -217,14 +247,14 @@ function runRoutineCheck(check: string, slot: number): { output: string; failed:
 // with something to act on: no check, non-empty stdout, or a failed check
 // (fail-open). Every due routine still gets marked run by the caller,
 // whether or not it survives this filter.
-function checkDueRoutines(due: RoutineInfo[], slot: number): DueRoutine[] {
+function checkDueRoutines(due: RoutineInfo[]): DueRoutine[] {
   const active: DueRoutine[] = [];
   for (const r of due) {
     if (!r.check) {
       active.push(r);
       continue;
     }
-    const { output, failed } = runRoutineCheck(r.check, slot);
+    const { output, failed } = runRoutineCheck(r.check);
     if (failed) {
       console.error(`runner: check failed for ${r.path}: ${output}`);
       active.push({ ...r, checkOutput: output });
@@ -239,8 +269,9 @@ function checkDueRoutines(due: RoutineInfo[], slot: number): DueRoutine[] {
 
 // Turn handovers to the human into one line for AGENTBOARD_NOTIFY_CMD:
 // cards the agent moved to needs_input or review during this session and
-// that still sit there (a later move onward un-notifies it).
-function handbacksSince(since: string): { id: string; to: string }[] {
+// that still sit there (a later move onward un-notifies it). Only this
+// session's own moves count — a concurrent session's hand-backs are its own.
+function handbacksSince(since: string, sessionId: number): { id: string; to: string }[] {
   const db = openDb();
   try {
     const rows = db
@@ -251,7 +282,9 @@ function handbacksSince(since: string): { id: string; to: string }[] {
       .all(since) as { card_id: string; payload: string }[];
     const latest = new Map<string, string>();
     for (const r of rows) {
-      const to = (JSON.parse(r.payload) as { to?: string }).to ?? '';
+      const p = JSON.parse(r.payload) as { to?: string; session?: number };
+      if (p.session !== sessionId) continue;
+      const to = p.to ?? '';
       if (to === 'needs_input' || to === 'review') latest.set(r.card_id, to);
       else latest.delete(r.card_id);
     }
@@ -301,13 +334,13 @@ export function runSession(
   notified?: { id: string; to: string }[];
 } {
   if (dryRun) {
-    const cards = gateWork();
+    const cards = gateWork(new Set(liveSessionIds()));
     const due = dueRoutines();
     return {
       started: false,
       reason: anyLockHeld() ? 'dry-run (lock file present)' : 'dry-run',
       gate: { cards: cards.length, routines: due.routines.length },
-      prompt: buildPrompt(due.routines),
+      prompt: buildPrompt(due.routines, cards[0]?.id ?? null),
     };
   }
   const slot = acquireLock();
@@ -316,65 +349,106 @@ export function runSession(
     return { started: false, reason: 'session already running' };
   }
   console.error(`runner: lock acquired (slot ${slot})`);
+  let sessionId: number | undefined;
+  // A session that ended before reading its card hit something global (usage
+  // limit, auth, outage); chaining would only burn through the next card.
+  let chain = true;
   try {
-    const cards = promptOverride ? [] : gateWork();
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
-    console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
-    const active = promptOverride ? [] : checkDueRoutines(due.routines, slot);
+    const active = promptOverride ? [] : checkDueRoutines(due.routines);
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
     console.error(`runner: marked ${due.routines.length} routines`);
-    if (!promptOverride && cards.length === 0 && active.length === 0) {
-      return { started: false, reason: 'gate empty' };
-    }
+    const { begun, parked } = beginSession(slot, trigger, {
+      assign: !promptOverride,
+      allowEmpty: !!promptOverride || active.length > 0,
+    });
+    // Parking hands a card to the human just like a hand-back does.
+    notify(parked.map((id) => ({ id, to: 'needs_input' })));
+    if (!begun) return { started: false, reason: 'gate empty' };
+    const { rec, card } = begun;
+    sessionId = rec.id;
     const sessionStart = now();
-    const rec = startSessionRecord(trigger);
-    console.error(`runner: session #${rec.id} -> ${rec.jsonl}`);
-    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(
-      /\s+/
-    );
+    console.error(`runner: session #${rec.id}${card ? ` (${card.id})` : ''} -> ${rec.jsonl}`);
+    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(/\s+/);
     let status: number | null = null;
     let notified: { id: string; to: string }[] = [];
     try {
+      const work = sessionWorkDir(card?.id ?? null, rec.id);
+      const tmp = sessionTmpDir(rec.id);
       const out = fs.openSync(rec.jsonl, 'w');
       const err = fs.openSync(rec.stderr, 'w');
       try {
         // stdout is the JSONL transcript; stderr goes to its own file so a
-        // stray warning can never corrupt a transcript line.
-        status = spawnSync(
+        // stray warning can never corrupt a transcript line. A session past
+        // the time limit is stopped and counts as stranded (spec section 7).
+        const result = spawnSync(
           parts[0],
-          [...parts.slice(1), '--mcp-config', mcpConfigArg(), promptOverride ?? buildPrompt(active)],
+          [
+            ...parts.slice(1),
+            '--mcp-config',
+            mcpConfigArg(),
+            promptOverride ?? buildPrompt(active, card?.id ?? null),
+          ],
           {
             stdio: ['ignore', out, err],
-            cwd: workDir(slot),
-            env: sessionEnv(),
+            cwd: work,
+            env: sessionEnv(work, tmp, rec.id),
+            timeout: sessionTimeoutMs(),
+            killSignal: 'SIGTERM',
           }
-        ).status;
+        );
+        status = result.status;
+        if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT') {
+          console.error(`runner: session #${rec.id} timed out`);
+        }
       } finally {
         fs.closeSync(out);
         fs.closeSync(err);
       }
       console.error(`runner: session exited ${status ?? 'null'}`);
       scanSessionCards(rec.id);
-      notified = handbacksSince(sessionStart);
+      notified = handbacksSince(sessionStart, rec.id);
       notify(notified);
       if (process.env.AGENTBOARD_NOTIFY_CMD && notified.length > 0) {
         console.error(`runner: notified: ${notified.length}`);
       }
       return { started: true, reason: `session exited ${status ?? 'null'}`, log: rec.jsonl, session: rec.id, notified };
     } finally {
-      // ended_at is always set, crash or not — a session row may never
-      // stay open forever (the heartbeat and prune both depend on it).
+      // ended_at is always set, crash or not; then the claims go, so the
+      // gate can hand a stranded card to the next session. An unread
+      // assigned card goes back first, while this session still holds it.
+      try {
+        const returned = returnUnreadCard(rec.id);
+        if (returned) {
+          chain = false;
+          console.error(`runner: session ended before reading ${returned}; card returned`);
+        }
+      } catch (e) {
+        console.error(`runner: returning the unread card failed: ${(e as Error).message}`);
+      }
       finishSessionRecord(rec.id, status, notified);
+      releaseSessionClaims(rec.id);
+      removeTmpDir(rec.id);
     }
   } finally {
     releaseLock();
+    // Best-effort and after the lock: a prune failure must neither hold the
+    // slot nor replace the session's result.
+    if (sessionId !== undefined) {
+      try {
+        pruneWorkdirs();
+      } catch (e) {
+        console.error(`runner: prune failed: ${(e as Error).message}`);
+      }
+    }
+    if (sessionId !== undefined && chain) pokeRunner('chain');
   }
 }
 
 // Observer (vision besluit J): re-read a finished session and judge it
 // against the rulebook. The prompt does the work — report to a fixed path,
 // an ops card only on a real violation. Runs through runSession, so the
-// single-flight lock and session capture apply to the observer itself.
+// slot pool and session capture apply to the observer itself.
 export function observeSession(
   nr: number,
   visionPath?: string
@@ -394,8 +468,7 @@ export function observeSession(
     // leaves an open row with no live lock forever — exactly the crash most
     // worth observing, and "still running" would contradict the UI's own
     // "ended early (crash)" for the same row.
-    const status = sessionStatus();
-    if (status.session_id === nr) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
+    if (liveSessionIds().includes(nr)) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
   }
   if (row.trigger === 'observe') throw new Error(`Session #${nr} is itself an observation — nothing to observe`);
   if (visionPath && !fs.existsSync(visionPath)) throw new Error(`Vision document not found: ${visionPath}`);

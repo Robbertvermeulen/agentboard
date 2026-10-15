@@ -8,10 +8,15 @@ import {
   STATUSES,
   Status,
   TYPES,
+  addEventIn,
   now,
   openDb,
 } from './db.js';
+import { assertNotHumanInSession, guardAgentWrite, ownSession, requestPrefixIn } from './claims.js';
 import { assertLanguage } from './settings.js';
+import { liveSessionCardIdsIn } from './slots.js';
+
+export { addEventIn } from './db.js';
 
 export interface Board {
   id: string;
@@ -34,6 +39,9 @@ export interface Card {
   context_refs: string[];
   blocked_by: string[];
   routine: string | null;
+  claimed_by: number | null; // holder session (hard claims); only counts while that session lives
+  claim_seen_at: string | null;
+  human_edited_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +53,7 @@ export interface Comment {
   body: string;
   created_at: string;
   updated_at: string | null;
+  session_id: number | null;
 }
 
 export interface BoardEvent {
@@ -232,22 +241,6 @@ function assertNoBlockerCycle(db: Database.Database, cardId: string, blockedBy: 
   }
 }
 
-export function addEventIn(
-  db: Database.Database,
-  cardId: string,
-  kind: EventKind,
-  actor: Actor,
-  payload: Record<string, unknown>
-): void {
-  db.prepare('INSERT INTO event (card_id, kind, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)').run(
-    cardId,
-    kind,
-    actor,
-    JSON.stringify(payload),
-    now()
-  );
-}
-
 export function listBoards(opts?: { includeArchived?: boolean }): Board[] {
   const db = openDb();
   try {
@@ -367,6 +360,9 @@ export function createCard(input: {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
   const actor = assertActor(input.actor ?? 'human');
+  assertNotHumanInSession(actor);
+  if (input.blocks) guardAgentWrite(input.blocks, actor);
+  const own = actor === 'agent' ? ownSession() : undefined;
   if (!input.title.trim()) throw new Error('Title cannot be empty');
 
   const db = openDb();
@@ -398,6 +394,9 @@ export function createCard(input: {
         ts,
         ts
       );
+      // A session owns what it creates: its ops card or routine card can take
+      // a comment right away (spec section 4).
+      if (own !== undefined) db.prepare('UPDATE card SET claimed_by = ?, claim_seen_at = ? WHERE id = ?').run(own, ts, id);
       if (input.blocks) {
         const target = getCardIn(db, input.blocks);
         db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(
@@ -507,6 +506,7 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
   if (actor === 'agent' && status === 'done') {
     throw new Error("An agent may not move a card to 'done'. Move it to 'review'; the human moves it to done.");
   }
+  guardAgentWrite(id, actor);
 
   const db = openDb();
   try {
@@ -525,7 +525,13 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
         throw new Error(`Card ${id} changed status concurrently — read it again and retry`);
       }
       // Invariant 1: every status change writes an event with from, to, reason.
-      addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason });
+      // A runner session stamps its id on the move, so a concurrent session
+      // can tell "claimed by a live session" from "left behind by a crash".
+      const session = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
+      addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason, session });
+      // A human status change takes the card back: whichever session held it
+      // gets "not yours" on its next write (spec section 6).
+      if (actor === 'human') db.prepare('UPDATE card SET claimed_by = NULL, claim_seen_at = NULL WHERE id = ?').run(id);
     });
     move.immediate();
     return getCardIn(db, id);
@@ -534,15 +540,18 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
   }
 }
 
-export function addComment(id: string, body: string, author: string): Comment {
+export function addComment(id: string, body: string, author: string, opts: { request?: boolean } = {}): Comment {
   const a = assertActor(author);
   if (!body.trim()) throw new Error('Comment cannot be empty');
+  const guard = guardAgentWrite(id, a, opts);
   const db = openDb();
   try {
     getCardIn(db, id);
+    const own = ownSession();
+    const text = guard === 'request' && own !== undefined ? requestPrefixIn(db, own) + body : body;
     const result = db
-      .prepare('INSERT INTO comment (card_id, author, body, created_at) VALUES (?, ?, ?, ?)')
-      .run(id, a, body, now());
+      .prepare('INSERT INTO comment (card_id, author, body, created_at, session_id) VALUES (?, ?, ?, ?, ?)')
+      .run(id, a, text, now(), own ?? null);
     return db.prepare('SELECT * FROM comment WHERE id = ?').get(result.lastInsertRowid) as Comment;
   } finally {
     db.close();
@@ -559,6 +568,7 @@ export function editComment(commentId: number, body: string, actor: string): Com
     const comment = db.prepare('SELECT * FROM comment WHERE id = ?').get(commentId) as Comment | undefined;
     if (!comment) throw new Error(`Comment not found: ${commentId}`);
     if (comment.author !== a) throw new Error(`Only the author (${comment.author}) may edit this comment`);
+    guardAgentWrite(comment.card_id, a);
     const edit = db.transaction(() => {
       db.prepare('UPDATE comment SET body = ?, updated_at = ? WHERE id = ?').run(body, now(), commentId);
       addEventIn(db, comment.card_id, 'action_taken', a, { note: `comment ${commentId} edited` });
@@ -581,6 +591,7 @@ export function editCard(
     blockedBy?: string[];
     board?: string;
     type?: string;
+    reason?: string; // recorded on blocker_added/blocker_removed events
   },
   actor: string
 ): Card {
@@ -622,6 +633,13 @@ export function editCard(
       'Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs, --blocked-by, --type or --board'
     );
   }
+  guardAgentWrite(id, a);
+  // Title/body edits stay silent in the timeline; this column lets a holder's
+  // freshness check see them (spec section 1).
+  if (a === 'human') {
+    sets.push('human_edited_at = ?');
+    values.push(now());
+  }
 
   const db = openDb();
   try {
@@ -649,8 +667,67 @@ export function editCard(
       if (fields.type !== undefined && fields.type !== card.type) {
         addEventIn(db, id, 'type_changed', a, { from: card.type, to: fields.type });
       }
+      if (fields.blockedBy !== undefined) blockerChangesIn(db, card, fields.blockedBy, a, fields.reason);
     });
     edit.immediate();
+    return getCardIn(db, id);
+  } finally {
+    db.close();
+  }
+}
+
+// Blocker changes are events, never silent: the timeline is the agent's
+// memory. A human removing a blocker overrides the agent's judgement, so the
+// agent may put that same blocker back only with a reason, and only by
+// handing the card to the human (needs_input) — never by parking it again in
+// a blocked ready, where it would silently drop out of next. Runs inside the
+// caller's transaction, after blocked_by is written.
+function blockerChangesIn(db: Database.Database, card: Card, next: string[], actor: Actor, reason?: string): void {
+  const added = next.filter((b) => !card.blocked_by.includes(b));
+  const removed = card.blocked_by.filter((b) => !next.includes(b));
+  const humanRemoved = new Set(
+    (
+      db
+        .prepare("SELECT payload FROM event WHERE card_id = ? AND kind = 'blocker_removed' AND actor = 'human'")
+        .all(card.id) as { payload: string }[]
+    ).map((r) => String((JSON.parse(r.payload) as { blocker?: unknown }).blocker))
+  );
+  const overridden = actor === 'agent' ? added.filter((b) => humanRemoved.has(b)) : [];
+  if (overridden.length && !reason?.trim()) {
+    throw new Error(
+      `The human removed blocker ${overridden.join(', ')} from ${card.id}. Re-adding it needs --reason: what is new ` +
+        'since, and why their route does not work. The card then goes to needs_input.'
+    );
+  }
+  const session = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
+  for (const b of removed) addEventIn(db, card.id, 'blocker_removed', actor, { blocker: b, reason });
+  for (const b of added) addEventIn(db, card.id, 'blocker_added', actor, { blocker: b, reason });
+  if (overridden.length && (card.status === 'ready' || card.status === 'doing')) {
+    db.prepare("UPDATE card SET status = 'needs_input', updated_at = ? WHERE id = ?").run(now(), card.id);
+    addEventIn(db, card.id, 'status_changed', actor, {
+      from: card.status,
+      to: 'needs_input',
+      reason: `Re-blocked on ${overridden.join(', ')} after the human removed it: ${reason}`,
+      session,
+    });
+  }
+}
+
+// Remove one blocker from a card (the human's "unblock"). The blocker card
+// itself stays as it is: it may still matter for other work.
+export function removeBlocker(id: string, blocker: string, actor: string, reason?: string): Card {
+  const a = assertActor(actor);
+  guardAgentWrite(id, a);
+  const db = openDb();
+  try {
+    const remove = db.transaction(() => {
+      const card = getCardIn(db, id);
+      if (!card.blocked_by.includes(blocker)) throw new Error(`Card ${id} is not blocked by ${blocker}`);
+      const next = card.blocked_by.filter((b) => b !== blocker);
+      db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(next), now(), id);
+      blockerChangesIn(db, card, next, a, reason?.trim() || undefined);
+    });
+    remove.immediate();
     return getCardIn(db, id);
   } finally {
     db.close();
@@ -665,6 +742,7 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
     throw new Error(`Invalid event kind '${kind}'. Loggable: action_taken, error`);
   }
   const a = assertActor(actor);
+  guardAgentWrite(id, a);
   if (!note.trim()) throw new Error('Event note cannot be empty');
   const db = openDb();
   try {
@@ -676,25 +754,28 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
   }
 }
 
-// Worklist for an agent session (and the cheap gate for a cron trigger:
-// empty list = no session). ready = new work, doing = resumable — doing is
-// agent territory (vision besluit I) and claiming never changes the owner,
-// so filtering on owner here would strand a human-owned card after a crash.
-// needs_input = possibly self-unblockable via a wait-check in the timeline.
-export function nextWork(): Card[] {
+const heldByLive = (c: Card, live: ReadonlySet<number>) => c.claimed_by !== null && live.has(c.claimed_by);
+
+// Worklist for an agent. Inside a session it is exactly the cards that
+// session holds (the runner assigned one; `card claim` adds more). Outside
+// one: ready, doing and needs_input, minus cards a live session holds and
+// cards with an open blocker.
+export function nextWork(live: ReadonlySet<number> = new Set(), own?: number): Card[] {
   const db = openDb();
   try {
+    if (own !== undefined) {
+      return db
+        .prepare("SELECT * FROM card WHERE claimed_by = ? AND status NOT IN ('done','archived') ORDER BY updated_at ASC")
+        .all(own)
+        .map(rowToCard);
+    }
     const cards = db
       .prepare(
-        `SELECT * FROM card
-         WHERE status = 'ready' OR status = 'needs_input'
-            OR status = 'doing'
-         ORDER BY updated_at ASC`
+        `SELECT * FROM card WHERE status = 'ready' OR status = 'needs_input' OR status = 'doing' ORDER BY updated_at ASC`
       )
       .all()
-      .map(rowToCard);
-    // A card with an open blocker is not workable: it resurfaces by itself
-    // when the last blocker goes done/archived (open-ness is derived).
+      .map(rowToCard)
+      .filter((c) => !heldByLive(c, live));
     const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
     if (blockerIds.length === 0) return cards;
     const open = new Set(
@@ -708,37 +789,158 @@ export function nextWork(): Card[] {
   }
 }
 
-// The scheduler's question (vision besluit C) — deliberately narrower than
-// next: bare needs_input never counts (one unanswered question must not
-// start a session every minute), and blocked ready cards wait for their
-// blockers. doing counting is the implicit crash recovery (any owner:
-// claiming never changes it, and doing is agent territory per besluit I).
-export function gateWork(): Card[] {
+// The scheduler's question (vision besluit C): ready without open blockers,
+// doing (a stranded session's card, resumable), needs_input whose wait-check
+// is due. A card a live session holds, or was assigned and still runs on
+// after a human take-back, is busy and never counts.
+export function gateWorkIn(db: Database.Database, live: ReadonlySet<number>): Card[] {
+  const assigned = liveSessionCardIdsIn(db, live);
+  const cards = db
+    .prepare(
+      `SELECT * FROM card WHERE status = 'ready' OR status = 'needs_input' OR status = 'doing' ORDER BY updated_at ASC`
+    )
+    .all()
+    .map(rowToCard)
+    .filter((c) => !heldByLive(c, live) && !assigned.has(c.id));
+  const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
+  const open = new Set(
+    blockerInfoIn(db, blockerIds)
+      .filter((b) => isOpenStatus(b.status))
+      .map((b) => b.id)
+  );
+  const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
+  const cutoff = now();
+  return cards.filter((c) => {
+    if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
+    if (c.status === 'doing') return true;
+    const check = waits.get(c.id);
+    return check !== undefined && check <= cutoff;
+  });
+}
+
+export function gateWork(live: ReadonlySet<number> = new Set()): Card[] {
   const db = openDb();
   try {
-    const cards = db
-      .prepare(
-        `SELECT * FROM card
-         WHERE status = 'ready' OR status = 'needs_input'
-            OR status = 'doing'
-         ORDER BY updated_at ASC`
-      )
-      .all()
-      .map(rowToCard);
-    const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
-    const open = new Set(
-      blockerInfoIn(db, blockerIds)
-        .filter((b) => isOpenStatus(b.status))
-        .map((b) => b.id)
+    return gateWorkIn(db, live);
+  } finally {
+    db.close();
+  }
+}
+
+// The session stamp on the card's latest status change: who had it last.
+function lastSessionIn(db: Database.Database, id: string): number | null {
+  const row = db
+    .prepare("SELECT payload FROM event WHERE card_id = ? AND kind = 'status_changed' ORDER BY id DESC LIMIT 1")
+    .get(id) as { payload: string } | undefined;
+  const s = row ? (JSON.parse(row.payload) as { session?: unknown }).session : undefined;
+  return typeof s === 'number' ? s : null;
+}
+
+// Resumes since the human last acted on the card (an event or a comment):
+// a human touch means "try again", so it resets the crash-loop count.
+function resumesSinceHumanIn(db: Database.Database, id: string): { count: number; sessions: number[] } {
+  const rows = db
+    .prepare(
+      `SELECT payload FROM event
+       WHERE card_id = ? AND kind = 'status_changed' AND json_extract(payload, '$.reason') LIKE 'Resumed:%'
+         AND created_at > COALESCE((SELECT MAX(t) FROM (
+               SELECT MAX(created_at) AS t FROM event WHERE card_id = ? AND actor = 'human'
+               UNION ALL SELECT MAX(created_at) FROM comment WHERE card_id = ? AND author = 'human')), '')
+       ORDER BY id`
+    )
+    .all(id, id, id) as { payload: string }[];
+  const sessions = rows
+    .map((r) => (JSON.parse(r.payload) as { session?: unknown }).session)
+    .filter((s): s is number => typeof s === 'number');
+  return { count: rows.length, sessions };
+}
+
+// The runner's half of a claim (spec section 2), inside its immediate
+// transaction: the first gate card wins, gets status doing and this session
+// as holder, all before the session process starts. A doing card past the
+// resume limit goes to the human instead of starting yet another session;
+// those parked ids come back so the runner can notify the human.
+export function pickAndClaimIn(
+  db: Database.Database,
+  sessionId: number,
+  live: ReadonlySet<number>,
+  resumeLimit: number
+): { card: Card | null; parked: string[] } {
+  const parked: string[] = [];
+  for (const card of gateWorkIn(db, live)) {
+    let reason: string;
+    if (card.status === 'doing') {
+      const loop = resumesSinceHumanIn(db, card.id);
+      const prev = lastSessionIn(db, card.id);
+      if (loop.count >= resumeLimit) {
+        const stranded = [...new Set([...loop.sessions, ...(prev !== null ? [prev] : [])])].sort((a, b) => a - b);
+        db.prepare("UPDATE card SET status = 'needs_input', claimed_by = NULL, claim_seen_at = NULL, updated_at = ? WHERE id = ?").run(now(), card.id);
+        addEventIn(db, card.id, 'status_changed', 'agent', {
+          from: 'doing',
+          to: 'needs_input',
+          reason: 'Stopped resuming after repeated failed sessions',
+        });
+        addEventIn(db, card.id, 'error', 'agent', {
+          note: `Stopped resuming: sessions ${stranded.join(', ')} ended without finishing this card`,
+        });
+        parked.push(card.id);
+        continue;
+      }
+      reason = prev !== null ? `Resumed: session ${prev} ended without finishing` : 'Resumed: unclaimed doing card';
+    } else {
+      reason = card.status === 'ready' ? `Assigned to session ${sessionId}` : `Check due, assigned to session ${sessionId}`;
+    }
+    db.prepare("UPDATE card SET status = 'doing', claimed_by = ?, claim_seen_at = NULL, updated_at = ? WHERE id = ?").run(
+      sessionId,
+      now(),
+      card.id
     );
-    const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
-    const cutoff = now();
-    return cards.filter((c) => {
-      if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
-      if (c.status === 'doing') return true;
-      const check = waits.get(c.id);
-      return check !== undefined && check <= cutoff;
-    });
+    addEventIn(db, card.id, 'status_changed', 'agent', { from: card.status, to: 'doing', reason, session: sessionId });
+    return { card: getCardIn(db, card.id), parked };
+  }
+  return { card: null, parked };
+}
+
+// At session end, before the claims go: a session that never read its
+// assigned card (a usage limit, expired auth or API outage makes every
+// `claude -p` exit at once) did no work on it. Hand the card back to where
+// the assignment found it instead of letting it strand: a stranding would
+// run every card through resume and park within minutes. The next pick from
+// ready is an "Assigned", so this never counts toward the resume limit.
+export function returnUnreadCard(sessionId: number): string | null {
+  const db = openDb();
+  try {
+    return db
+      .transaction((): string | null => {
+        const row = db.prepare('SELECT card_id FROM session WHERE id = ?').get(sessionId) as { card_id: string | null } | undefined;
+        if (!row?.card_id) return null;
+        const card = db
+          .prepare("SELECT id FROM card WHERE id = ? AND status = 'doing' AND claimed_by = ? AND claim_seen_at IS NULL")
+          .get(row.card_id, sessionId) as { id: string } | undefined;
+        if (!card) return null;
+        const assigned = db
+          .prepare(
+            `SELECT json_extract(payload, '$.from') AS "from" FROM event
+             WHERE card_id = ? AND kind = 'status_changed' AND json_extract(payload, '$.session') = ?
+               AND json_extract(payload, '$.to') = 'doing'
+             ORDER BY id DESC LIMIT 1`
+          )
+          .get(card.id, sessionId) as { from: string | null } | undefined;
+        const to = assigned?.from === 'needs_input' ? 'needs_input' : 'ready';
+        db.prepare('UPDATE card SET status = ?, claimed_by = NULL, claim_seen_at = NULL, updated_at = ? WHERE id = ?').run(
+          to,
+          now(),
+          card.id
+        );
+        addEventIn(db, card.id, 'status_changed', 'agent', {
+          from: 'doing',
+          to,
+          reason: `Session ${sessionId} ended before reading the card`,
+          session: sessionId,
+        });
+        return card.id;
+      })
+      .immediate();
   } finally {
     db.close();
   }

@@ -316,6 +316,12 @@ input, textarea, select { font: inherit; color: var(--ink); }
   font-family: var(--mono); font-size: 12px; text-decoration: none; color: var(--brand-deep);
   background: color-mix(in oklch, var(--brand) 7%, #fff); border: 1px solid color-mix(in oklch, var(--brand) 28%, #fff);
 }
+.blocker-wrap { display: inline-flex; align-items: center; gap: 2px; }
+.blocker-x {
+  border: 0; background: transparent; color: var(--mut); font-size: 15px; line-height: 1; padding: 2px 5px;
+  border-radius: 999px; cursor: pointer;
+}
+.blocker-x:hover { color: var(--brand-deep); background: color-mix(in oklch, var(--brand) 10%, #fff); }
 .blocker-chip.resolved { color: var(--mut); background: transparent; border-color: var(--line); text-decoration: line-through; }
 .openreq-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 8px 0; background: var(--surface); }
 .openreq-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: oklch(0.44 0.13 45); background: color-mix(in oklch, oklch(0.44 0.13 45) 9%, transparent); border: 1px solid color-mix(in oklch, oklch(0.44 0.13 45) 30%, transparent); border-radius: 999px; padding: 4px 12px; cursor: pointer; }

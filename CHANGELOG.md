@@ -1,3 +1,31 @@
+# [0.24.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.23.0...v0.24.0) (2026-10-15)
+
+
+### Features
+
+* **runner:** hard claims, the runner assigns one card per session ([#115](https://github.com/Robbertvermeulen/agentboard/issues/115)) ([c952e28](https://github.com/Robbertvermeulen/agentboard/commit/c952e28b41c668e3b690cfafa7d5e3ee7d0ddac9))
+
+# [0.23.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.2...v0.23.0) (2026-10-15)
+
+
+### Features
+
+* **cards:** let the human unblock a card, with a guarded re-block ([#112](https://github.com/Robbertvermeulen/agentboard/issues/112)) ([bd0a953](https://github.com/Robbertvermeulen/agentboard/commit/bd0a953eb580b65c5418a0bbad4adc0cdeedf15d)), closes [#token](https://github.com/Robbertvermeulen/agentboard/issues/token)
+
+## [0.22.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.1...v0.22.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* **runner:** don't start a session for cards a starting session will claim ([#111](https://github.com/Robbertvermeulen/agentboard/issues/111)) ([6caba83](https://github.com/Robbertvermeulen/agentboard/commit/6caba83d276dc48310640a28265f5e4127b1e934)), closes [#328](https://github.com/Robbertvermeulen/agentboard/issues/328) [#329](https://github.com/Robbertvermeulen/agentboard/issues/329) [#110](https://github.com/Robbertvermeulen/agentboard/issues/110)
+
+## [0.22.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.0...v0.22.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **runner:** give each concurrent session its own cards and workdir ([#110](https://github.com/Robbertvermeulen/agentboard/issues/110)) ([0100b9d](https://github.com/Robbertvermeulen/agentboard/commit/0100b9d827db867f55827dc5d67cf0aa1a506226)), closes [#102](https://github.com/Robbertvermeulen/agentboard/issues/102) [#324](https://github.com/Robbertvermeulen/agentboard/issues/324) [#321](https://github.com/Robbertvermeulen/agentboard/issues/321) [#322](https://github.com/Robbertvermeulen/agentboard/issues/322) [#322](https://github.com/Robbertvermeulen/agentboard/issues/322) [#323](https://github.com/Robbertvermeulen/agentboard/issues/323) [#102](https://github.com/Robbertvermeulen/agentboard/issues/102)
+
 # [0.22.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.21.0...v0.22.0) (2026-10-15)
 
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import { Command } from 'commander';
-import { initData } from '../core/db.js';
+import { claimCard, markSeen, ownSession } from '../core/claims.js';
+import { initData, now } from '../core/db.js';
 import {
   BoardEvent,
   Card,
@@ -19,6 +20,7 @@ import {
   logEvent,
   moveCard,
   nextWork,
+  removeBlocker,
   renameBoard,
   unarchiveBoard,
 } from '../core/cards.js';
@@ -31,8 +33,9 @@ import {
   setSecretFromFile,
   writeContext,
 } from '../core/context.js';
+import { recoverSessions } from '../core/claims.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
-import { observeSession, runSession, sessionStatus } from '../core/runner.js';
+import { liveSessionIds, observeSession, runSession } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
 import { performUpdate, versionInfo } from '../core/update.js';
@@ -286,11 +289,11 @@ routines
 
 program
   .command('next')
-  .description('cards that need agent attention (ready, doing@agent, needs_input)')
+  .description('in a session: the cards it holds; outside one: ready, doing and needs_input cards no live session holds')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = nextWork();
+      const cards = nextWork(new Set(liveSessionIds()), ownSession());
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       output(opts, lines.length ? lines.join('\n') : 'Nothing for the agent right now', { cards });
     })
@@ -298,11 +301,13 @@ program
 
 program
   .command('gate')
-  .description('scheduler gate: ready w/o open blockers, doing@agent, needs_input with expired wait-check, due routines')
+  .description(
+    'scheduler gate: ready w/o open blockers, doing (stranded), needs_input with expired wait-check, due routines; cards a live session holds or runs on never count'
+  )
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = gateWork();
+      const cards = gateWork(new Set(liveSessionIds()));
       const due = dueRoutines();
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       lines.push(...due.routines.map((r) => `  routine    ${r.board.padEnd(12)} due          ${r.path}`));
@@ -445,30 +450,44 @@ card
     })
   );
 
+// Shared by `card show` and `card claim`: the claim prints the card it just
+// took, so the agent starts from the current state, not an older read.
+function printCard(opts: OutputOpts, id: string): void {
+  const detail = cardDetail(id);
+  const c = detail.card;
+  const lines = [`${c.id}  ${c.title}`, `board: ${c.board_id}  type: ${c.type}  status: ${c.status}  owner: ${c.owner}`];
+  if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
+  if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
+  if (c.context_refs.length) lines.push(`context: ${c.context_refs.join(', ')}`);
+  if (detail.blockers.length) lines.push(`blocked by: ${detail.blockers.map((b) => `${b.id} (${b.status})`).join(', ')}`);
+  if (detail.blocks.length) lines.push(`unblocks: ${detail.blocks.map((b) => `${b.id} (${b.status})`).join(', ')}`);
+  lines.push(`created: ${c.created_at}  updated: ${c.updated_at}`);
+  if (c.body) lines.push('', c.body);
+  const timeline = renderTimeline(detail.comments, detail.events);
+  if (timeline.length) lines.push('', ...timeline);
+  output(opts, lines.join('\n'), detail);
+}
+
 card
   .command('show <id>')
   .description('body + comments + events, chronological')
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string) => {
-      const detail = cardDetail(id);
-      const c = detail.card;
-      const lines = [
-        `${c.id}  ${c.title}`,
-        `board: ${c.board_id}  type: ${c.type}  status: ${c.status}  owner: ${c.owner}`,
-      ];
-      if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
-      if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
-      if (c.context_refs.length) lines.push(`context: ${c.context_refs.join(', ')}`);
-      if (detail.blockers.length)
-        lines.push(`blocked by: ${detail.blockers.map((b) => `${b.id} (${b.status})`).join(', ')}`);
-      if (detail.blocks.length)
-        lines.push(`unblocks: ${detail.blocks.map((b) => `${b.id} (${b.status})`).join(', ')}`);
-      lines.push(`created: ${c.created_at}  updated: ${c.updated_at}`);
-      if (c.body) lines.push('', c.body);
-      const timeline = renderTimeline(detail.comments, detail.events);
-      if (timeline.length) lines.push('', ...timeline);
-      output(opts, lines.join('\n'), detail);
+      const at = now();
+      printCard(opts, id);
+      markSeen(id, at);
+    })
+  );
+
+card
+  .command('claim <id>')
+  .description('inside a session: hold one more card (fails at once if another live session holds it), then print it')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string) => {
+      claimCard(id);
+      printCard(opts, id);
     })
   );
 
@@ -505,11 +524,12 @@ card
   .command('comment <id> <text>')
   .description("add a comment ('-' reads stdin, e.g. to pipe a diff)")
   .option('--as <author>', 'human | agent', DEFAULT_ACTOR)
+  .option('--request', "ask the session holding this card; the only write allowed on another session's card")
   .option('--json', 'JSON output')
   .action(
     run(async (opts, id: string, text: string) => {
       const body = text === '-' ? await readStdin() : text;
-      const comment = addComment(id, body, opts.as);
+      const comment = addComment(id, body, opts.as, { request: opts.request === true });
       output(opts, `Comment added to ${comment.card_id}`, comment);
     })
   );
@@ -539,6 +559,7 @@ card
   .option('--blocked-by <ids>', 'comma-separated card ids that block this card, empty string clears')
   .option('--board <id>', 'move card to another board')
   .option('--type <type>', 'task | ops — writes a type_changed event')
+  .option('--reason <text>', 'why the blockers changed (required to re-add a blocker the human removed)')
   .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
@@ -554,10 +575,24 @@ card
           blockedBy: opts.blockedBy !== undefined ? splitList(opts.blockedBy) : undefined,
           board: opts.board,
           type: opts.type,
+          reason: opts.reason,
         },
         opts.as
       );
       output(opts, `Updated ${c.id}`, c);
+    })
+  );
+
+card
+  .command('unblock <id> <blocker>')
+  .description('remove one blocker from a card (writes blocker_removed; the blocker card itself is untouched)')
+  .option('--reason <text>', 'why it no longer blocks')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string, blocker: string) => {
+      const c = removeBlocker(id, blocker, opts.as, opts.reason);
+      output(opts, `Removed blocker ${blocker} from ${c.id}`, c);
     })
   );
 
@@ -747,8 +782,8 @@ auth
 
 const sessions = program.command('sessions').description('recorded runner sessions (JSONL + index)');
 
-function sessionLine(s: any, liveId: number | null): string {
-  const live = s.ended_at === null && s.id === liveId;
+function sessionLine(s: any, liveIds: number[]): string {
+  const live = s.ended_at === null && liveIds.includes(s.id);
   const dur =
     s.ended_at !== null
       ? `${Math.max(1, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s`
@@ -777,8 +812,8 @@ sessions
   .action(
     run((opts) => {
       const all = listSessions();
-      const liveId = sessionStatus().session_id;
-      output(opts, all.length ? all.map((s) => sessionLine(s, liveId)).join('\n') : 'No sessions yet', {
+      const liveIds = liveSessionIds();
+      output(opts, all.length ? all.map((s) => sessionLine(s, liveIds)).join('\n') : 'No sessions yet', {
         sessions: all,
       });
     })
@@ -791,7 +826,7 @@ sessions
   .action(
     run((opts, nr: string) => {
       const detail = sessionDetail(Number(nr));
-      const lines = [sessionLine(detail.session, sessionStatus().session_id), ''];
+      const lines = [sessionLine(detail.session, liveSessionIds()), ''];
       lines.push(...detail.steps.map((s) => `  [${s.type.padEnd(6)}] ${s.label}`));
       output(opts, lines.join('\n'), detail);
     })
@@ -806,6 +841,17 @@ sessions
     run((opts) => {
       const result = pruneSessions(opts.olderThan);
       output(opts, result.removed.length ? `Pruned ${result.removed.length} session(s): ${result.removed.join(', ')}` : 'Nothing to prune', result);
+    })
+  );
+
+sessions
+  .command('recover')
+  .description('boot cleanup: close session rows left open by a restart and clear their card claims')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const r = recoverSessions();
+      output(opts, `Recovered: ${r.sessions} open sessions closed, ${r.claims} claims cleared`, r);
     })
   );
 
