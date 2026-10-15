@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.23.0...v0.24.0) (2026-10-15)
+
+
+### Features
+
+* **runner:** hard claims, the runner assigns one card per session ([#115](https://github.com/Robbertvermeulen/agentboard/issues/115)) ([c952e28](https://github.com/Robbertvermeulen/agentboard/commit/c952e28b41c668e3b690cfafa7d5e3ee7d0ddac9))
+
 # [0.23.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.2...v0.23.0) (2026-10-15)
 
 
