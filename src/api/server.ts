@@ -26,6 +26,7 @@ import {
   archiveBoard,
   archivedCards,
   boardView,
+  cardClaimSession,
   cardDetail,
   changesSince,
   createBoard,
@@ -46,7 +47,7 @@ import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
 import { sessionStatus } from '../core/runner.js';
-import { cardSessions, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
+import { cardSessions, latestStep, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
 import { performUpdate, versionInfo } from '../core/update.js';
 
 // The UI user is by definition the human; the agent uses the CLI.
@@ -574,6 +575,21 @@ export function createApp(): Hono {
   app.get('/api/cards/:id/sessions', (c) => {
     try {
       return c.json({ sessions: cardSessions(c.req.param('id')) });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // One line for the card detail view's "what is the agent doing right
+  // now" presence: the session that claimed this doing card, if that
+  // session is still actually live, and its latest step.
+  app.get('/api/cards/:id/live-step', (c) => {
+    try {
+      const sessionId = cardClaimSession(c.req.param('id'));
+      const live = sessionId !== null && sessionStatus().session_ids.includes(sessionId);
+      if (!live) return c.json({ live: false });
+      const step = latestStep(sessionId as number);
+      return c.json({ live: true, session_id: sessionId, step: step ? { type: step.type, label: step.label } : null });
     } catch (err) {
       return errorResponse(c, err);
     }

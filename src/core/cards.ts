@@ -771,6 +771,17 @@ export function claimingSessions(): Set<number> {
   }
 }
 
+// The session claiming this one card, if any — same stamp doingClaimsIn
+// reads, scoped to a single id for the card detail view's live-step poll.
+export function cardClaimSession(id: string): number | null {
+  const db = openDb();
+  try {
+    return doingClaimsIn(db, [id]).get(id) ?? null;
+  } finally {
+    db.close();
+  }
+}
+
 // Crash recovery at N>1: a doing card whose claiming session is gone (or
 // that was never stamped) is handed to `sessionId` with a doing -> doing
 // event, so it gets exactly one resumer — without this, every concurrent
