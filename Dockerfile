@@ -17,6 +17,10 @@ RUN npm run build && npm prune --omit=dev
 # agent reaches client servers. gh: issues and pull requests on GitHub. gosu:
 # drop root in start.sh. Claude Code: the default session command.
 FROM node:22-bookworm-slim
+# Fixed path, independent of HOME: the install below runs as root, the app
+# later runs as node (gosu drop in start.sh) -- a HOME-relative default
+# (~/.cache/ms-playwright) would put the browser where only root can see it.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git openssh-client ca-certificates curl gosu \
  && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
@@ -32,7 +36,11 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/web ./web
 COPY --from=build /app/AGENT.md ./AGENT.md
 COPY bin ./bin
-RUN chmod +x bin/start.sh bin/run.sh \
+# Browser binary for the native Playwright MCP tool (issue #107): baked into
+# the image so every session pays this cost at build time, not a lazy
+# first-use install with unpredictable latency inside a random session.
+RUN npx playwright install --with-deps chromium \
+ && chmod +x bin/start.sh bin/run.sh \
  && printf '#!/bin/sh\nexec node /app/dist/cli/index.js "$@"\n' > /usr/local/bin/agentboard \
  && chmod +x /usr/local/bin/agentboard \
  && git config --system user.name agentboard \
@@ -40,7 +48,7 @@ RUN chmod +x bin/start.sh bin/run.sh \
  && mkdir -p /data /home/node/.claude \
  && mkdir -p /home/node/.ssh \
  && printf 'StrictHostKeyChecking accept-new\n' > /home/node/.ssh/config \
- && chown -R node:node /data /home/node
+ && chown -R node:node /data /home/node /opt/playwright-browsers
 
 ENV AGENTBOARD_DATA=/data \
     AGENTBOARD_WORK=/data/work \

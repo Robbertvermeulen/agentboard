@@ -158,6 +158,20 @@ function agentMdPath(): string {
   );
 }
 
+// Issue #107: the browser tool is wired into every session unconditionally
+// (no opt-in env var) via --mcp-config on the spawned `claude` command. The
+// server is a plain Node script (dist/mcp/browser-server.js); passing it as
+// an inline JSON string avoids a temp config file per session.
+function browserServerPath(): string {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../mcp/browser-server.js');
+}
+
+function mcpConfigArg(): string {
+  return JSON.stringify({
+    mcpServers: { 'agentboard-browser': { command: process.execPath, args: [browserServerPath()] } },
+  });
+}
+
 export type DueRoutine = RoutineInfo & { checkOutput?: string };
 
 export function buildPrompt(due: DueRoutine[]): string {
@@ -326,11 +340,15 @@ export function runSession(
       try {
         // stdout is the JSONL transcript; stderr goes to its own file so a
         // stray warning can never corrupt a transcript line.
-        status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active)], {
-          stdio: ['ignore', out, err],
-          cwd: workDir(slot),
-          env: sessionEnv(),
-        }).status;
+        status = spawnSync(
+          parts[0],
+          [...parts.slice(1), '--mcp-config', mcpConfigArg(), promptOverride ?? buildPrompt(active)],
+          {
+            stdio: ['ignore', out, err],
+            cwd: workDir(slot),
+            env: sessionEnv(),
+          }
+        ).status;
       } finally {
         fs.closeSync(out);
         fs.closeSync(err);
