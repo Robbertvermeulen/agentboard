@@ -276,6 +276,18 @@ export function sessionStepsSince(
   return { steps, offset: offset + Buffer.byteLength(complete, 'utf8'), n: n + steps.length };
 }
 
+// The single most recent step of a session — the card detail view's
+// live-step poll only ever needs the last line, not the full transcript.
+export function latestStep(id: number): SessionStep | null {
+  const file = sessionJsonlPath(id);
+  if (!fs.existsSync(file)) return null;
+  const steps = parseSessionSteps(fs.readFileSync(file, 'utf8'));
+  const last = steps.at(-1);
+  if (!last) return null;
+  const redact = secretRedactor();
+  return { ...last, label: redact(last.label), detail: redact(last.detail) };
+}
+
 function rowToMeta(db: Database.Database, row: any): SessionMeta {
   const cards = (
     db.prepare('SELECT card_id FROM session_card WHERE session_id = ? ORDER BY card_id').all(row.id) as {

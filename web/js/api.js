@@ -61,6 +61,7 @@ export const api = {
   session: (id) => req(`/api/sessions/${encodeURIComponent(id)}`),
   sessionSteps: (id, offset, n) => req(`/api/sessions/${encodeURIComponent(id)}/steps?offset=${offset}&n=${n}`),
   cardSessions: (id) => req(`/api/cards/${encodeURIComponent(id)}/sessions`),
+  cardLiveStep: (id) => req(`/api/cards/${encodeURIComponent(id)}/live-step`),
   sessionStatus: () => req('/api/session-status'),
   changes: (since) => req(`/api/changes${since ? `?since=${encodeURIComponent(since)}` : ''}`),
   version: (opts) => req(`/api/version${opts?.fresh ? '?fresh=1' : ''}`),
