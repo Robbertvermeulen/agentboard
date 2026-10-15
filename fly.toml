@@ -36,6 +36,6 @@ swap_size_mb = 512
   initial_size = "3gb"
 
 [[vm]]
-  memory = "2gb"
+  memory = "4gb"
   cpu_kind = "shared"
   cpus = 2
