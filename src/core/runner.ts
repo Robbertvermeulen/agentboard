@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dataDir, now, openDb } from './db.js';
-import { gateWork } from './cards.js';
+import { adoptOrphanedDoing, gateWork } from './cards.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
@@ -29,6 +29,7 @@ interface SessionLock {
   pid: number;
   hostname: string;
   started_at: string;
+  session_id?: number; // set once the session record exists (see markLockSession)
 }
 
 function processAlive(pid: number): boolean {
@@ -99,32 +100,55 @@ export function releaseLock(): void {
   }
 }
 
-// Heartbeat: is a runner-started session alive right now? The lock proves a
-// live process; the open session row names it. Both required — a stale row
-// after a crash must not read as "live".
-export function sessionStatus(): { running: boolean; session_id: number | null } {
+// Name the session in this process's lock, so liveSessionIds can map every
+// held slot to the session it runs (several can be live at N>1).
+function markLockSession(slot: number, sessionId: number): void {
+  const file = lockPath(slot);
+  const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
+  if (lock.pid !== process.pid) return; // not ours anymore (max-age steal)
+  fs.writeFileSync(file, JSON.stringify({ ...lock, session_id: sessionId }));
+}
+
+// Heartbeat: which runner-started sessions are alive right now? A lock with
+// a live process proves it; the open session row confirms it. Both required —
+// a stale row after a crash must not read as "live".
+export function liveSessionIds(): number[] {
   const slots = maxSessions();
-  let alive = false;
+  const ids: number[] = [];
   for (let slot = 0; slot < slots; slot++) {
     try {
       const lock = JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
-      if (lock.hostname === os.hostname() && processAlive(lock.pid)) {
-        alive = true;
-        break;
+      if (lock.hostname === os.hostname() && processAlive(lock.pid) && typeof lock.session_id === 'number') {
+        ids.push(lock.session_id);
       }
     } catch {
       // no live lock at this slot
     }
   }
+  if (ids.length === 0) return [];
   const db = openDb();
   try {
-    const row = db.prepare('SELECT id FROM session WHERE ended_at IS NULL ORDER BY id DESC LIMIT 1').get() as
-      | { id: number }
-      | undefined;
-    return { running: alive && row !== undefined, session_id: alive && row ? row.id : null };
+    const rows = db
+      .prepare(`SELECT id FROM session WHERE ended_at IS NULL AND id IN (${ids.map(() => '?').join(',')}) ORDER BY id`)
+      .all(ids) as { id: number }[];
+    return rows.map((r) => r.id);
   } finally {
     db.close();
   }
+}
+
+// Live sessions other than the caller's own: what `next` and the gate must
+// leave alone. Inside a session AGENTBOARD_SESSION_ID names the caller.
+export function otherLiveSessions(): Set<number> {
+  const own = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
+  return new Set(liveSessionIds().filter((id) => id !== own));
+}
+
+// session_id stays the newest live session for existing callers; session_ids
+// lists every live one.
+export function sessionStatus(): { running: boolean; session_id: number | null; session_ids: number[] } {
+  const ids = liveSessionIds();
+  return { running: ids.length > 0, session_id: ids.length ? ids[ids.length - 1] : null, session_ids: ids };
 }
 
 // Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
@@ -146,9 +170,15 @@ function workDir(slot: number): string {
 // --dangerously-skip-permissions must not be able to read either.
 const SESSION_ENV_STRIP = ['FLY_API_TOKEN', 'AGENTBOARD_SESSION_SECRET'];
 
-function sessionEnv(): NodeJS.ProcessEnv {
+// With a slot, AGENTBOARD_WORK points at that slot's workdir: AGENT.md rule
+// 12 derives repo paths from $AGENTBOARD_WORK, so a cwd alone would still
+// send every slot into slot 0's checkouts. With a session id, the session
+// stamps its claims (moveCard) and finds its own id among the live ones.
+function sessionEnv(slot?: number, sessionId?: number): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, AGENTBOARD_ACTOR: 'agent' };
   for (const key of SESSION_ENV_STRIP) delete env[key];
+  if (slot !== undefined) env.AGENTBOARD_WORK = workDir(slot);
+  if (sessionId !== undefined) env.AGENTBOARD_SESSION_ID = String(sessionId);
   return env;
 }
 
@@ -189,7 +219,7 @@ export function buildPrompt(due: DueRoutine[]): string {
 function runRoutineCheck(check: string, slot: number): { output: string; failed: boolean } {
   const result = spawnSync('sh', ['-c', check], {
     cwd: workDir(slot),
-    env: sessionEnv(),
+    env: sessionEnv(slot),
     timeout: 30_000,
     encoding: 'utf8',
   });
@@ -225,8 +255,9 @@ function checkDueRoutines(due: RoutineInfo[], slot: number): DueRoutine[] {
 
 // Turn handovers to the human into one line for AGENTBOARD_NOTIFY_CMD:
 // cards the agent moved to needs_input or review during this session and
-// that still sit there (a later move onward un-notifies it).
-function handbacksSince(since: string): { id: string; to: string }[] {
+// that still sit there (a later move onward un-notifies it). Only this
+// session's own moves count — a concurrent session's hand-backs are its own.
+function handbacksSince(since: string, sessionId: number): { id: string; to: string }[] {
   const db = openDb();
   try {
     const rows = db
@@ -237,7 +268,9 @@ function handbacksSince(since: string): { id: string; to: string }[] {
       .all(since) as { card_id: string; payload: string }[];
     const latest = new Map<string, string>();
     for (const r of rows) {
-      const to = (JSON.parse(r.payload) as { to?: string }).to ?? '';
+      const p = JSON.parse(r.payload) as { to?: string; session?: number };
+      if (p.session !== sessionId) continue;
+      const to = p.to ?? '';
       if (to === 'needs_input' || to === 'review') latest.set(r.card_id, to);
       else latest.delete(r.card_id);
     }
@@ -287,7 +320,7 @@ export function runSession(
   notified?: { id: string; to: string }[];
 } {
   if (dryRun) {
-    const cards = gateWork();
+    const cards = gateWork(otherLiveSessions());
     const due = dueRoutines();
     return {
       started: false,
@@ -303,7 +336,7 @@ export function runSession(
   }
   console.error(`runner: lock acquired (slot ${slot})`);
   try {
-    const cards = promptOverride ? [] : gateWork();
+    const cards = promptOverride ? [] : gateWork(otherLiveSessions());
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
     console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
     const active = promptOverride ? [] : checkDueRoutines(due.routines, slot);
@@ -314,7 +347,12 @@ export function runSession(
     }
     const sessionStart = now();
     const rec = startSessionRecord(trigger);
+    markLockSession(slot, rec.id);
     console.error(`runner: session #${rec.id} -> ${rec.jsonl}`);
+    if (!promptOverride) {
+      const adopted = adoptOrphanedDoing(rec.id, new Set(liveSessionIds()));
+      if (adopted.length) console.error(`runner: adopted ${adopted.join(', ')}`);
+    }
     const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(
       /\s+/
     );
@@ -329,7 +367,7 @@ export function runSession(
         status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active)], {
           stdio: ['ignore', out, err],
           cwd: workDir(slot),
-          env: sessionEnv(),
+          env: sessionEnv(slot, rec.id),
         }).status;
       } finally {
         fs.closeSync(out);
@@ -337,7 +375,7 @@ export function runSession(
       }
       console.error(`runner: session exited ${status ?? 'null'}`);
       scanSessionCards(rec.id);
-      notified = handbacksSince(sessionStart);
+      notified = handbacksSince(sessionStart, rec.id);
       notify(notified);
       if (process.env.AGENTBOARD_NOTIFY_CMD && notified.length > 0) {
         console.error(`runner: notified: ${notified.length}`);
@@ -356,7 +394,7 @@ export function runSession(
 // Observer (vision besluit J): re-read a finished session and judge it
 // against the rulebook. The prompt does the work — report to a fixed path,
 // an ops card only on a real violation. Runs through runSession, so the
-// single-flight lock and session capture apply to the observer itself.
+// slot pool and session capture apply to the observer itself.
 export function observeSession(
   nr: number,
   visionPath?: string
@@ -376,8 +414,7 @@ export function observeSession(
     // leaves an open row with no live lock forever — exactly the crash most
     // worth observing, and "still running" would contradict the UI's own
     // "ended early (crash)" for the same row.
-    const status = sessionStatus();
-    if (status.session_id === nr) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
+    if (liveSessionIds().includes(nr)) throw new Error(`Session #${nr} is still running — observe finished sessions only`);
   }
   if (row.trigger === 'observe') throw new Error(`Session #${nr} is itself an observation — nothing to observe`);
   if (visionPath && !fs.existsSync(visionPath)) throw new Error(`Vision document not found: ${visionPath}`);
