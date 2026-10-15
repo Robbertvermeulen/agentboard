@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dataDir, now, openDb } from './db.js';
-import { adoptOrphanedDoing, gateWork } from './cards.js';
+import { adoptOrphanedDoing, claimingSessions, gateWork } from './cards.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
@@ -107,6 +107,32 @@ function markLockSession(slot: number, sessionId: number): void {
   const lock = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionLock;
   if (lock.pid !== process.pid) return; // not ours anymore (max-age steal)
   fs.writeFileSync(file, JSON.stringify({ ...lock, session_id: sessionId }));
+}
+
+// Live runners that took their slot before `own` (slot order breaks a tie)
+// and hold no doing card yet: sessions still starting up, about to claim
+// from the same ready pool. The gate must leave that many cards to them, or
+// a UI poke plus a cron tick all start on the one ready card. The earliest
+// runner never counts anyone ahead, so work is never left unstarted.
+function runnersAhead(own: number): number {
+  const read = (slot: number): SessionLock | null => {
+    try {
+      return JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
+    } catch {
+      return null;
+    }
+  };
+  const mine = read(own);
+  if (!mine) return 0;
+  const claiming = claimingSessions();
+  let ahead = 0;
+  for (let slot = 0; slot < maxSessions(); slot++) {
+    const lock = read(slot);
+    if (slot === own || !lock || lock.hostname !== os.hostname() || !processAlive(lock.pid)) continue;
+    const earlier = lock.started_at < mine.started_at || (lock.started_at === mine.started_at && slot < own);
+    if (earlier && !(lock.session_id !== undefined && claiming.has(lock.session_id))) ahead++;
+  }
+  return ahead;
 }
 
 // Heartbeat: which runner-started sessions are alive right now? A lock with
@@ -344,6 +370,10 @@ export function runSession(
     console.error(`runner: marked ${due.routines.length} routines`);
     if (!promptOverride && cards.length === 0 && active.length === 0) {
       return { started: false, reason: 'gate empty' };
+    }
+    const ahead = promptOverride || active.length > 0 ? 0 : runnersAhead(slot);
+    if (cards.length <= ahead) {
+      return { started: false, reason: `gate covered: ${cards.length} cards, ${ahead} sessions starting` };
     }
     const sessionStart = now();
     const rec = startSessionRecord(trigger);
