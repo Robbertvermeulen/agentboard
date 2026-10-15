@@ -178,7 +178,9 @@ cat > "$SCR/look.sh" << EOF
 #!/usr/bin/env bash
 echo "PROMPT:\$(echo "\${@: -1}" | tr '\n' ' ')" >> "\$FAKE_OUT"
 $CLI_ABS card show $A --json | python3 -c "import json,sys; d=json.load(sys.stdin)['card']; print('STATUS:'+d['status']+':'+str(d['claimed_by']))" >> "\$FAKE_OUT"
+echo NEXT-START >> "\$FAKE_OUT"
 $CLI_ABS next >> "\$FAKE_OUT"
+echo GATE-START >> "\$FAKE_OUT"
 $CLI_ABS gate >> "\$FAKE_OUT"
 EOF
 chmod +x "$SCR/look.sh"; : > "$FAKE_OUT"
@@ -186,8 +188,11 @@ AGENTBOARD_SESSION_CMD="$SCR/look.sh" $CLI runner >/dev/null
 SID1=$(q "SELECT id FROM session ORDER BY id DESC LIMIT 1;")
 grep -q "PROMPT:.*Your card this session: $A" "$FAKE_OUT" || fail "prompt does not name the assigned card"
 grep -q "STATUS:doing:$SID1" "$FAKE_OUT" || fail "card not doing+claimed when the session started"
-grep -q "^  $A " "$FAKE_OUT" || fail "next in the session misses its own card"
-[ "$(grep -c "^  $B " "$FAKE_OUT")" = 1 ] || fail "next in the session lists a card it does not hold (or gate lost the free card)"
+NEXT_OUT=$(sed -n '/^NEXT-START/,/^GATE-START/p' "$FAKE_OUT"); GATE_OUT=$(sed -n '/^GATE-START/,$p' "$FAKE_OUT")
+echo "$NEXT_OUT" | grep -q "^  $A " || fail "next in the session misses its own card"
+echo "$NEXT_OUT" | grep -q "^  $B " && fail "next in the session lists a card it does not hold"
+echo "$GATE_OUT" | grep -q "^  $A " && fail "gate in the session lists the held card"
+echo "$GATE_OUT" | grep -q "^  $B " || fail "gate lost the free card"
 q "SELECT payload FROM event WHERE card_id = '$A' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Assigned to session $SID1" || fail "assignment event reason wrong"
 [ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$A';")" = 1 ] || fail "claim not released at session end"
 
@@ -235,6 +240,20 @@ AGENTBOARD_SESSION_TIMEOUT_MIN=0.02 AGENTBOARD_SESSION_CMD="$SCR/hang.sh" $CLI r
 [ $(( $(date +%s) - START )) -lt 10 ] || fail "timeout did not stop the session"
 grep -q "timed out" "$SCR/err.log" || fail "runner did not log the timeout"
 [ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$H';")" = 1 ] || fail "timed-out session kept its claim"
+
+# Leg 8b: a non-integer timeout still stops the session; an invalid one falls back to the default
+fresh_data
+H=$(new_ready "hangs fractional")
+START=$(date +%s)
+AGENTBOARD_SESSION_TIMEOUT_MIN=0.017 AGENTBOARD_SESSION_CMD="$SCR/hang.sh" $CLI runner >/dev/null 2>"$SCR/err.log" || true
+[ $(( $(date +%s) - START )) -lt 10 ] || fail "fractional timeout did not stop the session"
+grep -q "ERR_OUT_OF_RANGE" "$SCR/err.log" && fail "fractional timeout threw ERR_OUT_OF_RANGE"
+grep -q "timed out" "$SCR/err.log" || fail "fractional timeout not logged"
+[ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$H';")" = 1 ] || fail "fractional timeout kept the claim"
+fresh_data
+H=$(new_ready "bad timeout")
+AGENTBOARD_SESSION_TIMEOUT_MIN=abc AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null 2>"$SCR/err.log" || fail "invalid timeout broke the runner"
+grep -q "session exited 0" "$SCR/err.log" || fail "invalid timeout: session did not run normally"
 
 # ============================================================================
 # Leg 11b: the doing card from the v0.23.0 database is resumed (Task 4)

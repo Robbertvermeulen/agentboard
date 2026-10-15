@@ -86,7 +86,12 @@ function markLockSession(slot: number, sessionId: number): void {
 }
 
 const resumeLimit = () => Math.max(1, Number(process.env.AGENTBOARD_RESUME_LIMIT ?? 2));
-const sessionTimeoutMs = () => Number(process.env.AGENTBOARD_SESSION_TIMEOUT_MIN ?? 45) * 60_000;
+// spawnSync throws on a non-integer or NaN timeout, after the card is claimed:
+// a bad env value must fall back instead of stranding healthy cards.
+const sessionTimeoutMs = () => {
+  const minutes = Number(process.env.AGENTBOARD_SESSION_TIMEOUT_MIN ?? 45);
+  return Math.max(1, Math.round((Number.isFinite(minutes) && minutes > 0 ? minutes : 45) * 60_000));
+};
 
 // One immediate transaction makes the session row, names it in this slot's
 // lock and claims the first gate card, so a concurrent runner either sees
