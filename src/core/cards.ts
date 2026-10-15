@@ -606,6 +606,7 @@ export function editCard(
     blockedBy?: string[];
     board?: string;
     type?: string;
+    reason?: string; // recorded on blocker_added/blocker_removed events
   },
   actor: string
 ): Card {
@@ -674,8 +675,66 @@ export function editCard(
       if (fields.type !== undefined && fields.type !== card.type) {
         addEventIn(db, id, 'type_changed', a, { from: card.type, to: fields.type });
       }
+      if (fields.blockedBy !== undefined) blockerChangesIn(db, card, fields.blockedBy, a, fields.reason);
     });
     edit.immediate();
+    return getCardIn(db, id);
+  } finally {
+    db.close();
+  }
+}
+
+// Blocker changes are events, never silent: the timeline is the agent's
+// memory. A human removing a blocker overrides the agent's judgement, so the
+// agent may put that same blocker back only with a reason, and only by
+// handing the card to the human (needs_input) — never by parking it again in
+// a blocked ready, where it would silently drop out of next. Runs inside the
+// caller's transaction, after blocked_by is written.
+function blockerChangesIn(db: Database.Database, card: Card, next: string[], actor: Actor, reason?: string): void {
+  const added = next.filter((b) => !card.blocked_by.includes(b));
+  const removed = card.blocked_by.filter((b) => !next.includes(b));
+  const humanRemoved = new Set(
+    (
+      db
+        .prepare("SELECT payload FROM event WHERE card_id = ? AND kind = 'blocker_removed' AND actor = 'human'")
+        .all(card.id) as { payload: string }[]
+    ).map((r) => String((JSON.parse(r.payload) as { blocker?: unknown }).blocker))
+  );
+  const overridden = actor === 'agent' ? added.filter((b) => humanRemoved.has(b)) : [];
+  if (overridden.length && !reason?.trim()) {
+    throw new Error(
+      `The human removed blocker ${overridden.join(', ')} from ${card.id}. Re-adding it needs --reason: what is new ` +
+        'since, and why their route does not work. The card then goes to needs_input.'
+    );
+  }
+  const session = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
+  for (const b of removed) addEventIn(db, card.id, 'blocker_removed', actor, { blocker: b, reason });
+  for (const b of added) addEventIn(db, card.id, 'blocker_added', actor, { blocker: b, reason });
+  if (overridden.length && (card.status === 'ready' || card.status === 'doing')) {
+    db.prepare("UPDATE card SET status = 'needs_input', updated_at = ? WHERE id = ?").run(now(), card.id);
+    addEventIn(db, card.id, 'status_changed', actor, {
+      from: card.status,
+      to: 'needs_input',
+      reason: `Re-blocked on ${overridden.join(', ')} after the human removed it: ${reason}`,
+      session,
+    });
+  }
+}
+
+// Remove one blocker from a card (the human's "unblock"). The blocker card
+// itself stays as it is: it may still matter for other work.
+export function removeBlocker(id: string, blocker: string, actor: string, reason?: string): Card {
+  const a = assertActor(actor);
+  const db = openDb();
+  try {
+    const remove = db.transaction(() => {
+      const card = getCardIn(db, id);
+      if (!card.blocked_by.includes(blocker)) throw new Error(`Card ${id} is not blocked by ${blocker}`);
+      const next = card.blocked_by.filter((b) => b !== blocker);
+      db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(next), now(), id);
+      blockerChangesIn(db, card, next, a, reason?.trim() || undefined);
+    });
+    remove.immediate();
     return getCardIn(db, id);
   } finally {
     db.close();

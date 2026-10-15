@@ -35,6 +35,7 @@ import {
   listBoards,
   moveCard,
   nextWork,
+  removeBlocker,
   renameBoard,
   setBoardLanguage,
   unarchiveBoard,
@@ -363,6 +364,18 @@ export function createApp(): Hono {
       const result = addComment(c.req.param('id'), body.text ?? '', ACTOR);
       maybeAutorun();
       return c.json(result, 201);
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  });
+
+  // A human unblock is a poke like move/comment: the card may be workable now.
+  app.post('/api/cards/:id/unblock', async (c) => {
+    try {
+      const body = await c.req.json();
+      const result = removeBlocker(c.req.param('id'), String(body.blocker ?? ''), ACTOR, body.reason);
+      maybeAutorun();
+      return c.json(result);
     } catch (err) {
       return errorResponse(c, err);
     }

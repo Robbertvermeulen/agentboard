@@ -135,7 +135,12 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     you pick it up again, verify the blockers are really gone. Claim
     every card with `card move <id> doing --from ready --as agent
     --reason "Claiming"`; if that fails, another session got there first
-    — take the next card.
+    — take the next card. A `blocker_removed` by the human means the
+    route changed: read the comments after it and try their route first.
+    Still blocked? Never quietly re-block: re-add it only with `card edit
+    <id> --blocked-by ... --reason "<what is new, why their route fails>"
+    --as agent` — core then moves the card to needs_input, so the human
+    decides. Repeating the old blocker reason is not a reason.
 16. Routine runs: read the routine file (`ctx show <path>`) and decide —
     a new card, a comment on an existing card, or nothing (a silent run
     is fine). Never create a card for something that already has a
