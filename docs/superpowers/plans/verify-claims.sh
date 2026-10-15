@@ -262,4 +262,36 @@ export AGENTBOARD_DATA="$MIGDATA"
 AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null
 q "SELECT payload FROM event WHERE card_id = '$MIG' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Resumed" || fail "migrated doing card not resumed"
 
+# ============================================================================
+# Leg 10: workdir per card, TMPDIR per session, pruning that never drops
+# unpushed work (Task 5)
+# ============================================================================
+fresh_data
+cat > "$SCR/where.sh" << 'EOF'
+#!/usr/bin/env bash
+echo "WORK:$AGENTBOARD_WORK" >> "$FAKE_OUT"
+echo "PWD:$(pwd -P)" >> "$FAKE_OUT"
+echo "TMP:$TMPDIR" >> "$FAKE_OUT"
+touch "$TMPDIR/scratch"
+EOF
+chmod +x "$SCR/where.sh"; : > "$FAKE_OUT"
+W=$(new_ready "where")
+AGENTBOARD_SESSION_CMD="$SCR/where.sh" $CLI runner >/dev/null
+WS=$(q "SELECT id FROM session ORDER BY id DESC LIMIT 1;")
+grep -qx "WORK:$AGENTBOARD_DATA/work/cards/$W" "$FAKE_OUT" || fail "AGENTBOARD_WORK is not the card's workdir"
+grep -qx "PWD:$(cd "$AGENTBOARD_DATA/work/cards/$W" && pwd -P)" "$FAKE_OUT" || fail "session cwd is not the card's workdir"
+grep -qx "TMP:$AGENTBOARD_DATA/tmp/session-$WS" "$FAKE_OUT" || fail "TMPDIR is not per session"
+[ ! -e "$AGENTBOARD_DATA/tmp/session-$WS" ] || fail "TMPDIR not removed after the session"
+
+# prune: a done card's workdir goes, a done card with an unpushed commit stays
+$CLI card move "$W" done --reason klaar >/dev/null
+KEEP=$(new_ready "unpushed"); $CLI card move "$KEEP" done --reason klaar >/dev/null
+mkdir -p "$AGENTBOARD_DATA/work/cards/$KEEP/repo"
+(cd "$AGENTBOARD_DATA/work/cards/$KEEP/repo" && git init -q && git -c user.email=a@b -c user.name=t commit -q --allow-empty -m wip)
+NEXT=$(new_ready "trigger prune")
+AGENTBOARD_SESSION_CMD="$SCR/where.sh" $CLI runner >/dev/null 2>"$SCR/err.log"
+[ ! -e "$AGENTBOARD_DATA/work/cards/$W" ] || fail "done card's workdir not pruned"
+[ -d "$AGENTBOARD_DATA/work/cards/$KEEP/repo" ] || fail "workdir with unpushed work was pruned"
+grep -q "workdir kept: .*$KEEP" "$SCR/err.log" || fail "kept workdir not logged"
+
 echo "OK: hard claims verified"

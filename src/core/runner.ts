@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { dataDir, now, openDb } from './db.js';
+import { now, openDb } from './db.js';
 import { Card, gateWork, pickAndClaimIn } from './cards.js';
 import { releaseSessionClaims } from './claims.js';
+import { checkWorkDir, pruneWorkdirs, removeTmpDir, sessionTmpDir, sessionWorkDir } from './workdirs.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecordIn } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
@@ -154,17 +155,8 @@ export function sessionStatus(): { running: boolean; session_id: number | null; 
 }
 
 // Sessions never inherit the caller's cwd: a repo checkout's CLAUDE.md (or
-// any stray project context) would leak into the session. The runner owns
-// its workspace — AGENTBOARD_WORK overrides, <data>/work is the default.
-// Slot 0 keeps that exact path (today's layout stays valid at the default
-// N=1); every other slot gets its own suffixed directory, since two
-// sessions running at once must never race on the same repo checkout.
-function workDir(slot: number): string {
-  const base = process.env.AGENTBOARD_WORK ?? path.join(dataDir(), 'work');
-  const dir = slot === 0 ? base : `${base}-slot-${slot}`;
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
+// any stray project context) would leak into the session. Workdirs come
+// from workdirs.ts.
 
 // The session gets the environment minus the secrets only the server
 // process needs: the Fly deploy token (it can replace this machine) and the
@@ -172,14 +164,15 @@ function workDir(slot: number): string {
 // --dangerously-skip-permissions must not be able to read either.
 const SESSION_ENV_STRIP = ['FLY_API_TOKEN', 'AGENTBOARD_SESSION_SECRET'];
 
-// With a slot, AGENTBOARD_WORK points at that slot's workdir: AGENT.md rule
-// 12 derives repo paths from $AGENTBOARD_WORK, so a cwd alone would still
-// send every slot into slot 0's checkouts. With a session id, the session
-// stamps its claims (moveCard) and finds its own id among the live ones.
-function sessionEnv(slot?: number, sessionId?: number): NodeJS.ProcessEnv {
+// AGENT.md rule 12 derives repo paths from $AGENTBOARD_WORK, so it points at
+// this card's workdir; TMPDIR is per session so two sessions never share
+// scratch files. With a session id, the session stamps its claims (moveCard)
+// and finds its own id among the live ones.
+function sessionEnv(work?: string, tmp?: string, sessionId?: number): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, AGENTBOARD_ACTOR: 'agent' };
   for (const key of SESSION_ENV_STRIP) delete env[key];
-  if (slot !== undefined) env.AGENTBOARD_WORK = workDir(slot);
+  if (work !== undefined) env.AGENTBOARD_WORK = work;
+  if (tmp !== undefined) Object.assign(env, { TMPDIR: tmp, TMP: tmp, TEMP: tmp });
   if (sessionId !== undefined) env.AGENTBOARD_SESSION_ID = String(sessionId);
   return env;
 }
@@ -222,10 +215,10 @@ export function buildPrompt(due: DueRoutine[], cardId: string | null): string {
 // every due routine). A failing or timed-out check counts as "found"
 // (fail-open) with the error surfaced instead — a broken check must never
 // make a routine silently vanish.
-function runRoutineCheck(check: string, slot: number): { output: string; failed: boolean } {
+function runRoutineCheck(check: string): { output: string; failed: boolean } {
   const result = spawnSync('sh', ['-c', check], {
-    cwd: workDir(slot),
-    env: sessionEnv(slot),
+    cwd: checkWorkDir(),
+    env: sessionEnv(),
     timeout: 30_000,
     encoding: 'utf8',
   });
@@ -239,14 +232,14 @@ function runRoutineCheck(check: string, slot: number): { output: string; failed:
 // with something to act on: no check, non-empty stdout, or a failed check
 // (fail-open). Every due routine still gets marked run by the caller,
 // whether or not it survives this filter.
-function checkDueRoutines(due: RoutineInfo[], slot: number): DueRoutine[] {
+function checkDueRoutines(due: RoutineInfo[]): DueRoutine[] {
   const active: DueRoutine[] = [];
   for (const r of due) {
     if (!r.check) {
       active.push(r);
       continue;
     }
-    const { output, failed } = runRoutineCheck(r.check, slot);
+    const { output, failed } = runRoutineCheck(r.check);
     if (failed) {
       console.error(`runner: check failed for ${r.path}: ${output}`);
       active.push({ ...r, checkOutput: output });
@@ -344,13 +337,15 @@ export function runSession(
   let sessionId: number | undefined;
   try {
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
-    const active = promptOverride ? [] : checkDueRoutines(due.routines, slot);
+    const active = promptOverride ? [] : checkDueRoutines(due.routines);
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
     console.error(`runner: marked ${due.routines.length} routines`);
     const begun = beginSession(slot, trigger, { assign: !promptOverride, allowEmpty: !!promptOverride || active.length > 0 });
     if (!begun) return { started: false, reason: 'gate empty' };
     const { rec, card } = begun;
     sessionId = rec.id;
+    const work = sessionWorkDir(card?.id ?? null, rec.id);
+    const tmp = sessionTmpDir(rec.id);
     const sessionStart = now();
     console.error(`runner: session #${rec.id}${card ? ` (${card.id})` : ''} -> ${rec.jsonl}`);
     const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(/\s+/);
@@ -365,8 +360,8 @@ export function runSession(
         // the time limit is stopped and counts as stranded (spec section 7).
         const result = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active, card?.id ?? null)], {
           stdio: ['ignore', out, err],
-          cwd: workDir(slot),
-          env: sessionEnv(slot, rec.id),
+          cwd: work,
+          env: sessionEnv(work, tmp, rec.id),
           timeout: sessionTimeoutMs(),
           killSignal: 'SIGTERM',
         });
@@ -391,8 +386,10 @@ export function runSession(
       // gate can hand a stranded card to the next session.
       finishSessionRecord(rec.id, status, notified);
       releaseSessionClaims(rec.id);
+      removeTmpDir(rec.id);
     }
   } finally {
+    if (sessionId !== undefined) pruneWorkdirs();
     releaseLock();
     if (sessionId !== undefined) pokeRunner('chain');
   }
