@@ -5,6 +5,7 @@
 set -e
 agentboard init
 rm -f "$AGENTBOARD_DATA"/session.lock*   # a fresh boot has no live session; stale locks (any slot) would block the runner for up to two hours
+agentboard sessions recover   # rows and claims a restart left behind (the runner's finally never ran)
 (
   pids=()
   while true; do

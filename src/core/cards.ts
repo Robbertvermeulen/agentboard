@@ -37,6 +37,9 @@ export interface Card {
   context_refs: string[];
   blocked_by: string[];
   routine: string | null;
+  claimed_by: number | null; // holder session (hard claims); only counts while that session lives
+  claim_seen_at: string | null;
+  human_edited_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +51,7 @@ export interface Comment {
   body: string;
   created_at: string;
   updated_at: string | null;
+  session_id: number | null;
 }
 
 export interface BoardEvent {

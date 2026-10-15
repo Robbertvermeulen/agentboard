@@ -32,6 +32,7 @@ import {
   setSecretFromFile,
   writeContext,
 } from '../core/context.js';
+import { recoverSessions } from '../core/claims.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
 import { liveSessionIds, observeSession, otherLiveSessions, runSession } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
@@ -822,6 +823,17 @@ sessions
     run((opts) => {
       const result = pruneSessions(opts.olderThan);
       output(opts, result.removed.length ? `Pruned ${result.removed.length} session(s): ${result.removed.join(', ')}` : 'Nothing to prune', result);
+    })
+  );
+
+sessions
+  .command('recover')
+  .description('boot cleanup: close session rows left open by a restart and clear their card claims')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts) => {
+      const r = recoverSessions();
+      output(opts, `Recovered: ${r.sessions} open sessions closed, ${r.claims} claims cleared`, r);
     })
   );
 
