@@ -8,10 +8,13 @@ import {
   STATUSES,
   Status,
   TYPES,
+  addEventIn,
   now,
   openDb,
 } from './db.js';
 import { assertLanguage } from './settings.js';
+
+export { addEventIn } from './db.js';
 
 export interface Board {
   id: string;
@@ -252,22 +255,6 @@ function assertNoBlockerCycle(db: Database.Database, cardId: string, blockedBy: 
       | undefined;
     if (row) stack.push(...(JSON.parse(row.blocked_by) as string[]));
   }
-}
-
-export function addEventIn(
-  db: Database.Database,
-  cardId: string,
-  kind: EventKind,
-  actor: Actor,
-  payload: Record<string, unknown>
-): void {
-  db.prepare('INSERT INTO event (card_id, kind, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)').run(
-    cardId,
-    kind,
-    actor,
-    JSON.stringify(payload),
-    now()
-  );
 }
 
 export function listBoards(opts?: { includeArchived?: boolean }): Board[] {

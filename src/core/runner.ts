@@ -8,37 +8,12 @@ import { adoptOrphanedDoing, claimingSessions, gateWork } from './cards.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
 import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
-
-// One numbered lock file per slot ('session.lock' for slot 0, matching the
-// pre-pool name so existing boot cleanup keeps working at the default N=1).
-const lockPath = (slot: number) => path.join(dataDir(), slot === 0 ? 'session.lock' : `session.lock.${slot}`);
-
-// How many sessions may run at once. Default 1 keeps today's single-flight
-// behavior; raising it widens the pool acquireLock draws from, and the
-// bin/run.sh tick loop fires a new `runner --trigger cron` without waiting
-// for the previous one, so up to this many can genuinely run in parallel.
-const maxSessions = () => Math.max(1, Number(process.env.AGENTBOARD_MAX_SESSIONS ?? 1));
+import { SessionLock, liveSessionIdsIn, lockPath, maxSessions, processAlive, readLock } from './slots.js';
 
 function anyLockHeld(): boolean {
   const slots = maxSessions();
   for (let slot = 0; slot < slots; slot++) if (fs.existsSync(lockPath(slot))) return true;
   return false;
-}
-
-interface SessionLock {
-  pid: number;
-  hostname: string;
-  started_at: string;
-  session_id?: number; // set once the session record exists (see markLockSession)
-}
-
-function processAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // A pool of N lock slots (vision Concurrency; N=1 is single-flight). A lock
@@ -115,19 +90,12 @@ function markLockSession(slot: number, sessionId: number): void {
 // a UI poke plus a cron tick all start on the one ready card. The earliest
 // runner never counts anyone ahead, so work is never left unstarted.
 function runnersAhead(own: number): number {
-  const read = (slot: number): SessionLock | null => {
-    try {
-      return JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
-    } catch {
-      return null;
-    }
-  };
-  const mine = read(own);
+  const mine = readLock(own);
   if (!mine) return 0;
   const claiming = claimingSessions();
   let ahead = 0;
   for (let slot = 0; slot < maxSessions(); slot++) {
-    const lock = read(slot);
+    const lock = readLock(slot);
     if (slot === own || !lock || lock.hostname !== os.hostname() || !processAlive(lock.pid)) continue;
     const earlier = lock.started_at < mine.started_at || (lock.started_at === mine.started_at && slot < own);
     if (earlier && !(lock.session_id !== undefined && claiming.has(lock.session_id))) ahead++;
@@ -139,25 +107,9 @@ function runnersAhead(own: number): number {
 // a live process proves it; the open session row confirms it. Both required —
 // a stale row after a crash must not read as "live".
 export function liveSessionIds(): number[] {
-  const slots = maxSessions();
-  const ids: number[] = [];
-  for (let slot = 0; slot < slots; slot++) {
-    try {
-      const lock = JSON.parse(fs.readFileSync(lockPath(slot), 'utf8')) as SessionLock;
-      if (lock.hostname === os.hostname() && processAlive(lock.pid) && typeof lock.session_id === 'number') {
-        ids.push(lock.session_id);
-      }
-    } catch {
-      // no live lock at this slot
-    }
-  }
-  if (ids.length === 0) return [];
   const db = openDb();
   try {
-    const rows = db
-      .prepare(`SELECT id FROM session WHERE ended_at IS NULL AND id IN (${ids.map(() => '?').join(',')}) ORDER BY id`)
-      .all(ids) as { id: number }[];
-    return rows.map((r) => r.id);
+    return liveSessionIdsIn(db);
   } finally {
     db.close();
   }

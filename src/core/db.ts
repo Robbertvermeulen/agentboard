@@ -320,3 +320,19 @@ export async function initData(opts?: {
 
   return { dataDir: dir, created };
 }
+
+export function addEventIn(
+  db: Database.Database,
+  cardId: string,
+  kind: EventKind,
+  actor: Actor,
+  payload: Record<string, unknown>
+): void {
+  db.prepare('INSERT INTO event (card_id, kind, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    cardId,
+    kind,
+    actor,
+    JSON.stringify(payload),
+    now()
+  );
+}
