@@ -344,14 +344,14 @@ export function runSession(
     if (!begun) return { started: false, reason: 'gate empty' };
     const { rec, card } = begun;
     sessionId = rec.id;
-    const work = sessionWorkDir(card?.id ?? null, rec.id);
-    const tmp = sessionTmpDir(rec.id);
     const sessionStart = now();
     console.error(`runner: session #${rec.id}${card ? ` (${card.id})` : ''} -> ${rec.jsonl}`);
     const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(/\s+/);
     let status: number | null = null;
     let notified: { id: string; to: string }[] = [];
     try {
+      const work = sessionWorkDir(card?.id ?? null, rec.id);
+      const tmp = sessionTmpDir(rec.id);
       const out = fs.openSync(rec.jsonl, 'w');
       const err = fs.openSync(rec.stderr, 'w');
       try {
@@ -389,8 +389,16 @@ export function runSession(
       removeTmpDir(rec.id);
     }
   } finally {
-    if (sessionId !== undefined) pruneWorkdirs();
     releaseLock();
+    // Best-effort and after the lock: a prune failure must neither hold the
+    // slot nor replace the session's result.
+    if (sessionId !== undefined) {
+      try {
+        pruneWorkdirs();
+      } catch (e) {
+        console.error(`runner: prune failed: ${(e as Error).message}`);
+      }
+    }
     if (sessionId !== undefined) pokeRunner('chain');
   }
 }

@@ -50,7 +50,7 @@ function hasUnpushedWork(repo: string): boolean {
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   try {
-    return git('status', '--porcelain') !== '' || git('log', '--branches', '--not', '--remotes', '--oneline') !== '';
+    return git('status', '--porcelain') !== '' || git('log', 'HEAD', '--branches', '--not', '--remotes', '--oneline') !== '';
   } catch {
     return true;
   }
@@ -66,7 +66,9 @@ export function pruneWorkdirs(log: (m: string) => void = (m) => console.error(m)
     const live = new Set(liveSessionIdsIn(db));
     const cardsDir = path.join(base(), 'cards');
     if (fs.existsSync(cardsDir)) {
-      for (const id of fs.readdirSync(cardsDir)) {
+      for (const e of fs.readdirSync(cardsDir, { withFileTypes: true })) {
+        if (!e.isDirectory()) continue;
+        const id = e.name;
         const row = db.prepare('SELECT status, claimed_by FROM card WHERE id = ?').get(id) as
           | { status: string; claimed_by: number | null }
           | undefined;
@@ -76,7 +78,9 @@ export function pruneWorkdirs(log: (m: string) => void = (m) => console.error(m)
     }
     const sessionsDir = path.join(base(), 'sessions');
     if (fs.existsSync(sessionsDir)) {
-      for (const n of fs.readdirSync(sessionsDir)) {
+      for (const e of fs.readdirSync(sessionsDir, { withFileTypes: true })) {
+        if (!e.isDirectory()) continue;
+        const n = e.name;
         const row = db.prepare('SELECT ended_at FROM session WHERE id = ?').get(Number(n)) as { ended_at: string | null } | undefined;
         if (row?.ended_at) candidates.push(path.join(sessionsDir, n));
       }
@@ -85,10 +89,15 @@ export function pruneWorkdirs(log: (m: string) => void = (m) => console.error(m)
     db.close();
   }
   for (const dir of candidates) {
-    if (gitRepos(dir).some(hasUnpushedWork)) {
-      log(`runner: workdir kept: ${dir}, unpushed work`);
-      continue;
+    // One unreadable directory must not stop the rest.
+    try {
+      if (gitRepos(dir).some(hasUnpushedWork)) {
+        log(`runner: workdir kept: ${dir}, unpushed work`);
+        continue;
+      }
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch (e) {
+      log(`runner: prune skipped ${dir}: ${(e as Error).message}`);
     }
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 }

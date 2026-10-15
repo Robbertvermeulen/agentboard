@@ -294,4 +294,14 @@ AGENTBOARD_SESSION_CMD="$SCR/where.sh" $CLI runner >/dev/null 2>"$SCR/err.log"
 [ -d "$AGENTBOARD_DATA/work/cards/$KEEP/repo" ] || fail "workdir with unpushed work was pruned"
 grep -q "workdir kept: .*$KEEP" "$SCR/err.log" || fail "kept workdir not logged"
 
+# a stray file under cards/ must not break pruning, leak the lock or fail the run
+BAD=$(new_ready "prune robustness")
+touch "$AGENTBOARD_DATA/work/cards/not-a-dir"
+$CLI card move "$NEXT" done --reason klaar >/dev/null
+mkdir -p "$AGENTBOARD_DATA/work/cards/$NEXT"
+AGENTBOARD_SESSION_CMD="$SCR/where.sh" $CLI runner >/dev/null 2>"$SCR/err2.log" || fail "runner failed with a stray file under cards/"
+ls "$AGENTBOARD_DATA"/session.lock* >/dev/null 2>&1 && fail "slot lock leaked after prune"
+[ ! -e "$AGENTBOARD_DATA/work/cards/$NEXT" ] || fail "done card's workdir not pruned next to a stray file"
+grep -q "prune failed" "$SCR/err2.log" && fail "prune threw on a stray file"
+
 echo "OK: hard claims verified"
