@@ -1,3 +1,10 @@
+# [0.25.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.24.0...v0.25.0) (2026-10-15)
+
+
+### Features
+
+* **mcp:** native Playwright browser tool, wired into every session ([#109](https://github.com/Robbertvermeulen/agentboard/issues/109)) ([1ecc9ef](https://github.com/Robbertvermeulen/agentboard/commit/1ecc9ef5228258a44926de8a911e702466dc4e3b))
+
 # [0.24.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.23.0...v0.24.0) (2026-10-15)
 
 
