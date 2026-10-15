@@ -141,6 +141,11 @@ export function createApp(): Hono {
   const app = new Hono();
   const auth = authConfig();
 
+  // Public, dependency-free: Fly's health check hits this to decide whether
+  // to restart a hung-but-still-running machine (crash-only restarts are
+  // already covered by fly.toml's restart policy).
+  app.get('/healthz', (c) => c.text('ok'));
+
   // Public: tells the UI whether to expect a login and whether to show Sign out.
   app.get('/auth/state', async (c) => {
     if (!auth.enabled) return c.json({ auth: false });
