@@ -180,8 +180,8 @@ NOTE1=$($CLI card new --type task --title "notify-handback" --json | id_of)
 $CLI card move "$NOTE1" ready --reason t >/dev/null
 cat > "$SCRATCH/hand1.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card claim $NOTE1 >> "\$FAKE_OUT" 2>&1
-$CLI_ABS card move $NOTE1 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE1 >/dev/null
+$CLI_ABS card move $NOTE1 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand1.sh"
 cat > "$SCRATCH/notify.sh" << 'EOF'
@@ -198,8 +198,8 @@ NOTE2=$($CLI card new --type task --title "notify-missing-binary" --json | id_of
 $CLI card move "$NOTE2" ready --reason t >/dev/null
 cat > "$SCRATCH/hand2.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card claim $NOTE2 >> "\$FAKE_OUT" 2>&1
-$CLI_ABS card move $NOTE2 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE2 >/dev/null
+$CLI_ABS card move $NOTE2 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand2.sh"
 : > "$SCRATCH/err.log"
@@ -210,8 +210,8 @@ NOTE3=$($CLI card new --type task --title "notify-no-env" --json | id_of)
 $CLI card move "$NOTE3" ready --reason t >/dev/null
 cat > "$SCRATCH/hand3.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card claim $NOTE3 >> "\$FAKE_OUT" 2>&1
-$CLI_ABS card move $NOTE3 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE3 >/dev/null
+$CLI_ABS card move $NOTE3 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand3.sh"
 : > "$SCRATCH/err.log"

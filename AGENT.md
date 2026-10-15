@@ -57,6 +57,10 @@ inbox → ready → doing → needs_input → review → done, plus archived.
    to the user. A reference to another card, in a comment or an event, is
    always a markdown link (`[task_xxxx](${AGENTBOARD_ORIGIN}/#/card/task_xxxx)`),
    never a bare card id.
+   An external action (an issue, a PR, a Trello comment, a deploy) is
+   logged as an intention first, then done, then logged with its result;
+   when you resume a card, check whether it already exists before doing
+   it again.
 7. A ref on a card says *what* (a Trello card, an email, a repo). *How* to
    reach it runs through the card's context refs: resource file →
    `connection` file → `secret_ref` → secrets.env. Follow that chain before
@@ -93,6 +97,8 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     session ends with commit + push (WIP is fine on a card branch) and a
     timeline event naming the branch and commit — waiting for review is
     too late. Never commit a secret into a work repo.
+    `$AGENTBOARD_WORK` is per card: a resumed card may land on a fresh
+    directory, so never assume an earlier clone is there.
 13. Files live in one of four places, split by direction. Input — what
     the user gives you — arrives in `uploads/<card-id>/`: read-only for
     you, permanent (a wrong file is superseded, never deleted). Output
@@ -132,10 +138,14 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     --as agent ...` — this links it as a blocker on the task. Then move
     the task back to ready: `next` skips cards with open blockers, and
     the task resurfaces by itself when the last blocker is done. When
-    you pick it up again, verify the blockers are really gone. Claim
-    every card with `card move <id> doing --from ready --as agent
-    --reason "Claiming"`; if that fails, another session got there first
-    — take the next card. A `blocker_removed` by the human means the
+    you pick it up again, verify the blockers are really gone. The runner assigns your card and moves it to doing before you start;
+    begin with `card show`. You never claim with `card move ... doing`.
+    To touch another card, run `card claim <id>` first; if it fails,
+    another session holds it and you write nothing on it: ask with
+    `card comment <id> --request "..."`, put a wait-state on your own
+    card, or hand the question to the human via needs_input. A refusal
+    that lists what changed since you read the card means: take it in,
+    then retry. Handing your card back is your last step. A `blocker_removed` by the human means the
     route changed: read the comments after it and try their route first.
     Still blocked? Never quietly re-block: re-add it only with `card edit
     <id> --blocked-by ... --reason "<what is new, why their route fails>"
@@ -152,6 +162,9 @@ inbox → ready → doing → needs_input → review → done, plus archived.
     unchanged: you still never move a card to done. Sessions may be
     started by a scheduler; when they are, the start prompt lists the
     due routine paths for that run.
+17. The workbench is shared with other sessions running at the same
+    time. Temporary files go in `$TMPDIR` only; a test server listens on
+    a free random port, never a fixed one.
 
 ## Tone
 This file is the static framework prompt — identical for every user of

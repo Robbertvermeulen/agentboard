@@ -132,7 +132,7 @@ card smarter? → context.
   deliberately). Permanent: a name conflict gets a suffix, nothing is
   ever overwritten or deleted. Each file writes an `upload_added` event.
 
-- **Workdir** (`AGENTBOARD_WORK`, default `<data>/work`): disposable,
+- **Workdir** (`AGENTBOARD_WORK`, default `<data>/work`; one directory per card under `cards/<id>/`, per card-less session under `sessions/<nr>/`, pruned after the card is done or archived unless it holds unpushed work): disposable,
   reconstructable from context + secrets, excluded from backups.
   Disposable means replaceable, not short-lived — a clone may sit there
   for weeks; the remote repo is the durable home of code work. The path
@@ -241,10 +241,9 @@ Unattended operation is three layers: the gate, the runner, and your clock:
    (path to AGENT.md) and the due routine paths to the prompt, logs raw
    output to `sessions/<nr>.jsonl` (+ `.stderr.log`), and sends a
    one-line handback summary to `AGENTBOARD_NOTIFY_CMD` (optional — e.g.
-   a script that posts to a webhook). Sessions run in a neutral working
-   directory (`AGENTBOARD_WORK`, default `<data>/work`) — never in the
+   a script that posts to a webhook). The runner assigns one card per session: in one transaction it creates the session row, claims the oldest gate card (status doing, `claimed_by` = the session) and only then starts the process, in that card's working directory, never in the
    caller's cwd, so a stray project checkout's CLAUDE.md can't leak into
-   a session. Dry-run: `agentboard runner --dry-run`.
+   a session. `AGENTBOARD_SESSION_TIMEOUT_MIN` (default 45) stops a session that runs too long; `AGENTBOARD_RESUME_LIMIT` (default 2) hands a card to the human after that many resumes without a human action in between. With `AGENTBOARD_AUTORUN=1` a finished session starts the next runner at once. Dry-run: `agentboard runner --dry-run`.
 
    **Environment.** The session inherits the runner's environment minus
    the server-only secrets `FLY_API_TOKEN` and `AGENTBOARD_SESSION_SECRET`:
@@ -329,7 +328,7 @@ Commands: `agentboard sessions list` (all, newest first), `sessions
 show <nr>` (meta + parsed steps, secrets redacted), `sessions prune
 --older-than 30d|12h|45m` (logs + index rows; running sessions kept).
 Pruning is the one place delete exists; it's safe because the timeline
-outlives the transcript.
+outlives the transcript. `sessions recover` (boot only: closes rows a restart left open and clears their claims).
 
 Secrets redaction happens at display time. The raw JSONL file on disk
 shares `secrets.env`'s trust boundary — AGENT.md rule 4 guards the
@@ -471,8 +470,13 @@ Each of these exists because the schema or an invariant needs it:
 - `card new --blocks <id>` — links the new card as blocker in one
   transaction with the `blocker_added` event; `--as` sets that event's
   actor.
-- `card move --from <status>` — the race-free claim: moves the card only
-  if it is still in that status.
+- `card move --from <status>`: moves the card only if it is still in
+  that status. Inside a session the runner already claimed the card;
+  agents use `--from doing` when handing back.
+- `card claim <id>`: inside a session: hold one more card, or fail at
+  once if another live session holds it; prints the card.
+- `card comment --request`: the one write allowed on a card another
+  session holds; prefixed with the requesting card and session.
 - `card edit --blocked-by <ids>` — full-list replace, validated for
   existence, self-blocking and cycles.
 - `card new --routine <path>` — spawns a card from a routine file; the
