@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS card (
   context_refs  TEXT NOT NULL DEFAULT '[]',
   blocked_by    TEXT NOT NULL DEFAULT '[]',
   routine       TEXT,
+  claimed_by      INTEGER,
+  claim_seen_at   TEXT,
+  human_edited_at TEXT,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -66,7 +69,8 @@ CREATE TABLE IF NOT EXISTS comment (
   author     TEXT NOT NULL CHECK (author IN ('human','agent')),
   body       TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT
+  updated_at TEXT,
+  session_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS event (${EVENT_TABLE_BODY});
@@ -92,6 +96,7 @@ CREATE TABLE IF NOT EXISTS session (
   output_tokens                INTEGER,
   cache_read_input_tokens      INTEGER,
   cache_creation_input_tokens  INTEGER,
+  card_id                      TEXT,
   total_cost_usd               REAL
 );
 
@@ -216,6 +221,18 @@ export async function initData(opts?: {
     created.push('card.routine');
   }
 
+  // Migration: hard claims (spec 2026-10-15). The holder session, how far it
+  // has read the card, and when a human last edited it (title/body edits
+  // write no event, so the freshness check needs this column to see them).
+  if (!cardCols.some((c) => c.name === 'claimed_by')) {
+    db.exec(`
+      ALTER TABLE card ADD COLUMN claimed_by INTEGER;
+      ALTER TABLE card ADD COLUMN claim_seen_at TEXT;
+      ALTER TABLE card ADD COLUMN human_edited_at TEXT;
+    `);
+    created.push('card claim columns');
+  }
+
   // Migration: board tables from before board archiving lack archived_at.
   const boardCols = db.prepare('PRAGMA table_info(board)').all() as { name: string }[];
   if (!boardCols.some((c) => c.name === 'archived_at')) {
@@ -248,11 +265,24 @@ export async function initData(opts?: {
     created.push('session usage/cost columns');
   }
 
+  // Migration: the card the runner assigned to a session (hard claims).
+  if (!sessionCols.some((c) => c.name === 'card_id')) {
+    db.exec('ALTER TABLE session ADD COLUMN card_id TEXT');
+    created.push('session.card_id');
+  }
+
   // Migration: comment tables from before comment editing lack updated_at.
   const commentCols = db.prepare('PRAGMA table_info(comment)').all() as { name: string }[];
   if (!commentCols.some((c) => c.name === 'updated_at')) {
     db.exec('ALTER TABLE comment ADD COLUMN updated_at TEXT');
     created.push('comment.updated_at');
+  }
+
+  // Migration: which session wrote an agent comment (hard claims): a holder
+  // must see comments from other sessions, not its own.
+  if (!commentCols.some((c) => c.name === 'session_id')) {
+    db.exec('ALTER TABLE comment ADD COLUMN session_id INTEGER');
+    created.push('comment.session_id');
   }
 
   // Migration: event tables with outdated kind checks. SQLite cannot alter a
@@ -319,4 +349,20 @@ export async function initData(opts?: {
   }
 
   return { dataDir: dir, created };
+}
+
+export function addEventIn(
+  db: Database.Database,
+  cardId: string,
+  kind: EventKind,
+  actor: Actor,
+  payload: Record<string, unknown>
+): void {
+  db.prepare('INSERT INTO event (card_id, kind, actor, payload, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    cardId,
+    kind,
+    actor,
+    JSON.stringify(payload),
+    now()
+  );
 }

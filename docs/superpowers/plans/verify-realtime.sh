@@ -196,8 +196,9 @@ CURSOR6=$(curl -s "localhost:$PORT/api/changes" | python3 -c "import json, sys; 
 
 sqlite3 "$AGENTBOARD_DATA/board.db" \
   "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
+SID=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT MAX(id) FROM session")
 cat > "$AGENTBOARD_DATA/session.lock" << EOF
-{"pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
+{"session_id": $SID, "pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
 EOF
 
 RESP=$(curl -s "localhost:$PORT/api/changes?since=$CURSOR6")
