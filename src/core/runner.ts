@@ -184,6 +184,20 @@ function agentMdPath(): string {
   );
 }
 
+// Issue #107: the browser tool is wired into every session unconditionally
+// (no opt-in env var) via --mcp-config on the spawned `claude` command. The
+// server is a plain Node script (dist/mcp/browser-server.js); passing it as
+// an inline JSON string avoids a temp config file per session.
+function browserServerPath(): string {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../mcp/browser-server.js');
+}
+
+function mcpConfigArg(): string {
+  return JSON.stringify({
+    mcpServers: { 'agentboard-browser': { command: process.execPath, args: [browserServerPath()] } },
+  });
+}
+
 export type DueRoutine = RoutineInfo & { checkOutput?: string };
 
 export function buildPrompt(due: DueRoutine[], cardId: string | null): string {
@@ -367,13 +381,22 @@ export function runSession(
         // stdout is the JSONL transcript; stderr goes to its own file so a
         // stray warning can never corrupt a transcript line. A session past
         // the time limit is stopped and counts as stranded (spec section 7).
-        const result = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active, card?.id ?? null)], {
-          stdio: ['ignore', out, err],
-          cwd: work,
-          env: sessionEnv(work, tmp, rec.id),
-          timeout: sessionTimeoutMs(),
-          killSignal: 'SIGTERM',
-        });
+        const result = spawnSync(
+          parts[0],
+          [
+            ...parts.slice(1),
+            '--mcp-config',
+            mcpConfigArg(),
+            promptOverride ?? buildPrompt(active, card?.id ?? null),
+          ],
+          {
+            stdio: ['ignore', out, err],
+            cwd: work,
+            env: sessionEnv(work, tmp, rec.id),
+            timeout: sessionTimeoutMs(),
+            killSignal: 'SIGTERM',
+          }
+        );
         status = result.status;
         if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT') {
           console.error(`runner: session #${rec.id} timed out`);
