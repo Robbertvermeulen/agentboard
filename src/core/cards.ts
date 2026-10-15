@@ -128,6 +128,28 @@ function waitCheckIn(db: Database.Database, ids: string[]): Map<string, string> 
   return latest;
 }
 
+// Which runner session holds each doing card: the session stamp on the
+// card's latest status change, when that change moved it into doing
+// (moveCard stamps AGENTBOARD_SESSION_ID). Unstamped claims — a human move,
+// history from before the stamp — map to nothing and stay resumable.
+function doingClaimsIn(db: Database.Database, ids: string[]): Map<string, number> {
+  if (ids.length === 0) return new Map();
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db
+    .prepare(
+      `SELECT e.card_id, e.payload FROM event e
+       JOIN (SELECT card_id, MAX(id) AS id FROM event WHERE card_id IN (${placeholders}) AND kind = 'status_changed' GROUP BY card_id) last
+         ON e.id = last.id`
+    )
+    .all(ids) as { card_id: string; payload: string }[];
+  const claims = new Map<string, number>();
+  for (const r of rows) {
+    const p = JSON.parse(r.payload) as { to?: string; session?: unknown };
+    if (p.to === 'doing' && typeof p.session === 'number') claims.set(r.card_id, p.session);
+  }
+  return claims;
+}
+
 function rowToCard(row: any): Card {
   return {
     ...row,
@@ -525,7 +547,10 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
         throw new Error(`Card ${id} changed status concurrently — read it again and retry`);
       }
       // Invariant 1: every status change writes an event with from, to, reason.
-      addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason });
+      // A runner session stamps its id on the move, so a concurrent session
+      // can tell "claimed by a live session" from "left behind by a crash".
+      const session = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
+      addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason, session });
     });
     move.immediate();
     return getCardIn(db, id);
@@ -676,15 +701,46 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
   }
 }
 
+// Crash recovery at N>1: a doing card whose claiming session is gone (or
+// that was never stamped) is handed to `sessionId` with a doing -> doing
+// event, so it gets exactly one resumer — without this, every concurrent
+// session would see it as resumable. One immediate transaction, so two
+// starting sessions cannot both adopt the same card.
+export function adoptOrphanedDoing(sessionId: number, live: ReadonlySet<number>): string[] {
+  const db = openDb();
+  try {
+    const adopt = db.transaction(() => {
+      const ids = (db.prepare("SELECT id FROM card WHERE status = 'doing'").all() as { id: string }[]).map((r) => r.id);
+      const claims = doingClaimsIn(db, ids);
+      const orphans = ids.filter((id) => !live.has(claims.get(id) ?? -1));
+      for (const id of orphans) {
+        const prev = claims.get(id);
+        addEventIn(db, id, 'status_changed', 'agent', {
+          from: 'doing',
+          to: 'doing',
+          reason: prev ? `Resumed: session #${prev} ended without finishing` : 'Resumed: unclaimed doing card',
+          session: sessionId,
+        });
+      }
+      return orphans;
+    });
+    return adopt.immediate();
+  } finally {
+    db.close();
+  }
+}
+
 // Worklist for an agent session (and the cheap gate for a cron trigger:
 // empty list = no session). ready = new work, doing = resumable — doing is
 // agent territory (vision besluit I) and claiming never changes the owner,
 // so filtering on owner here would strand a human-owned card after a crash.
 // needs_input = possibly self-unblockable via a wait-check in the timeline.
-export function nextWork(): Card[] {
+// `busy` = ids of OTHER live sessions: a doing card one of them claimed is
+// theirs, not resumable — with N>1 sessions it would otherwise be worked twice.
+export function nextWork(busy: ReadonlySet<number> = new Set()): Card[] {
   const db = openDb();
   try {
-    const cards = db
+    const all = db
       .prepare(
         `SELECT * FROM card
          WHERE status = 'ready' OR status = 'needs_input'
@@ -693,6 +749,8 @@ export function nextWork(): Card[] {
       )
       .all()
       .map(rowToCard);
+    const claims = doingClaimsIn(db, all.filter((c) => c.status === 'doing').map((c) => c.id));
+    const cards = all.filter((c) => !busy.has(claims.get(c.id) ?? -1));
     // A card with an open blocker is not workable: it resurfaces by itself
     // when the last blocker goes done/archived (open-ness is derived).
     const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
@@ -712,8 +770,10 @@ export function nextWork(): Card[] {
 // next: bare needs_input never counts (one unanswered question must not
 // start a session every minute), and blocked ready cards wait for their
 // blockers. doing counting is the implicit crash recovery (any owner:
-// claiming never changes it, and doing is agent territory per besluit I).
-export function gateWork(): Card[] {
+// claiming never changes it, and doing is agent territory per besluit I) —
+// except a doing card a live session in `busy` claimed: that one is being
+// worked right now, and counting it would start a second session on it.
+export function gateWork(busy: ReadonlySet<number> = new Set()): Card[] {
   const db = openDb();
   try {
     const cards = db
@@ -732,10 +792,11 @@ export function gateWork(): Card[] {
         .map((b) => b.id)
     );
     const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
+    const claims = doingClaimsIn(db, cards.filter((c) => c.status === 'doing').map((c) => c.id));
     const cutoff = now();
     return cards.filter((c) => {
       if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
-      if (c.status === 'doing') return true;
+      if (c.status === 'doing') return !busy.has(claims.get(c.id) ?? -1);
       const check = waits.get(c.id);
       return check !== undefined && check <= cutoff;
     });

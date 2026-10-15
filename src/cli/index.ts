@@ -32,7 +32,7 @@ import {
   writeContext,
 } from '../core/context.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
-import { observeSession, runSession, sessionStatus } from '../core/runner.js';
+import { liveSessionIds, observeSession, otherLiveSessions, runSession } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
 import { performUpdate, versionInfo } from '../core/update.js';
@@ -290,7 +290,7 @@ program
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = nextWork();
+      const cards = nextWork(otherLiveSessions());
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       output(opts, lines.length ? lines.join('\n') : 'Nothing for the agent right now', { cards });
     })
@@ -302,7 +302,7 @@ program
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = gateWork();
+      const cards = gateWork(otherLiveSessions());
       const due = dueRoutines();
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       lines.push(...due.routines.map((r) => `  routine    ${r.board.padEnd(12)} due          ${r.path}`));
@@ -747,8 +747,8 @@ auth
 
 const sessions = program.command('sessions').description('recorded runner sessions (JSONL + index)');
 
-function sessionLine(s: any, liveId: number | null): string {
-  const live = s.ended_at === null && s.id === liveId;
+function sessionLine(s: any, liveIds: number[]): string {
+  const live = s.ended_at === null && liveIds.includes(s.id);
   const dur =
     s.ended_at !== null
       ? `${Math.max(1, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s`
@@ -777,8 +777,8 @@ sessions
   .action(
     run((opts) => {
       const all = listSessions();
-      const liveId = sessionStatus().session_id;
-      output(opts, all.length ? all.map((s) => sessionLine(s, liveId)).join('\n') : 'No sessions yet', {
+      const liveIds = liveSessionIds();
+      output(opts, all.length ? all.map((s) => sessionLine(s, liveIds)).join('\n') : 'No sessions yet', {
         sessions: all,
       });
     })
@@ -791,7 +791,7 @@ sessions
   .action(
     run((opts, nr: string) => {
       const detail = sessionDetail(Number(nr));
-      const lines = [sessionLine(detail.session, sessionStatus().session_id), ''];
+      const lines = [sessionLine(detail.session, liveSessionIds()), ''];
       lines.push(...detail.steps.map((s) => `  [${s.type.padEnd(6)}] ${s.label}`));
       output(opts, lines.join('\n'), detail);
     })

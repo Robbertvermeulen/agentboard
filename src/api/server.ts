@@ -527,7 +527,7 @@ export function createApp(): Hono {
       const status = sessionStatus();
       const sessions = listSessions().map((s) => ({
         ...s,
-        live: s.ended_at === null && status.running && status.session_id === s.id,
+        live: s.ended_at === null && status.session_ids.includes(s.id),
         observed: fs.existsSync(observationPath(s.id)),
       }));
       return c.json({ sessions });
@@ -541,7 +541,7 @@ export function createApp(): Hono {
       const id = Number(c.req.param('id'));
       const r = sessionStepsSince(id, Number(c.req.query('offset') ?? 0), Number(c.req.query('n') ?? 0));
       const status = sessionStatus();
-      return c.json({ ...r, live: status.running && status.session_id === id });
+      return c.json({ ...r, live: status.session_ids.includes(id) });
     } catch (err) {
       return errorResponse(c, err);
     }
@@ -551,7 +551,7 @@ export function createApp(): Hono {
     try {
       const d = sessionDetail(Number(c.req.param('id')));
       const status = sessionStatus();
-      const live = d.session.ended_at === null && status.running && status.session_id === d.session.id;
+      const live = d.session.ended_at === null && status.session_ids.includes(d.session.id);
       return c.json({ ...d, session: { ...d.session, live } });
     } catch (err) {
       return errorResponse(c, err);
