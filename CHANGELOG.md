@@ -1,3 +1,10 @@
+## [0.22.2](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.1...v0.22.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* **runner:** don't start a session for cards a starting session will claim ([#111](https://github.com/Robbertvermeulen/agentboard/issues/111)) ([6caba83](https://github.com/Robbertvermeulen/agentboard/commit/6caba83d276dc48310640a28265f5e4127b1e934)), closes [#328](https://github.com/Robbertvermeulen/agentboard/issues/328) [#329](https://github.com/Robbertvermeulen/agentboard/issues/329) [#110](https://github.com/Robbertvermeulen/agentboard/issues/110)
+
 ## [0.22.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.0...v0.22.1) (2026-10-15)
 
 
