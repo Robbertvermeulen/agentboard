@@ -16,6 +16,7 @@ export const EVENT_KINDS = [
   'upload_added',
   'secret_stored',
   'blocker_added',
+  'blocker_removed',
 ] as const;
 
 export type Status = (typeof STATUSES)[number];

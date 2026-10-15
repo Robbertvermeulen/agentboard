@@ -19,6 +19,7 @@ import {
   logEvent,
   moveCard,
   nextWork,
+  removeBlocker,
   renameBoard,
   unarchiveBoard,
 } from '../core/cards.js';
@@ -539,6 +540,7 @@ card
   .option('--blocked-by <ids>', 'comma-separated card ids that block this card, empty string clears')
   .option('--board <id>', 'move card to another board')
   .option('--type <type>', 'task | ops — writes a type_changed event')
+  .option('--reason <text>', 'why the blockers changed (required to re-add a blocker the human removed)')
   .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
   .option('--json', 'JSON output')
   .action(
@@ -554,10 +556,24 @@ card
           blockedBy: opts.blockedBy !== undefined ? splitList(opts.blockedBy) : undefined,
           board: opts.board,
           type: opts.type,
+          reason: opts.reason,
         },
         opts.as
       );
       output(opts, `Updated ${c.id}`, c);
+    })
+  );
+
+card
+  .command('unblock <id> <blocker>')
+  .description('remove one blocker from a card (writes blocker_removed; the blocker card itself is untouched)')
+  .option('--reason <text>', 'why it no longer blocks')
+  .option('--as <actor>', 'human | agent', DEFAULT_ACTOR)
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string, blocker: string) => {
+      const c = removeBlocker(id, blocker, opts.as, opts.reason);
+      output(opts, `Removed blocker ${blocker} from ${c.id}`, c);
     })
   );
 

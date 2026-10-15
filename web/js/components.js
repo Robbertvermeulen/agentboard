@@ -112,7 +112,7 @@ export function closeOverlay() {
 
 /* ---------- reason dialog: every status change asks why ---------- */
 
-export function askReason({ title, toStatus, warning }) {
+export function askReason({ title, toStatus, warning, suggestions = ['Looks right', 'Checked myself'], okLabel }) {
   return new Promise((resolve) => {
     const approve = toStatus === 'done';
     const el = openOverlay(`<div class="dialog reason-dialog" role="dialog" aria-label="${esc(title)}">
@@ -121,13 +121,12 @@ export function askReason({ title, toStatus, warning }) {
       ${warning ? `<p class="dialog-warning">${icons.block(12)}${esc(warning)}</p>` : ''}
       <input id="reason-input" type="text" autocomplete="off" placeholder="Why?">
       <div class="reason-suggest">
-        <button type="button" data-fill="Looks right">Looks right</button>
-        <button type="button" data-fill="Checked myself">Checked myself</button>
+        ${suggestions.map((t) => `<button type="button" data-fill="${esc(t)}">${esc(t)}</button>`).join('')}
       </div>
       <p id="reason-error" class="field-error" hidden></p>
       <div class="dialog-actions">
         <button type="button" id="reason-cancel" class="btn-ghost">Cancel</button>
-        <button type="button" id="reason-ok" class="${approve ? 'btn-green' : 'btn-dark'}" disabled>${approve ? (warning ? 'Approve anyway' : 'Approve') : 'Move'}</button>
+        <button type="button" id="reason-ok" class="${approve ? 'btn-green' : 'btn-dark'}" disabled>${okLabel ?? (approve ? (warning ? 'Approve anyway' : 'Approve') : 'Move')}</button>
       </div>
     </div>`);
     const input = el.querySelector('#reason-input');
@@ -216,6 +215,23 @@ async function confirmDoingMove(card, onDone) {
       alertError(err.message);
     }
   };
+}
+
+// Remove one blocker as the human, with a reason the agent reads on its next
+// pass. The blocker card itself stays open: it may still matter elsewhere.
+export async function unblockWithReason(card, blockerId, onDone) {
+  const reason = await askReason({
+    title: `Unblock from ${blockerId}?`,
+    suggestions: ['Different route, see my comment', 'No longer needed'],
+    okLabel: 'Unblock',
+  });
+  if (reason == null) return;
+  try {
+    await api.unblock(card.id, blockerId, reason);
+    onDone();
+  } catch (err) {
+    alertError(err.message);
+  }
 }
 
 function alertError(message) {
