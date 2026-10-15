@@ -1,3 +1,10 @@
+# [0.22.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.21.0...v0.22.0) (2026-10-15)
+
+
+### Features
+
+* **infra:** add /healthz check for Fly auto-restart ([#108](https://github.com/Robbertvermeulen/agentboard/issues/108)) ([27605dd](https://github.com/Robbertvermeulen/agentboard/commit/27605dd0da493563a7c53ffc23aae9d4994e0e82))
+
 # [0.21.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.20.0...v0.21.0) (2026-10-14)
 
 
