@@ -14,6 +14,7 @@ import {
 } from './db.js';
 import { assertNotHumanInSession, guardAgentWrite, ownSession, requestPrefixIn } from './claims.js';
 import { assertLanguage } from './settings.js';
+import { liveSessionCardIdsIn } from './slots.js';
 
 export { addEventIn } from './db.js';
 
@@ -790,15 +791,17 @@ export function nextWork(live: ReadonlySet<number> = new Set(), own?: number): C
 
 // The scheduler's question (vision besluit C): ready without open blockers,
 // doing (a stranded session's card, resumable), needs_input whose wait-check
-// is due. A card a live session holds is being worked and never counts.
+// is due. A card a live session holds, or was assigned and still runs on
+// after a human take-back, is busy and never counts.
 export function gateWorkIn(db: Database.Database, live: ReadonlySet<number>): Card[] {
+  const assigned = liveSessionCardIdsIn(db, live);
   const cards = db
     .prepare(
       `SELECT * FROM card WHERE status = 'ready' OR status = 'needs_input' OR status = 'doing' ORDER BY updated_at ASC`
     )
     .all()
     .map(rowToCard)
-    .filter((c) => !heldByLive(c, live));
+    .filter((c) => !heldByLive(c, live) && !assigned.has(c.id));
   const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
   const open = new Set(
     blockerInfoIn(db, blockerIds)
@@ -855,13 +858,15 @@ function resumesSinceHumanIn(db: Database.Database, id: string): { count: number
 // The runner's half of a claim (spec section 2), inside its immediate
 // transaction: the first gate card wins, gets status doing and this session
 // as holder, all before the session process starts. A doing card past the
-// resume limit goes to the human instead of starting yet another session.
+// resume limit goes to the human instead of starting yet another session;
+// those parked ids come back so the runner can notify the human.
 export function pickAndClaimIn(
   db: Database.Database,
   sessionId: number,
   live: ReadonlySet<number>,
   resumeLimit: number
-): Card | null {
+): { card: Card | null; parked: string[] } {
+  const parked: string[] = [];
   for (const card of gateWorkIn(db, live)) {
     let reason: string;
     if (card.status === 'doing') {
@@ -878,6 +883,7 @@ export function pickAndClaimIn(
         addEventIn(db, card.id, 'error', 'agent', {
           note: `Stopped resuming: sessions ${stranded.join(', ')} ended without finishing this card`,
         });
+        parked.push(card.id);
         continue;
       }
       reason = prev !== null ? `Resumed: session ${prev} ended without finishing` : 'Resumed: unclaimed doing card';
@@ -890,9 +896,54 @@ export function pickAndClaimIn(
       card.id
     );
     addEventIn(db, card.id, 'status_changed', 'agent', { from: card.status, to: 'doing', reason, session: sessionId });
-    return getCardIn(db, card.id);
+    return { card: getCardIn(db, card.id), parked };
   }
-  return null;
+  return { card: null, parked };
+}
+
+// At session end, before the claims go: a session that never read its
+// assigned card (a usage limit, expired auth or API outage makes every
+// `claude -p` exit at once) did no work on it. Hand the card back to where
+// the assignment found it instead of letting it strand: a stranding would
+// run every card through resume and park within minutes. The next pick from
+// ready is an "Assigned", so this never counts toward the resume limit.
+export function returnUnreadCard(sessionId: number): string | null {
+  const db = openDb();
+  try {
+    return db
+      .transaction((): string | null => {
+        const row = db.prepare('SELECT card_id FROM session WHERE id = ?').get(sessionId) as { card_id: string | null } | undefined;
+        if (!row?.card_id) return null;
+        const card = db
+          .prepare("SELECT id FROM card WHERE id = ? AND status = 'doing' AND claimed_by = ? AND claim_seen_at IS NULL")
+          .get(row.card_id, sessionId) as { id: string } | undefined;
+        if (!card) return null;
+        const assigned = db
+          .prepare(
+            `SELECT json_extract(payload, '$.from') AS "from" FROM event
+             WHERE card_id = ? AND kind = 'status_changed' AND json_extract(payload, '$.session') = ?
+               AND json_extract(payload, '$.to') = 'doing'
+             ORDER BY id DESC LIMIT 1`
+          )
+          .get(card.id, sessionId) as { from: string | null } | undefined;
+        const to = assigned?.from === 'needs_input' ? 'needs_input' : 'ready';
+        db.prepare('UPDATE card SET status = ?, claimed_by = NULL, claim_seen_at = NULL, updated_at = ? WHERE id = ?').run(
+          to,
+          now(),
+          card.id
+        );
+        addEventIn(db, card.id, 'status_changed', 'agent', {
+          from: 'doing',
+          to,
+          reason: `Session ${sessionId} ended before reading the card`,
+          session: sessionId,
+        });
+        return card.id;
+      })
+      .immediate();
+  } finally {
+    db.close();
+  }
 }
 
 // One cheap question for the UI poller (vision besluit K, amended): did

@@ -3,7 +3,9 @@
 You work one or more Kanban boards (one per business). Each card is a
 self-contained unit of work with its own conversation, timeline and context
 references. You never start from a blank chat — you always start from a
-card. `agentboard next` lists the cards that need you, across all boards.
+card. Inside a runner session, `agentboard next` lists only the cards that
+session holds; outside one it lists the cards that need an agent, across
+all boards.
 
 ## Card types
 - **task** — work to be done: code, research, an email, a post.

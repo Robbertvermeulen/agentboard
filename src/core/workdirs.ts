@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { dataDir, openDb } from './db.js';
-import { liveSessionIdsIn } from './slots.js';
+import { liveSessionCardIdsIn, liveSessionIdsIn } from './slots.js';
 
 // Workdirs per card (spec section 9): a card resumed in another slot finds
 // its own checkout, and no session switches branches under another card's
@@ -56,14 +56,15 @@ function hasUnpushedWork(repo: string): boolean {
   }
 }
 
-// After every session: workdirs of done/archived cards nobody holds, and of
-// sessions that have ended. The volume is small (2.9 GB on Fly) and a clone
+// After every session: workdirs of done/archived cards nobody holds and no
+// live session was assigned, and of sessions that have ended. The volume is small (2.9 GB on Fly) and a clone
 // per card grows faster than a clone per slot.
 export function pruneWorkdirs(log: (m: string) => void = (m) => console.error(m)): void {
   const candidates: string[] = [];
   const db = openDb();
   try {
     const live = new Set(liveSessionIdsIn(db));
+    const assigned = liveSessionCardIdsIn(db, live);
     const cardsDir = path.join(base(), 'cards');
     if (fs.existsSync(cardsDir)) {
       for (const e of fs.readdirSync(cardsDir, { withFileTypes: true })) {
@@ -72,7 +73,7 @@ export function pruneWorkdirs(log: (m: string) => void = (m) => console.error(m)
         const row = db.prepare('SELECT status, claimed_by FROM card WHERE id = ?').get(id) as
           | { status: string; claimed_by: number | null }
           | undefined;
-        const held = row?.claimed_by != null && live.has(row.claimed_by);
+        const held = (row?.claimed_by != null && live.has(row.claimed_by)) || assigned.has(id);
         if (row && (row.status === 'done' || row.status === 'archived') && !held) candidates.push(path.join(cardsDir, id));
       }
     }

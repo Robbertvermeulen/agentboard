@@ -51,7 +51,9 @@ fake_live_session 0; S=$SID; P=$SPID
 q "UPDATE card SET claimed_by = $S WHERE id = '$X';"
 expect_fail $CLI sessions recover
 kill "$P"; wait "$P" 2>/dev/null || true; rm -f "$AGENTBOARD_DATA"/session.lock*
+mkdir -p "$AGENTBOARD_DATA/tmp/session-99" && touch "$AGENTBOARD_DATA/tmp/session-99/x"   # a restart skipped the runner's finally
 $CLI sessions recover >/dev/null
+[ ! -e "$AGENTBOARD_DATA/tmp" ] || fail "recover did not sweep the leftover session TMPDIRs"
 [ "$(q "SELECT ended_at IS NOT NULL FROM session WHERE id = $S;")" = 1 ] || fail "recover did not close the open session row"
 [ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$X';")" = 1 ] || fail "recover did not clear the claim"
 
@@ -147,18 +149,40 @@ $CLI card comment "$Y" "laatste opdracht" >/dev/null
 as_s $B card claim "$Y" | grep -q "laatste opdracht" || fail "claim output misses the newest comment"
 
 # ============================================================================
-# Leg 6: a human status move revokes the claim (Task 3)
+# Leg 6: a human status move revokes the claim for good (Task 3, final
+# review): the old holder's writes and its re-claim are both refused
 # ============================================================================
 $CLI card move "$Y" needs_input --reason "terug naar mij" >/dev/null
 [ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$Y';")" = 1 ] || fail "human move kept the claim"
-err_of as_s $B card comment "$Y" "x" | grep -q "is not yours" || fail "write after revocation: wrong error"
+err_of as_s $B card comment "$Y" "x" | grep -qF "The human took card $Y back (moved to needs_input); stop working on it." || fail "write after revocation: wrong error"
+err_of as_s $B card claim "$Y" | grep -qF "The human took card $Y back (moved to needs_input)" || fail "re-claim after revocation not refused"
+[ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$Y';")" = 1 ] || fail "revoked session took the card back"
+fake_live_session 2; C=$SID
+err_of as_s $C card comment "$Y" "x" | grep -q "is not yours. Claim it first" || fail "a session that never claimed got the take-back message"
+
+# Leg 6b: the same through a runner assignment -- mid-session the human moves
+# the card to ready; the session's next write and its card claim both fail
+fresh_data
+SCR="$(mktemp -d)"; export FAKE_OUT="$SCR/out.log"; : > "$FAKE_OUT"
+TB=$(new_ready "taken back")
+cat > "$SCR/takeback.sh" << EOF
+#!/usr/bin/env bash
+$CLI_ABS card show $TB >/dev/null
+env -u AGENTBOARD_SESSION_ID -u AGENTBOARD_ACTOR $CLI_ABS card move $TB ready --reason "ik doe het zelf" >/dev/null
+echo "WRITE:\$($CLI_ABS card comment $TB "still here" 2>&1)" >> "\$FAKE_OUT"
+echo "CLAIM:\$($CLI_ABS card claim $TB 2>&1)" >> "\$FAKE_OUT"
+EOF
+chmod +x "$SCR/takeback.sh"
+AGENTBOARD_SESSION_CMD="$SCR/takeback.sh" $CLI runner >/dev/null 2>&1
+grep -q "^WRITE:.*The human took card $TB back (moved to ready)" "$FAKE_OUT" || fail "assigned session: write after take-back: $(cat "$FAKE_OUT")"
+grep -q "^CLAIM:.*The human took card $TB back (moved to ready)" "$FAKE_OUT" || fail "assigned session: re-claim after take-back: $(cat "$FAKE_OUT")"
+[ "$(q "SELECT status || ':' || (claimed_by IS NULL) FROM card WHERE id = '$TB';")" = "ready:1" ] || fail "taken-back card not ready and free"
 
 # ============================================================================
 # Leg 1: race (Task 4) -- one ready card, two runners at once: one session
 # gets it, the other starts no session at all
 # ============================================================================
 fresh_data
-SCR="$(mktemp -d)"; export FAKE_OUT="$SCR/out.log"; : > "$FAKE_OUT"
 printf '#!/usr/bin/env bash\nsleep 2\n' > "$SCR/slow.sh"; chmod +x "$SCR/slow.sh"
 R=$(new_ready "race")
 AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null & R1=$!
@@ -215,7 +239,16 @@ for i in 1 2 3 4 5 6 7 8 9 10; do [ "$(q "SELECT COUNT(*) FROM card WHERE status
 # human comment resets the count; past the limit the card goes to the human
 # ============================================================================
 fresh_data
-printf '#!/usr/bin/env bash\nexit 1\n' > "$SCR/crash.sh"; chmod +x "$SCR/crash.sh"
+# The crash reads its card first: a session that never read it is a global
+# failure (leg 13) and returns the card instead of stranding it.
+cat > "$SCR/crash.sh" << EOF
+#!/usr/bin/env bash
+CARD=\$(echo "\${@: -1}" | grep -o 'task_[0-9a-f]\{4\}' | head -1)
+$CLI_ABS card show "\$CARD" >/dev/null
+exit 1
+EOF
+chmod +x "$SCR/crash.sh"
+printf '#!/usr/bin/env bash\necho "$*" >> "%s"\n' "$SCR/notify.log" > "$SCR/notify.sh"; chmod +x "$SCR/notify.sh"; : > "$SCR/notify.log"
 K=$(new_ready "crashy")
 crash_run() { AGENTBOARD_SESSION_CMD="$SCR/crash.sh" $CLI runner >/dev/null 2>&1 || true; }
 crash_run                                   # assigned, strands
@@ -225,7 +258,8 @@ $CLI card comment "$K" "probeer het anders" >/dev/null   # human comment resets 
 crash_run                                   # resume (count 0 again)
 crash_run                                   # resume (count 1)
 [ "$(q "SELECT status FROM card WHERE id = '$K';")" = doing ] || fail "parked too early: the human comment did not reset the count"
-crash_run                                   # count 2 = limit: park
+AGENTBOARD_NOTIFY_CMD="$SCR/notify.sh" crash_run   # count 2 = limit: park, and tell the human
+grep -qF "$K (needs_input)" "$SCR/notify.log" || fail "crash-loop park did not notify: $(cat "$SCR/notify.log")"
 [ "$(q "SELECT status FROM card WHERE id = '$K';")" = needs_input ] || fail "crash loop not parked on needs_input"
 q "SELECT payload FROM event WHERE card_id = '$K' AND kind = 'error' ORDER BY id DESC LIMIT 1;" | grep -q "Stopped resuming: sessions" || fail "crash-loop error event missing"
 
@@ -260,7 +294,7 @@ grep -q "session exited 0" "$SCR/err.log" || fail "invalid timeout: session did 
 # ============================================================================
 export AGENTBOARD_DATA="$MIGDATA"
 AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null
-q "SELECT payload FROM event WHERE card_id = '$MIG' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Resumed" || fail "migrated doing card not resumed"
+q "SELECT payload FROM event WHERE card_id = '$MIG' AND kind = 'status_changed';" | grep -q "Resumed" || fail "migrated doing card not resumed"
 
 # ============================================================================
 # Leg 10: workdir per card, TMPDIR per session, pruning that never drops
@@ -303,5 +337,51 @@ AGENTBOARD_SESSION_CMD="$SCR/where.sh" $CLI runner >/dev/null 2>"$SCR/err2.log" 
 ls "$AGENTBOARD_DATA"/session.lock* >/dev/null 2>&1 && fail "slot lock leaked after prune"
 [ ! -e "$AGENTBOARD_DATA/work/cards/$NEXT" ] || fail "done card's workdir not pruned next to a stray file"
 grep -q "prune failed" "$SCR/err2.log" && fail "prune threw on a stray file"
+
+# ============================================================================
+# Leg 12: busy by card_id (final review) -- after a take-back the old
+# session still runs on cards/<id>: the gate and the runner skip the card,
+# and pruning keeps its workdir
+# ============================================================================
+fresh_data
+X=$(new_ready "taken back, session still running")
+fake_live_session 0; S1=$SID; P1=$SPID
+q "UPDATE session SET card_id = '$X' WHERE id = $S1;"   # ready and unclaimed: the post-take-back state
+$CLI gate --json | python3 -c "
+import json,sys
+ids=[c['id'] for c in json.load(sys.stdin)['cards']]
+assert '$X' not in ids, ('card of a live session in the gate', ids)
+" || fail "gate lists the card a live session still runs on"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$SCR/ok.sh"; chmod +x "$SCR/ok.sh"
+AGENTBOARD_SESSION_CMD="$SCR/ok.sh" $CLI runner >/dev/null 2>&1
+[ "$(q "SELECT COUNT(*) FROM session WHERE card_id = '$X';")" = 1 ] || fail "runner assigned a card a live session still runs on"
+[ "$(q "SELECT status || ':' || (claimed_by IS NULL) FROM card WHERE id = '$X';")" = "ready:1" ] || fail "busy card was touched"
+D=$(new_ready "done, session still running"); $CLI card move "$D" done --reason klaar >/dev/null
+mkdir -p "$AGENTBOARD_DATA/work/cards/$D"
+fake_live_session 1; S2=$SID
+q "UPDATE session SET card_id = '$D' WHERE id = $S2;"
+Z=$(new_ready "triggers a prune")
+AGENTBOARD_SESSION_CMD="$SCR/ok.sh" $CLI runner >/dev/null 2>&1
+[ "$(q "SELECT COUNT(*) FROM session WHERE card_id = '$Z';")" = 1 ] || fail "prune-trigger session did not run"
+[ -d "$AGENTBOARD_DATA/work/cards/$D" ] || fail "workdir of a card a live session runs on was pruned"
+end_fake_session "$S1" "$P1"
+AGENTBOARD_SESSION_CMD="$SCR/ok.sh" $CLI runner >/dev/null 2>&1
+[ "$(q "SELECT COUNT(*) FROM session WHERE card_id = '$X';")" = 2 ] || fail "card not picked up after the old session ended"
+
+# ============================================================================
+# Leg 13: a session that never read its card (usage limit, auth, outage)
+# returns it instead of stranding it: no resume count, no chain
+# ============================================================================
+fresh_data
+NR=$(new_ready "never read")
+printf '#!/usr/bin/env bash\nexit 1\n' > "$SCR/noread.sh"; chmod +x "$SCR/noread.sh"
+AGENTBOARD_AUTORUN=1 AGENTBOARD_SESSION_CMD="$SCR/noread.sh" $CLI runner >/dev/null 2>&1 || true
+sleep 2
+[ "$(q "SELECT COUNT(*) FROM session;")" = 1 ] || fail "a session that never read its card chained another runner"
+[ "$(q "SELECT status || ':' || (claimed_by IS NULL) FROM card WHERE id = '$NR';")" = "ready:1" ] || fail "unread card not returned to ready"
+q "SELECT payload FROM event WHERE card_id = '$NR' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Session 1 ended before reading the card" || fail "return event missing"
+AGENTBOARD_SESSION_CMD="$SCR/noread.sh" $CLI runner >/dev/null 2>&1 || true
+q "SELECT payload FROM event WHERE card_id = '$NR' AND kind = 'status_changed';" | grep -q "Resumed" && fail "a returned card was resumed instead of assigned"
+q "SELECT payload FROM event WHERE card_id = '$NR' AND kind = 'status_changed';" | grep -q "Assigned to session 2" || fail "a returned card was not reassigned"
 
 echo "OK: hard claims verified"

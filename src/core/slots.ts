@@ -54,3 +54,15 @@ export function liveSessionIdsIn(db: Database.Database): number[] {
     .all(ids) as { id: number }[];
   return rows.map((r) => r.id);
 }
+
+// The cards live sessions were assigned (session.card_id). A human take-back
+// clears the claim but not the session: until it ends, its card and its
+// cards/<id> workdir stay busy, or a second session would share the checkout.
+export function liveSessionCardIdsIn(db: Database.Database, live: ReadonlySet<number>): Set<string> {
+  if (live.size === 0) return new Set();
+  const ids = [...live];
+  const rows = db
+    .prepare(`SELECT card_id FROM session WHERE card_id IS NOT NULL AND id IN (${ids.map(() => '?').join(',')})`)
+    .all(ids) as { card_id: string }[];
+  return new Set(rows.map((r) => r.card_id));
+}

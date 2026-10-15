@@ -1,5 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type Database from 'better-sqlite3';
-import { addEventIn, now, openDb } from './db.js';
+import { addEventIn, dataDir, now, openDb } from './db.js';
 import { liveSessionIdsIn } from './slots.js';
 
 // Hard claims (spec 2026-10-15): card.claimed_by names the session that
@@ -23,13 +25,14 @@ export function releaseSessionClaims(sessionId: number): number {
 }
 
 // Boot only (bin/run.sh, after the stale locks are gone): a machine restart
-// skips the runner's finally-block, so close the rows it left open and drop
-// every claim. Refuses while any session is live.
+// skips the runner's finally-block, so close the rows it left open, drop
+// every claim and sweep the per-session TMPDIRs it never removed. Refuses
+// while any session is live.
 export function recoverSessions(): { sessions: number; claims: number } {
   const db = openDb();
   try {
     if (liveSessionIdsIn(db).length) throw new Error('A session is live; recover only runs at boot');
-    return db
+    const result = db
       .transaction(() => ({
         sessions: db.prepare('UPDATE session SET ended_at = ? WHERE ended_at IS NULL').run(now()).changes,
         claims: db
@@ -37,6 +40,8 @@ export function recoverSessions(): { sessions: number; claims: number } {
           .run().changes,
       }))
       .immediate();
+    fs.rmSync(path.join(dataDir(), 'tmp'), { recursive: true, force: true });
+    return result;
   } finally {
     db.close();
   }
@@ -68,6 +73,27 @@ export function liveHolderIn(
   if (claimedBy === null) return null;
   return (live ?? new Set(liveSessionIdsIn(db))).has(claimedBy) ? claimedBy : null;
 }
+
+// A human status move after this session's latest claim on the card (the
+// runner's assignment or its own `card claim`) took the card back for good:
+// a plain "claim it first" would let the old holder grab it straight back
+// and hide the human's move from the freshness check.
+function revokedIn(db: Database.Database, cardId: string, own: number): boolean {
+  const row = db
+    .prepare(
+      `SELECT 1 FROM event h
+       WHERE h.card_id = ? AND h.kind = 'status_changed' AND h.actor = 'human'
+         AND h.id > (SELECT MAX(id) FROM event c
+                     WHERE c.card_id = ? AND json_extract(c.payload, '$.session') = ?
+                       AND (c.kind = 'status_changed'
+                            OR (c.kind = 'action_taken' AND json_extract(c.payload, '$.note') LIKE 'Claimed by session %')))
+       LIMIT 1`
+    )
+    .get(cardId, cardId, own);
+  return row !== undefined;
+}
+
+const tookBack = (card: ClaimRow) => `The human took card ${card.id} back (moved to ${card.status}); stop working on it.`;
 
 const heldBy = (id: string, holder: number) =>
   `Card ${id} is held by session ${holder}. Use 'card comment ${id} --request' to ask, or wait.`;
@@ -129,6 +155,7 @@ export function guardAgentWrite(cardId: string, actor: string, opts: { request?:
         const card = claimRowIn(db, cardId);
         const holder = liveHolderIn(db, card.claimed_by);
         if (holder !== own) {
+          if (revokedIn(db, cardId, own)) throw new Error(tookBack(card));
           if (opts.request && holder !== null) return 'request';
           if (opts.request) throw new Error(`Card ${cardId} is free: claim it instead (agentboard card claim ${cardId})`);
           if (holder !== null) throw new Error(heldBy(cardId, holder));
@@ -164,6 +191,7 @@ export function claimCard(cardId: string): void {
     db.transaction(() => {
       const at = now();
       const card = claimRowIn(db, cardId);
+      if (card.claimed_by !== own && revokedIn(db, cardId, own)) throw new Error(tookBack(card));
       if (card.status === 'done' || card.status === 'archived') throw new Error(`Card ${cardId} is ${card.status}; nothing to claim`);
       const holder = liveHolderIn(db, card.claimed_by);
       if (holder !== null && holder !== own) throw new Error(heldBy(cardId, holder));

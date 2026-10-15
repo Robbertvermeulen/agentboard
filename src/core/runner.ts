@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { now, openDb } from './db.js';
-import { Card, gateWork, pickAndClaimIn } from './cards.js';
+import { Card, gateWork, pickAndClaimIn, returnUnreadCard } from './cards.js';
 import { releaseSessionClaims } from './claims.js';
 import { checkWorkDir, pruneWorkdirs, removeTmpDir, sessionTmpDir, sessionWorkDir } from './workdirs.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
@@ -98,13 +98,14 @@ const sessionTimeoutMs = () => {
 // lock and claims the first gate card, so a concurrent runner either sees
 // all of it or none. The lock write happens inside the transaction on
 // purpose: a runner that commits after us reads the lock as live. With no
-// card and nothing else to do, the row is deleted again, while a crash-loop
-// park made during the pick still commits.
+// card and nothing else to do, the row is deleted again (begun is null),
+// while a crash-loop park made during the pick still commits and comes back
+// in `parked` either way.
 function beginSession(
   slot: number,
   trigger: string,
   opts: { assign: boolean; allowEmpty: boolean }
-): { rec: { id: number; jsonl: string; stderr: string }; card: Card | null } | null {
+): { begun: { rec: { id: number; jsonl: string; stderr: string }; card: Card | null } | null; parked: string[] } {
   const db = openDb();
   try {
     return db
@@ -112,13 +113,13 @@ function beginSession(
         const live = new Set(liveSessionIdsIn(db));
         const rec = startSessionRecordIn(db, trigger);
         markLockSession(slot, rec.id);
-        const card = opts.assign ? pickAndClaimIn(db, rec.id, live, resumeLimit()) : null;
+        const { card, parked } = opts.assign ? pickAndClaimIn(db, rec.id, live, resumeLimit()) : { card: null, parked: [] };
         if (!card && !opts.allowEmpty) {
           db.prepare('DELETE FROM session WHERE id = ?').run(rec.id);
-          return null;
+          return { begun: null, parked };
         }
         if (card) db.prepare('UPDATE session SET card_id = ? WHERE id = ?').run(card.id, rec.id);
-        return { rec, card };
+        return { begun: { rec, card }, parked };
       })
       .immediate();
   } finally {
@@ -335,12 +336,20 @@ export function runSession(
   }
   console.error(`runner: lock acquired (slot ${slot})`);
   let sessionId: number | undefined;
+  // A session that ended before reading its card hit something global (usage
+  // limit, auth, outage); chaining would only burn through the next card.
+  let chain = true;
   try {
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
     const active = promptOverride ? [] : checkDueRoutines(due.routines);
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
     console.error(`runner: marked ${due.routines.length} routines`);
-    const begun = beginSession(slot, trigger, { assign: !promptOverride, allowEmpty: !!promptOverride || active.length > 0 });
+    const { begun, parked } = beginSession(slot, trigger, {
+      assign: !promptOverride,
+      allowEmpty: !!promptOverride || active.length > 0,
+    });
+    // Parking hands a card to the human just like a hand-back does.
+    notify(parked.map((id) => ({ id, to: 'needs_input' })));
     if (!begun) return { started: false, reason: 'gate empty' };
     const { rec, card } = begun;
     sessionId = rec.id;
@@ -383,7 +392,17 @@ export function runSession(
       return { started: true, reason: `session exited ${status ?? 'null'}`, log: rec.jsonl, session: rec.id, notified };
     } finally {
       // ended_at is always set, crash or not; then the claims go, so the
-      // gate can hand a stranded card to the next session.
+      // gate can hand a stranded card to the next session. An unread
+      // assigned card goes back first, while this session still holds it.
+      try {
+        const returned = returnUnreadCard(rec.id);
+        if (returned) {
+          chain = false;
+          console.error(`runner: session ended before reading ${returned}; card returned`);
+        }
+      } catch (e) {
+        console.error(`runner: returning the unread card failed: ${(e as Error).message}`);
+      }
       finishSessionRecord(rec.id, status, notified);
       releaseSessionClaims(rec.id);
       removeTmpDir(rec.id);
@@ -399,7 +418,7 @@ export function runSession(
         console.error(`runner: prune failed: ${(e as Error).message}`);
       }
     }
-    if (sessionId !== undefined) pokeRunner('chain');
+    if (sessionId !== undefined && chain) pokeRunner('chain');
   }
 }
 

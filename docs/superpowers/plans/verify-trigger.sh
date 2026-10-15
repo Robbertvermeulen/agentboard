@@ -176,6 +176,9 @@ rm -f "$AGENTBOARD_DATA/session.lock"
 # Leg 6: notify -- handback -> NOTIFY line; missing binary -> "notify failed"
 # on stderr; no env -> silent (Task 3, incl. its spawnSync-result fix)
 # ============================================================================
+# The fake sessions above never read WORK, so each one returned it to ready
+# (hard claims, final review); it would win the next pick over NOTE1.
+$CLI card move "$WORK" done --reason t >/dev/null
 NOTE1=$($CLI card new --type task --title "notify-handback" --json | id_of)
 $CLI card move "$NOTE1" ready --reason t >/dev/null
 cat > "$SCRATCH/hand1.sh" << EOF

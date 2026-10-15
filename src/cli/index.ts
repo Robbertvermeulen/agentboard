@@ -289,7 +289,7 @@ routines
 
 program
   .command('next')
-  .description('cards that need agent attention (ready, doing@agent, needs_input)')
+  .description('in a session: the cards it holds; outside one: ready, doing and needs_input cards no live session holds')
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
@@ -301,7 +301,9 @@ program
 
 program
   .command('gate')
-  .description('scheduler gate: ready w/o open blockers, doing@agent, needs_input with expired wait-check, due routines')
+  .description(
+    'scheduler gate: ready w/o open blockers, doing (stranded), needs_input with expired wait-check, due routines; cards a live session holds or runs on never count'
+  )
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
