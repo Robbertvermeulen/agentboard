@@ -151,7 +151,8 @@ agent zelf schrijft is niet nieuw voor hem, en wat anderen schreven moet
 hij nog zien.
 
 `--as human` binnen een sessie: fout (`An agent session cannot act as
-human`). Ook `secret set` valt hieronder.
+human`). `secret set` heeft geen actor en blijft toegestaan: regel 14
+laat de agent een duurzaam token in de vault zetten.
 
 `createCard` door een agent in een sessie maakt de nieuwe kaart direct
 eigendom van de sessie (`claimed_by` gezet, `claim_seen_at` = nu). Een
@@ -237,7 +238,7 @@ een kaart die wacht op een vrij slot niet op de cron te wachten.
   `<data>/work`. Werk aan extra geclaimde kaarten gebeurt in de werkmap
   van de toegewezen kaart; branches per kaart (regel 12) houden het
   gescheiden.
-- **Opruimen:** aan het eind van elke runner-tick verwijdert de runner
+- **Opruimen:** na afloop van elke sessie verwijdert de runner
   `cards/<id>` voor kaarten die done of archived zijn en geen geldige
   houder hebben, en `sessions/<n>` van afgelopen sessies. Een map met een
   git-repo met ongecommit werk of commits die niet op de remote staan
