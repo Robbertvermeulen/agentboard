@@ -1,14 +1,15 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dataDir, now, openDb } from './db.js';
-import { adoptOrphanedDoing, claimingSessions, gateWork } from './cards.js';
+import { Card, gateWork, pickAndClaimIn } from './cards.js';
+import { releaseSessionClaims } from './claims.js';
 import { RoutineError, RoutineInfo, dueRoutines, markRoutineRun } from './routines.js';
-import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecord } from './sessions.js';
+import { finishSessionRecord, observationPath, scanSessionCards, startSessionRecordIn } from './sessions.js';
 import { getSettings, languageLabel } from './settings.js';
-import { SessionLock, liveSessionIdsIn, lockPath, maxSessions, processAlive, readLock } from './slots.js';
+import { SessionLock, liveSessionIdsIn, lockPath, maxSessions, processAlive } from './slots.js';
 
 function anyLockHeld(): boolean {
   const slots = maxSessions();
@@ -84,23 +85,48 @@ function markLockSession(slot: number, sessionId: number): void {
   fs.writeFileSync(file, JSON.stringify({ ...lock, session_id: sessionId }));
 }
 
-// Live runners that took their slot before `own` (slot order breaks a tie)
-// and hold no doing card yet: sessions still starting up, about to claim
-// from the same ready pool. The gate must leave that many cards to them, or
-// a UI poke plus a cron tick all start on the one ready card. The earliest
-// runner never counts anyone ahead, so work is never left unstarted.
-function runnersAhead(own: number): number {
-  const mine = readLock(own);
-  if (!mine) return 0;
-  const claiming = claimingSessions();
-  let ahead = 0;
-  for (let slot = 0; slot < maxSessions(); slot++) {
-    const lock = readLock(slot);
-    if (slot === own || !lock || lock.hostname !== os.hostname() || !processAlive(lock.pid)) continue;
-    const earlier = lock.started_at < mine.started_at || (lock.started_at === mine.started_at && slot < own);
-    if (earlier && !(lock.session_id !== undefined && claiming.has(lock.session_id))) ahead++;
+const resumeLimit = () => Math.max(1, Number(process.env.AGENTBOARD_RESUME_LIMIT ?? 2));
+const sessionTimeoutMs = () => Number(process.env.AGENTBOARD_SESSION_TIMEOUT_MIN ?? 45) * 60_000;
+
+// One immediate transaction makes the session row, names it in this slot's
+// lock and claims the first gate card, so a concurrent runner either sees
+// all of it or none. The lock write happens inside the transaction on
+// purpose: a runner that commits after us reads the lock as live. With no
+// card and nothing else to do, the row is deleted again, while a crash-loop
+// park made during the pick still commits.
+function beginSession(
+  slot: number,
+  trigger: string,
+  opts: { assign: boolean; allowEmpty: boolean }
+): { rec: { id: number; jsonl: string; stderr: string }; card: Card | null } | null {
+  const db = openDb();
+  try {
+    return db
+      .transaction(() => {
+        const live = new Set(liveSessionIdsIn(db));
+        const rec = startSessionRecordIn(db, trigger);
+        markLockSession(slot, rec.id);
+        const card = opts.assign ? pickAndClaimIn(db, rec.id, live, resumeLimit()) : null;
+        if (!card && !opts.allowEmpty) {
+          db.prepare('DELETE FROM session WHERE id = ?').run(rec.id);
+          return null;
+        }
+        if (card) db.prepare('UPDATE session SET card_id = ? WHERE id = ?').run(card.id, rec.id);
+        return { rec, card };
+      })
+      .immediate();
+  } finally {
+    db.close();
   }
-  return ahead;
+}
+
+// Start the next runner the way the server's autorun does: detached, opt-in.
+// A finished session uses it so a waiting card does not wait for the cron.
+export function pokeRunner(trigger: string): void {
+  if (process.env.AGENTBOARD_AUTORUN !== '1') return;
+  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
+  const child = spawn(process.execPath, [cli, 'runner', '--trigger', trigger], { detached: true, stdio: 'ignore' });
+  child.unref();
 }
 
 // Heartbeat: which runner-started sessions are alive right now? A lock with
@@ -113,13 +139,6 @@ export function liveSessionIds(): number[] {
   } finally {
     db.close();
   }
-}
-
-// Live sessions other than the caller's own: what `next` and the gate must
-// leave alone. Inside a session AGENTBOARD_SESSION_ID names the caller.
-export function otherLiveSessions(): Set<number> {
-  const own = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
-  return new Set(liveSessionIds().filter((id) => id !== own));
 }
 
 // session_id stays the newest live session for existing callers; session_ids
@@ -168,7 +187,7 @@ function agentMdPath(): string {
 
 export type DueRoutine = RoutineInfo & { checkOutput?: string };
 
-export function buildPrompt(due: DueRoutine[]): string {
+export function buildPrompt(due: DueRoutine[], cardId: string | null): string {
   const routineBlock = due.length
     ? `Due routines this run — read each with \`agentboard ctx show <path>\` and act per rule 16:\n${due
         .map((r) => `- ${r.path}${r.checkOutput ? ` (check found:\n${r.checkOutput})` : ''}`)
@@ -185,7 +204,11 @@ export function buildPrompt(due: DueRoutine[]): string {
     `You are the agentboard agent. Read and follow every rule in ${agentMdPath()} before doing anything else.\n\n` +
     languageLine +
     routineBlock +
-    'Then work the board: run `agentboard next` and handle what it lists.'
+    (cardId
+      ? `Your card this session: ${cardId}. Start with \`agentboard card show ${cardId}\`. Work only this card; ` +
+        'touching another card needs `agentboard card claim <id>` first (AGENT.md rule 15). Handing the card ' +
+        'back is your last step.'
+      : 'You hold no card this session; touching a card needs `agentboard card claim <id>` first (AGENT.md rule 15).')
   );
 }
 
@@ -298,13 +321,13 @@ export function runSession(
   notified?: { id: string; to: string }[];
 } {
   if (dryRun) {
-    const cards = gateWork(otherLiveSessions());
+    const cards = gateWork(new Set(liveSessionIds()));
     const due = dueRoutines();
     return {
       started: false,
       reason: anyLockHeld() ? 'dry-run (lock file present)' : 'dry-run',
       gate: { cards: cards.length, routines: due.routines.length },
-      prompt: buildPrompt(due.routines),
+      prompt: buildPrompt(due.routines, cards[0]?.id ?? null),
     };
   }
   const slot = acquireLock();
@@ -313,31 +336,19 @@ export function runSession(
     return { started: false, reason: 'session already running' };
   }
   console.error(`runner: lock acquired (slot ${slot})`);
+  let sessionId: number | undefined;
   try {
-    const cards = promptOverride ? [] : gateWork(otherLiveSessions());
     const due = promptOverride ? { routines: [] as RoutineInfo[], errors: [] as RoutineError[] } : dueRoutines();
-    console.error(`runner: gate: ${cards.length} cards, ${due.routines.length} routines`);
     const active = promptOverride ? [] : checkDueRoutines(due.routines, slot);
     for (const r of due.routines) markRoutineRun(r.path); // before the spawn: a crash may not retrigger every minute (every due routine, checked or not)
     console.error(`runner: marked ${due.routines.length} routines`);
-    if (!promptOverride && cards.length === 0 && active.length === 0) {
-      return { started: false, reason: 'gate empty' };
-    }
-    const ahead = promptOverride || active.length > 0 ? 0 : runnersAhead(slot);
-    if (cards.length <= ahead) {
-      return { started: false, reason: `gate covered: ${cards.length} cards, ${ahead} sessions starting` };
-    }
+    const begun = beginSession(slot, trigger, { assign: !promptOverride, allowEmpty: !!promptOverride || active.length > 0 });
+    if (!begun) return { started: false, reason: 'gate empty' };
+    const { rec, card } = begun;
+    sessionId = rec.id;
     const sessionStart = now();
-    const rec = startSessionRecord(trigger);
-    markLockSession(slot, rec.id);
-    console.error(`runner: session #${rec.id} -> ${rec.jsonl}`);
-    if (!promptOverride) {
-      const adopted = adoptOrphanedDoing(rec.id, new Set(liveSessionIds()));
-      if (adopted.length) console.error(`runner: adopted ${adopted.join(', ')}`);
-    }
-    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(
-      /\s+/
-    );
+    console.error(`runner: session #${rec.id}${card ? ` (${card.id})` : ''} -> ${rec.jsonl}`);
+    const parts = (process.env.AGENTBOARD_SESSION_CMD ?? 'claude -p --output-format stream-json --verbose').split(/\s+/);
     let status: number | null = null;
     let notified: { id: string; to: string }[] = [];
     try {
@@ -345,12 +356,19 @@ export function runSession(
       const err = fs.openSync(rec.stderr, 'w');
       try {
         // stdout is the JSONL transcript; stderr goes to its own file so a
-        // stray warning can never corrupt a transcript line.
-        status = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active)], {
+        // stray warning can never corrupt a transcript line. A session past
+        // the time limit is stopped and counts as stranded (spec section 7).
+        const result = spawnSync(parts[0], [...parts.slice(1), promptOverride ?? buildPrompt(active, card?.id ?? null)], {
           stdio: ['ignore', out, err],
           cwd: workDir(slot),
           env: sessionEnv(slot, rec.id),
-        }).status;
+          timeout: sessionTimeoutMs(),
+          killSignal: 'SIGTERM',
+        });
+        status = result.status;
+        if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT') {
+          console.error(`runner: session #${rec.id} timed out`);
+        }
       } finally {
         fs.closeSync(out);
         fs.closeSync(err);
@@ -364,12 +382,14 @@ export function runSession(
       }
       return { started: true, reason: `session exited ${status ?? 'null'}`, log: rec.jsonl, session: rec.id, notified };
     } finally {
-      // ended_at is always set, crash or not — a session row may never
-      // stay open forever (the heartbeat and prune both depend on it).
+      // ended_at is always set, crash or not; then the claims go, so the
+      // gate can hand a stranded card to the next session.
       finishSessionRecord(rec.id, status, notified);
+      releaseSessionClaims(rec.id);
     }
   } finally {
     releaseLock();
+    if (sessionId !== undefined) pokeRunner('chain');
   }
 }
 

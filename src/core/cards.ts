@@ -136,28 +136,6 @@ function waitCheckIn(db: Database.Database, ids: string[]): Map<string, string> 
   return latest;
 }
 
-// Which runner session holds each doing card: the session stamp on the
-// card's latest status change, when that change moved it into doing
-// (moveCard stamps AGENTBOARD_SESSION_ID). Unstamped claims — a human move,
-// history from before the stamp — map to nothing and stay resumable.
-function doingClaimsIn(db: Database.Database, ids: string[]): Map<string, number> {
-  if (ids.length === 0) return new Map();
-  const placeholders = ids.map(() => '?').join(',');
-  const rows = db
-    .prepare(
-      `SELECT e.card_id, e.payload FROM event e
-       JOIN (SELECT card_id, MAX(id) AS id FROM event WHERE card_id IN (${placeholders}) AND kind = 'status_changed' GROUP BY card_id) last
-         ON e.id = last.id`
-    )
-    .all(ids) as { card_id: string; payload: string }[];
-  const claims = new Map<string, number>();
-  for (const r of rows) {
-    const p = JSON.parse(r.payload) as { to?: string; session?: unknown };
-    if (p.to === 'doing' && typeof p.session === 'number') claims.set(r.card_id, p.session);
-  }
-  return claims;
-}
-
 function rowToCard(row: any): Card {
   return {
     ...row,
@@ -775,69 +753,28 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
   }
 }
 
-// Sessions that currently hold at least one doing card.
-export function claimingSessions(): Set<number> {
-  const db = openDb();
-  try {
-    const ids = (db.prepare("SELECT id FROM card WHERE status = 'doing'").all() as { id: string }[]).map((r) => r.id);
-    return new Set(doingClaimsIn(db, ids).values());
-  } finally {
-    db.close();
-  }
-}
+const heldByLive = (c: Card, live: ReadonlySet<number>) => c.claimed_by !== null && live.has(c.claimed_by);
 
-// Crash recovery at N>1: a doing card whose claiming session is gone (or
-// that was never stamped) is handed to `sessionId` with a doing -> doing
-// event, so it gets exactly one resumer — without this, every concurrent
-// session would see it as resumable. One immediate transaction, so two
-// starting sessions cannot both adopt the same card.
-export function adoptOrphanedDoing(sessionId: number, live: ReadonlySet<number>): string[] {
+// Worklist for an agent. Inside a session it is exactly the cards that
+// session holds (the runner assigned one; `card claim` adds more). Outside
+// one: ready, doing and needs_input, minus cards a live session holds and
+// cards with an open blocker.
+export function nextWork(live: ReadonlySet<number> = new Set(), own?: number): Card[] {
   const db = openDb();
   try {
-    const adopt = db.transaction(() => {
-      const ids = (db.prepare("SELECT id FROM card WHERE status = 'doing'").all() as { id: string }[]).map((r) => r.id);
-      const claims = doingClaimsIn(db, ids);
-      const orphans = ids.filter((id) => !live.has(claims.get(id) ?? -1));
-      for (const id of orphans) {
-        const prev = claims.get(id);
-        addEventIn(db, id, 'status_changed', 'agent', {
-          from: 'doing',
-          to: 'doing',
-          reason: prev ? `Resumed: session #${prev} ended without finishing` : 'Resumed: unclaimed doing card',
-          session: sessionId,
-        });
-      }
-      return orphans;
-    });
-    return adopt.immediate();
-  } finally {
-    db.close();
-  }
-}
-
-// Worklist for an agent session (and the cheap gate for a cron trigger:
-// empty list = no session). ready = new work, doing = resumable — doing is
-// agent territory (vision besluit I) and claiming never changes the owner,
-// so filtering on owner here would strand a human-owned card after a crash.
-// needs_input = possibly self-unblockable via a wait-check in the timeline.
-// `busy` = ids of OTHER live sessions: a doing card one of them claimed is
-// theirs, not resumable — with N>1 sessions it would otherwise be worked twice.
-export function nextWork(busy: ReadonlySet<number> = new Set()): Card[] {
-  const db = openDb();
-  try {
-    const all = db
+    if (own !== undefined) {
+      return db
+        .prepare("SELECT * FROM card WHERE claimed_by = ? AND status NOT IN ('done','archived') ORDER BY updated_at ASC")
+        .all(own)
+        .map(rowToCard);
+    }
+    const cards = db
       .prepare(
-        `SELECT * FROM card
-         WHERE status = 'ready' OR status = 'needs_input'
-            OR status = 'doing'
-         ORDER BY updated_at ASC`
+        `SELECT * FROM card WHERE status = 'ready' OR status = 'needs_input' OR status = 'doing' ORDER BY updated_at ASC`
       )
       .all()
-      .map(rowToCard);
-    const claims = doingClaimsIn(db, all.filter((c) => c.status === 'doing').map((c) => c.id));
-    const cards = all.filter((c) => !busy.has(claims.get(c.id) ?? -1));
-    // A card with an open blocker is not workable: it resurfaces by itself
-    // when the last blocker goes done/archived (open-ness is derived).
+      .map(rowToCard)
+      .filter((c) => !heldByLive(c, live));
     const blockerIds = [...new Set(cards.flatMap((c) => c.blocked_by))];
     if (blockerIds.length === 0) return cards;
     const open = new Set(
@@ -851,43 +788,111 @@ export function nextWork(busy: ReadonlySet<number> = new Set()): Card[] {
   }
 }
 
-// The scheduler's question (vision besluit C) — deliberately narrower than
-// next: bare needs_input never counts (one unanswered question must not
-// start a session every minute), and blocked ready cards wait for their
-// blockers. doing counting is the implicit crash recovery (any owner:
-// claiming never changes it, and doing is agent territory per besluit I) —
-// except a doing card a live session in `busy` claimed: that one is being
-// worked right now, and counting it would start a second session on it.
-export function gateWork(busy: ReadonlySet<number> = new Set()): Card[] {
+// The scheduler's question (vision besluit C): ready without open blockers,
+// doing (a stranded session's card, resumable), needs_input whose wait-check
+// is due. A card a live session holds is being worked and never counts.
+export function gateWorkIn(db: Database.Database, live: ReadonlySet<number>): Card[] {
+  const cards = db
+    .prepare(
+      `SELECT * FROM card WHERE status = 'ready' OR status = 'needs_input' OR status = 'doing' ORDER BY updated_at ASC`
+    )
+    .all()
+    .map(rowToCard)
+    .filter((c) => !heldByLive(c, live));
+  const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
+  const open = new Set(
+    blockerInfoIn(db, blockerIds)
+      .filter((b) => isOpenStatus(b.status))
+      .map((b) => b.id)
+  );
+  const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
+  const cutoff = now();
+  return cards.filter((c) => {
+    if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
+    if (c.status === 'doing') return true;
+    const check = waits.get(c.id);
+    return check !== undefined && check <= cutoff;
+  });
+}
+
+export function gateWork(live: ReadonlySet<number> = new Set()): Card[] {
   const db = openDb();
   try {
-    const cards = db
-      .prepare(
-        `SELECT * FROM card
-         WHERE status = 'ready' OR status = 'needs_input'
-            OR status = 'doing'
-         ORDER BY updated_at ASC`
-      )
-      .all()
-      .map(rowToCard);
-    const blockerIds = [...new Set(cards.filter((c) => c.status === 'ready').flatMap((c) => c.blocked_by))];
-    const open = new Set(
-      blockerInfoIn(db, blockerIds)
-        .filter((b) => isOpenStatus(b.status))
-        .map((b) => b.id)
-    );
-    const waits = waitCheckIn(db, cards.filter((c) => c.status === 'needs_input').map((c) => c.id));
-    const claims = doingClaimsIn(db, cards.filter((c) => c.status === 'doing').map((c) => c.id));
-    const cutoff = now();
-    return cards.filter((c) => {
-      if (c.status === 'ready') return !c.blocked_by.some((b) => open.has(b));
-      if (c.status === 'doing') return !busy.has(claims.get(c.id) ?? -1);
-      const check = waits.get(c.id);
-      return check !== undefined && check <= cutoff;
-    });
+    return gateWorkIn(db, live);
   } finally {
     db.close();
   }
+}
+
+// The session stamp on the card's latest status change: who had it last.
+function lastSessionIn(db: Database.Database, id: string): number | null {
+  const row = db
+    .prepare("SELECT payload FROM event WHERE card_id = ? AND kind = 'status_changed' ORDER BY id DESC LIMIT 1")
+    .get(id) as { payload: string } | undefined;
+  const s = row ? (JSON.parse(row.payload) as { session?: unknown }).session : undefined;
+  return typeof s === 'number' ? s : null;
+}
+
+// Resumes since the human last acted on the card (an event or a comment):
+// a human touch means "try again", so it resets the crash-loop count.
+function resumesSinceHumanIn(db: Database.Database, id: string): { count: number; sessions: number[] } {
+  const rows = db
+    .prepare(
+      `SELECT payload FROM event
+       WHERE card_id = ? AND kind = 'status_changed' AND json_extract(payload, '$.reason') LIKE 'Resumed:%'
+         AND created_at > COALESCE((SELECT MAX(t) FROM (
+               SELECT MAX(created_at) AS t FROM event WHERE card_id = ? AND actor = 'human'
+               UNION ALL SELECT MAX(created_at) FROM comment WHERE card_id = ? AND author = 'human')), '')
+       ORDER BY id`
+    )
+    .all(id, id, id) as { payload: string }[];
+  const sessions = rows
+    .map((r) => (JSON.parse(r.payload) as { session?: unknown }).session)
+    .filter((s): s is number => typeof s === 'number');
+  return { count: rows.length, sessions };
+}
+
+// The runner's half of a claim (spec section 2), inside its immediate
+// transaction: the first gate card wins, gets status doing and this session
+// as holder, all before the session process starts. A doing card past the
+// resume limit goes to the human instead of starting yet another session.
+export function pickAndClaimIn(
+  db: Database.Database,
+  sessionId: number,
+  live: ReadonlySet<number>,
+  resumeLimit: number
+): Card | null {
+  for (const card of gateWorkIn(db, live)) {
+    let reason: string;
+    if (card.status === 'doing') {
+      const loop = resumesSinceHumanIn(db, card.id);
+      const prev = lastSessionIn(db, card.id);
+      if (loop.count >= resumeLimit) {
+        const stranded = [...new Set([...loop.sessions, ...(prev !== null ? [prev] : [])])].sort((a, b) => a - b);
+        db.prepare("UPDATE card SET status = 'needs_input', claimed_by = NULL, claim_seen_at = NULL, updated_at = ? WHERE id = ?").run(now(), card.id);
+        addEventIn(db, card.id, 'status_changed', 'agent', {
+          from: 'doing',
+          to: 'needs_input',
+          reason: 'Stopped resuming after repeated failed sessions',
+        });
+        addEventIn(db, card.id, 'error', 'agent', {
+          note: `Stopped resuming: sessions ${stranded.join(', ')} ended without finishing this card`,
+        });
+        continue;
+      }
+      reason = prev !== null ? `Resumed: session ${prev} ended without finishing` : 'Resumed: unclaimed doing card';
+    } else {
+      reason = card.status === 'ready' ? `Assigned to session ${sessionId}` : `Check due, assigned to session ${sessionId}`;
+    }
+    db.prepare("UPDATE card SET status = 'doing', claimed_by = ?, claim_seen_at = NULL, updated_at = ? WHERE id = ?").run(
+      sessionId,
+      now(),
+      card.id
+    );
+    addEventIn(db, card.id, 'status_changed', 'agent', { from: card.status, to: 'doing', reason, session: sessionId });
+    return getCardIn(db, card.id);
+  }
+  return null;
 }
 
 // One cheap question for the UI poller (vision besluit K, amended): did

@@ -153,4 +153,94 @@ $CLI card move "$Y" needs_input --reason "terug naar mij" >/dev/null
 [ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$Y';")" = 1 ] || fail "human move kept the claim"
 err_of as_s $B card comment "$Y" "x" | grep -q "is not yours" || fail "write after revocation: wrong error"
 
+# ============================================================================
+# Leg 1: race (Task 4) -- one ready card, two runners at once: one session
+# gets it, the other starts no session at all
+# ============================================================================
+fresh_data
+SCR="$(mktemp -d)"; export FAKE_OUT="$SCR/out.log"; : > "$FAKE_OUT"
+printf '#!/usr/bin/env bash\nsleep 2\n' > "$SCR/slow.sh"; chmod +x "$SCR/slow.sh"
+R=$(new_ready "race")
+AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null & R1=$!
+AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null & R2=$!
+wait $R1 $R2
+[ "$(q "SELECT COUNT(*) FROM session;")" = 1 ] || fail "race: expected exactly one session, got $(q 'SELECT COUNT(*) FROM session;')"
+[ "$(q "SELECT card_id FROM session;")" = "$R" ] || fail "race: the session does not name the card"
+
+# ============================================================================
+# Leg 2: assignment (Task 4) -- doing + event before the session runs, the
+# prompt names the card, next shows only that card, the gate skips it
+# ============================================================================
+fresh_data
+A=$(new_ready "first")
+B=$(new_ready "second")
+cat > "$SCR/look.sh" << EOF
+#!/usr/bin/env bash
+echo "PROMPT:\$(echo "\${@: -1}" | tr '\n' ' ')" >> "\$FAKE_OUT"
+$CLI_ABS card show $A --json | python3 -c "import json,sys; d=json.load(sys.stdin)['card']; print('STATUS:'+d['status']+':'+str(d['claimed_by']))" >> "\$FAKE_OUT"
+$CLI_ABS next >> "\$FAKE_OUT"
+$CLI_ABS gate >> "\$FAKE_OUT"
+EOF
+chmod +x "$SCR/look.sh"; : > "$FAKE_OUT"
+AGENTBOARD_SESSION_CMD="$SCR/look.sh" $CLI runner >/dev/null
+SID1=$(q "SELECT id FROM session ORDER BY id DESC LIMIT 1;")
+grep -q "PROMPT:.*Your card this session: $A" "$FAKE_OUT" || fail "prompt does not name the assigned card"
+grep -q "STATUS:doing:$SID1" "$FAKE_OUT" || fail "card not doing+claimed when the session started"
+grep -q "^  $A " "$FAKE_OUT" || fail "next in the session misses its own card"
+[ "$(grep -c "^  $B " "$FAKE_OUT")" = 1 ] || fail "next in the session lists a card it does not hold (or gate lost the free card)"
+q "SELECT payload FROM event WHERE card_id = '$A' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Assigned to session $SID1" || fail "assignment event reason wrong"
+[ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$A';")" = 1 ] || fail "claim not released at session end"
+
+# Leg 2b: chain -- with AUTORUN the finished session pokes the next runner
+cat > "$SCR/hand.sh" << EOF
+#!/usr/bin/env bash
+CARD=\$(echo "\${@: -1}" | grep -o 'task_[0-9a-f]\{4\}' | head -1)
+$CLI_ABS card show "\$CARD" >/dev/null
+$CLI_ABS card move "\$CARD" review --from doing --reason done >> "\$FAKE_OUT" 2>&1
+EOF
+chmod +x "$SCR/hand.sh"
+fresh_data
+C1=$(new_ready "chain one"); C2=$(new_ready "chain two")
+AGENTBOARD_MAX_SESSIONS=1 AGENTBOARD_AUTORUN=1 AGENTBOARD_SESSION_CMD="$SCR/hand.sh" $CLI runner >/dev/null
+for i in 1 2 3 4 5 6 7 8 9 10; do [ "$(q "SELECT COUNT(*) FROM card WHERE status = 'review';")" = 2 ] && break; sleep 0.5; done
+[ "$(q "SELECT COUNT(*) FROM card WHERE status = 'review';")" = 2 ] || fail "chain: the second card was not picked up right after the first session"
+
+# ============================================================================
+# Leg 7: crash loop (Task 4) -- stranded sessions resume with an event; a
+# human comment resets the count; past the limit the card goes to the human
+# ============================================================================
+fresh_data
+printf '#!/usr/bin/env bash\nexit 1\n' > "$SCR/crash.sh"; chmod +x "$SCR/crash.sh"
+K=$(new_ready "crashy")
+crash_run() { AGENTBOARD_SESSION_CMD="$SCR/crash.sh" $CLI runner >/dev/null 2>&1 || true; }
+crash_run                                   # assigned, strands
+crash_run                                   # resume 1
+q "SELECT payload FROM event WHERE card_id = '$K' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Resumed: session .* ended without finishing" || fail "resume event missing"
+$CLI card comment "$K" "probeer het anders" >/dev/null   # human comment resets the count
+crash_run                                   # resume (count 0 again)
+crash_run                                   # resume (count 1)
+[ "$(q "SELECT status FROM card WHERE id = '$K';")" = doing ] || fail "parked too early: the human comment did not reset the count"
+crash_run                                   # count 2 = limit: park
+[ "$(q "SELECT status FROM card WHERE id = '$K';")" = needs_input ] || fail "crash loop not parked on needs_input"
+q "SELECT payload FROM event WHERE card_id = '$K' AND kind = 'error' ORDER BY id DESC LIMIT 1;" | grep -q "Stopped resuming: sessions" || fail "crash-loop error event missing"
+
+# ============================================================================
+# Leg 8: timeout (Task 4) -- a hanging session is stopped and its claim freed
+# ============================================================================
+fresh_data
+printf '#!/usr/bin/env bash\nsleep 30\n' > "$SCR/hang.sh"; chmod +x "$SCR/hang.sh"
+H=$(new_ready "hangs")
+START=$(date +%s)
+AGENTBOARD_SESSION_TIMEOUT_MIN=0.02 AGENTBOARD_SESSION_CMD="$SCR/hang.sh" $CLI runner >/dev/null 2>"$SCR/err.log" || true
+[ $(( $(date +%s) - START )) -lt 10 ] || fail "timeout did not stop the session"
+grep -q "timed out" "$SCR/err.log" || fail "runner did not log the timeout"
+[ "$(q "SELECT claimed_by IS NULL FROM card WHERE id = '$H';")" = 1 ] || fail "timed-out session kept its claim"
+
+# ============================================================================
+# Leg 11b: the doing card from the v0.23.0 database is resumed (Task 4)
+# ============================================================================
+export AGENTBOARD_DATA="$MIGDATA"
+AGENTBOARD_SESSION_CMD="$SCR/slow.sh" $CLI runner >/dev/null
+q "SELECT payload FROM event WHERE card_id = '$MIG' AND kind = 'status_changed' ORDER BY id DESC LIMIT 1;" | grep -q "Resumed" || fail "migrated doing card not resumed"
+
 echo "OK: hard claims verified"

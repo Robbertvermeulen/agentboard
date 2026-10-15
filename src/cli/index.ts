@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import { Command } from 'commander';
-import { claimCard, markSeen } from '../core/claims.js';
+import { claimCard, markSeen, ownSession } from '../core/claims.js';
 import { initData, now } from '../core/db.js';
 import {
   BoardEvent,
@@ -35,7 +35,7 @@ import {
 } from '../core/context.js';
 import { recoverSessions } from '../core/claims.js';
 import { dueRoutines, listRoutines, markRoutineRun } from '../core/routines.js';
-import { liveSessionIds, observeSession, otherLiveSessions, runSession } from '../core/runner.js';
+import { liveSessionIds, observeSession, runSession } from '../core/runner.js';
 import { listSessions, pruneSessions, sessionDetail } from '../core/sessions.js';
 import { authConfig, createEnrolToken, listCredentials } from '../core/auth.js';
 import { performUpdate, versionInfo } from '../core/update.js';
@@ -293,7 +293,7 @@ program
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = nextWork(otherLiveSessions());
+      const cards = nextWork(new Set(liveSessionIds()), ownSession());
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       output(opts, lines.length ? lines.join('\n') : 'Nothing for the agent right now', { cards });
     })
@@ -305,7 +305,7 @@ program
   .option('--json', 'JSON output')
   .action(
     run((opts) => {
-      const cards = gateWork(otherLiveSessions());
+      const cards = gateWork(new Set(liveSessionIds()));
       const due = dueRoutines();
       const lines = cards.map((c) => `  ${c.id.padEnd(10)} ${c.board_id.padEnd(12)} ${c.status.padEnd(12)} ${c.title}`);
       lines.push(...due.routines.map((r) => `  routine    ${r.board.padEnd(12)} due          ${r.path}`));
