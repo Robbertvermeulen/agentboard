@@ -1,4 +1,5 @@
-import { now, openDb } from './db.js';
+import type Database from 'better-sqlite3';
+import { addEventIn, now, openDb } from './db.js';
 import { liveSessionIdsIn } from './slots.js';
 
 // Hard claims (spec 2026-10-15): card.claimed_by names the session that
@@ -39,4 +40,160 @@ export function recoverSessions(): { sessions: number; claims: number } {
   } finally {
     db.close();
   }
+}
+
+interface ClaimRow {
+  id: string;
+  status: string;
+  claimed_by: number | null;
+  claim_seen_at: string | null;
+  human_edited_at: string | null;
+}
+
+function claimRowIn(db: Database.Database, id: string): ClaimRow {
+  const row = db
+    .prepare('SELECT id, status, claimed_by, claim_seen_at, human_edited_at FROM card WHERE id = ?')
+    .get(id) as ClaimRow | undefined;
+  if (!row) throw new Error(`Card not found: ${id}`);
+  return row;
+}
+
+// The holder only counts while its session lives: a crashed session's claim
+// reads as free everywhere, without any cleanup having run.
+export function liveHolderIn(
+  db: Database.Database,
+  claimedBy: number | null,
+  live?: ReadonlySet<number>
+): number | null {
+  if (claimedBy === null) return null;
+  return (live ?? new Set(liveSessionIdsIn(db))).has(claimedBy) ? claimedBy : null;
+}
+
+const heldBy = (id: string, holder: number) =>
+  `Card ${id} is held by session ${holder}. Use 'card comment ${id} --request' to ask, or wait.`;
+
+export function assertNotHumanInSession(actor: string): void {
+  if (ownSession() !== undefined && actor === 'human') throw new Error('An agent session cannot act as human');
+}
+
+// What the holder has not seen yet: comments from anyone but itself, human
+// events, and silent human edits. Own writes are never news.
+export function newSinceIn(db: Database.Database, cardId: string, since: string, own: number): string[] {
+  const comments = db
+    .prepare(
+      `SELECT author, body, created_at, session_id FROM comment
+       WHERE card_id = ? AND (created_at > ? OR updated_at > ?) AND (session_id IS NULL OR session_id != ?)
+       ORDER BY created_at, id`
+    )
+    .all(cardId, since, since, own) as { author: string; body: string; created_at: string; session_id: number | null }[];
+  const events = db
+    .prepare(
+      `SELECT kind, payload, created_at FROM event
+       WHERE card_id = ? AND actor = 'human' AND created_at > ? ORDER BY created_at, id`
+    )
+    .all(cardId, since) as { kind: string; payload: string; created_at: string }[];
+  const card = claimRowIn(db, cardId);
+  const items = [
+    ...comments.map((c) => ({
+      at: c.created_at,
+      text: `comment by ${c.author}${c.session_id ? ` (session ${c.session_id})` : ''} at ${c.created_at}: ${c.body.slice(0, 300)}`,
+    })),
+    ...events.map((e) => {
+      const p = JSON.parse(e.payload) as Record<string, unknown>;
+      const detail = p.reason ?? p.note ?? p.blocker ?? p.name ?? p.path ?? '';
+      return { at: e.created_at, text: `${e.kind} by human at ${e.created_at}${detail ? `: ${String(detail).slice(0, 300)}` : ''}` };
+    }),
+  ];
+  if (card.human_edited_at && card.human_edited_at > since) {
+    items.push({ at: card.human_edited_at, text: `card edited by human at ${card.human_edited_at} (title, body, labels or refs): run card show` });
+  }
+  return items.sort((a, b) => a.at.localeCompare(b.at)).map((i) => i.text);
+}
+
+export type GuardResult = 'unguarded' | 'holder' | 'request';
+
+// Every agent write inside a session passes here first (spec section 4):
+// the session must hold the card, must have read it, and must have seen
+// everything new since. A refusal for news moves the read mark, so the
+// retry passes once the agent has taken it in. Runs in its own short
+// transaction before the caller's write; a human action landing in the
+// milliseconds between the two is caught by the next write instead.
+export function guardAgentWrite(cardId: string, actor: string, opts: { request?: boolean } = {}): GuardResult {
+  const own = ownSession();
+  if (own === undefined) return 'unguarded';
+  assertNotHumanInSession(actor);
+  const db = openDb();
+  try {
+    const outcome = db
+      .transaction((): GuardResult | string[] => {
+        const card = claimRowIn(db, cardId);
+        const holder = liveHolderIn(db, card.claimed_by);
+        if (holder !== own) {
+          if (opts.request && holder !== null) return 'request';
+          if (opts.request) throw new Error(`Card ${cardId} is free: claim it instead (agentboard card claim ${cardId})`);
+          if (holder !== null) throw new Error(heldBy(cardId, holder));
+          throw new Error(`Card ${cardId} is not yours. Claim it first: agentboard card claim ${cardId}`);
+        }
+        if (card.claim_seen_at === null) throw new Error(`Read the card first: agentboard card show ${cardId}`);
+        const at = now();
+        const news = newSinceIn(db, cardId, card.claim_seen_at, own);
+        // The mark moves before the refusal so it commits with this transaction.
+        if (news.length) db.prepare('UPDATE card SET claim_seen_at = ? WHERE id = ?').run(at, cardId);
+        return news.length ? news : 'holder';
+      })
+      .immediate();
+    if (Array.isArray(outcome)) {
+      throw new Error(
+        `Card ${cardId} changed since you read it. Take this into account, then retry:\n` +
+          outcome.map((t) => `- ${t}`).join('\n')
+      );
+    }
+    return outcome;
+  } finally {
+    db.close();
+  }
+}
+
+// `card claim`: one immediate transaction, never waits. The read mark is the
+// claim moment, so the caller prints the card right after and has seen it all.
+export function claimCard(cardId: string): void {
+  const own = ownSession();
+  if (own === undefined) throw new Error('card claim only works inside a runner session (AGENTBOARD_SESSION_ID)');
+  const db = openDb();
+  try {
+    db.transaction(() => {
+      const at = now();
+      const card = claimRowIn(db, cardId);
+      if (card.status === 'done' || card.status === 'archived') throw new Error(`Card ${cardId} is ${card.status}; nothing to claim`);
+      const holder = liveHolderIn(db, card.claimed_by);
+      if (holder !== null && holder !== own) throw new Error(heldBy(cardId, holder));
+      db.prepare('UPDATE card SET claimed_by = ?, claim_seen_at = ? WHERE id = ?').run(own, at, cardId);
+      if (holder !== own) addEventIn(db, cardId, 'action_taken', 'agent', { note: `Claimed by session ${own}`, session: own });
+    }).immediate();
+  } finally {
+    db.close();
+  }
+}
+
+// `card show` by the holder: `at` is taken before the read, so anything
+// landing during the read still counts as new.
+export function markSeen(cardId: string, at: string): void {
+  const own = ownSession();
+  if (own === undefined) return;
+  const db = openDb();
+  try {
+    db.prepare('UPDATE card SET claim_seen_at = ? WHERE id = ? AND claimed_by = ?').run(at, cardId, own);
+  } finally {
+    db.close();
+  }
+}
+
+// "Request from [task_y](origin/#/card/task_y) (session N):" -- the card is
+// the requesting session's assigned card; without one, just the session.
+export function requestPrefixIn(db: Database.Database, own: number): string {
+  const row = db.prepare('SELECT card_id FROM session WHERE id = ?').get(own) as { card_id: string | null } | undefined;
+  const origin = (process.env.AGENTBOARD_ORIGIN ?? '').trim().replace(/\/$/, '');
+  return row?.card_id
+    ? `Request from [${row.card_id}](${origin}/#/card/${row.card_id}) (session ${own}):\n\n`
+    : `Request from session ${own}:\n\n`;
 }

@@ -12,6 +12,7 @@ import {
   now,
   openDb,
 } from './db.js';
+import { assertNotHumanInSession, guardAgentWrite, ownSession, requestPrefixIn } from './claims.js';
 import { assertLanguage } from './settings.js';
 
 export { addEventIn } from './db.js';
@@ -380,6 +381,9 @@ export function createCard(input: {
   const type = assertType(input.type);
   const owner = assertActor(input.owner ?? 'human');
   const actor = assertActor(input.actor ?? 'human');
+  assertNotHumanInSession(actor);
+  if (input.blocks) guardAgentWrite(input.blocks, actor);
+  const own = actor === 'agent' ? ownSession() : undefined;
   if (!input.title.trim()) throw new Error('Title cannot be empty');
 
   const db = openDb();
@@ -411,6 +415,9 @@ export function createCard(input: {
         ts,
         ts
       );
+      // A session owns what it creates: its ops card or routine card can take
+      // a comment right away (spec section 4).
+      if (own !== undefined) db.prepare('UPDATE card SET claimed_by = ?, claim_seen_at = ? WHERE id = ?').run(own, ts, id);
       if (input.blocks) {
         const target = getCardIn(db, input.blocks);
         db.prepare('UPDATE card SET blocked_by = ?, updated_at = ? WHERE id = ?').run(
@@ -520,6 +527,7 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
   if (actor === 'agent' && status === 'done') {
     throw new Error("An agent may not move a card to 'done'. Move it to 'review'; the human moves it to done.");
   }
+  guardAgentWrite(id, actor);
 
   const db = openDb();
   try {
@@ -542,6 +550,9 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
       // can tell "claimed by a live session" from "left behind by a crash".
       const session = Number(process.env.AGENTBOARD_SESSION_ID) || undefined;
       addEventIn(db, id, 'status_changed', actor, { from: card.status, to: status, reason: opts.reason, session });
+      // A human status change takes the card back: whichever session held it
+      // gets "not yours" on its next write (spec section 6).
+      if (actor === 'human') db.prepare('UPDATE card SET claimed_by = NULL, claim_seen_at = NULL WHERE id = ?').run(id);
     });
     move.immediate();
     return getCardIn(db, id);
@@ -550,15 +561,18 @@ export function moveCard(id: string, to: string, opts: { actor: string; reason: 
   }
 }
 
-export function addComment(id: string, body: string, author: string): Comment {
+export function addComment(id: string, body: string, author: string, opts: { request?: boolean } = {}): Comment {
   const a = assertActor(author);
   if (!body.trim()) throw new Error('Comment cannot be empty');
+  const guard = guardAgentWrite(id, a, opts);
   const db = openDb();
   try {
     getCardIn(db, id);
+    const own = ownSession();
+    const text = guard === 'request' && own !== undefined ? requestPrefixIn(db, own) + body : body;
     const result = db
-      .prepare('INSERT INTO comment (card_id, author, body, created_at) VALUES (?, ?, ?, ?)')
-      .run(id, a, body, now());
+      .prepare('INSERT INTO comment (card_id, author, body, created_at, session_id) VALUES (?, ?, ?, ?, ?)')
+      .run(id, a, text, now(), own ?? null);
     return db.prepare('SELECT * FROM comment WHERE id = ?').get(result.lastInsertRowid) as Comment;
   } finally {
     db.close();
@@ -575,6 +589,7 @@ export function editComment(commentId: number, body: string, actor: string): Com
     const comment = db.prepare('SELECT * FROM comment WHERE id = ?').get(commentId) as Comment | undefined;
     if (!comment) throw new Error(`Comment not found: ${commentId}`);
     if (comment.author !== a) throw new Error(`Only the author (${comment.author}) may edit this comment`);
+    guardAgentWrite(comment.card_id, a);
     const edit = db.transaction(() => {
       db.prepare('UPDATE comment SET body = ?, updated_at = ? WHERE id = ?').run(body, now(), commentId);
       addEventIn(db, comment.card_id, 'action_taken', a, { note: `comment ${commentId} edited` });
@@ -638,6 +653,13 @@ export function editCard(
     throw new Error(
       'Nothing to edit. Pass --title, --body, --labels, --refs, --context-refs, --blocked-by, --type or --board'
     );
+  }
+  guardAgentWrite(id, a);
+  // Title/body edits stay silent in the timeline; this column lets a holder's
+  // freshness check see them (spec section 1).
+  if (a === 'human') {
+    sets.push('human_edited_at = ?');
+    values.push(now());
   }
 
   const db = openDb();
@@ -716,6 +738,7 @@ function blockerChangesIn(db: Database.Database, card: Card, next: string[], act
 // itself stays as it is: it may still matter for other work.
 export function removeBlocker(id: string, blocker: string, actor: string, reason?: string): Card {
   const a = assertActor(actor);
+  guardAgentWrite(id, a);
   const db = openDb();
   try {
     const remove = db.transaction(() => {
@@ -740,6 +763,7 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
     throw new Error(`Invalid event kind '${kind}'. Loggable: action_taken, error`);
   }
   const a = assertActor(actor);
+  guardAgentWrite(id, a);
   if (!note.trim()) throw new Error('Event note cannot be empty');
   const db = openDb();
   try {

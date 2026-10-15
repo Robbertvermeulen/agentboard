@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import { Command } from 'commander';
-import { initData } from '../core/db.js';
+import { claimCard, markSeen } from '../core/claims.js';
+import { initData, now } from '../core/db.js';
 import {
   BoardEvent,
   Card,
@@ -447,30 +448,44 @@ card
     })
   );
 
+// Shared by `card show` and `card claim`: the claim prints the card it just
+// took, so the agent starts from the current state, not an older read.
+function printCard(opts: OutputOpts, id: string): void {
+  const detail = cardDetail(id);
+  const c = detail.card;
+  const lines = [`${c.id}  ${c.title}`, `board: ${c.board_id}  type: ${c.type}  status: ${c.status}  owner: ${c.owner}`];
+  if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
+  if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
+  if (c.context_refs.length) lines.push(`context: ${c.context_refs.join(', ')}`);
+  if (detail.blockers.length) lines.push(`blocked by: ${detail.blockers.map((b) => `${b.id} (${b.status})`).join(', ')}`);
+  if (detail.blocks.length) lines.push(`unblocks: ${detail.blocks.map((b) => `${b.id} (${b.status})`).join(', ')}`);
+  lines.push(`created: ${c.created_at}  updated: ${c.updated_at}`);
+  if (c.body) lines.push('', c.body);
+  const timeline = renderTimeline(detail.comments, detail.events);
+  if (timeline.length) lines.push('', ...timeline);
+  output(opts, lines.join('\n'), detail);
+}
+
 card
   .command('show <id>')
   .description('body + comments + events, chronological')
   .option('--json', 'JSON output')
   .action(
     run((opts, id: string) => {
-      const detail = cardDetail(id);
-      const c = detail.card;
-      const lines = [
-        `${c.id}  ${c.title}`,
-        `board: ${c.board_id}  type: ${c.type}  status: ${c.status}  owner: ${c.owner}`,
-      ];
-      if (c.labels.length) lines.push(`labels: ${c.labels.join(', ')}`);
-      if (c.refs.length) lines.push(`refs: ${JSON.stringify(c.refs)}`);
-      if (c.context_refs.length) lines.push(`context: ${c.context_refs.join(', ')}`);
-      if (detail.blockers.length)
-        lines.push(`blocked by: ${detail.blockers.map((b) => `${b.id} (${b.status})`).join(', ')}`);
-      if (detail.blocks.length)
-        lines.push(`unblocks: ${detail.blocks.map((b) => `${b.id} (${b.status})`).join(', ')}`);
-      lines.push(`created: ${c.created_at}  updated: ${c.updated_at}`);
-      if (c.body) lines.push('', c.body);
-      const timeline = renderTimeline(detail.comments, detail.events);
-      if (timeline.length) lines.push('', ...timeline);
-      output(opts, lines.join('\n'), detail);
+      const at = now();
+      printCard(opts, id);
+      markSeen(id, at);
+    })
+  );
+
+card
+  .command('claim <id>')
+  .description('inside a session: hold one more card (fails at once if another live session holds it), then print it')
+  .option('--json', 'JSON output')
+  .action(
+    run((opts, id: string) => {
+      claimCard(id);
+      printCard(opts, id);
     })
   );
 
@@ -507,11 +522,12 @@ card
   .command('comment <id> <text>')
   .description("add a comment ('-' reads stdin, e.g. to pipe a diff)")
   .option('--as <author>', 'human | agent', DEFAULT_ACTOR)
+  .option('--request', "ask the session holding this card; the only write allowed on another session's card")
   .option('--json', 'JSON output')
   .action(
     run(async (opts, id: string, text: string) => {
       const body = text === '-' ? await readStdin() : text;
-      const comment = addComment(id, body, opts.as);
+      const comment = addComment(id, body, opts.as, { request: opts.request === true });
       output(opts, `Comment added to ${comment.card_id}`, comment);
     })
   );
