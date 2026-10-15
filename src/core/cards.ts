@@ -701,6 +701,17 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
   }
 }
 
+// Sessions that currently hold at least one doing card.
+export function claimingSessions(): Set<number> {
+  const db = openDb();
+  try {
+    const ids = (db.prepare("SELECT id FROM card WHERE status = 'doing'").all() as { id: string }[]).map((r) => r.id);
+    return new Set(doingClaimsIn(db, ids).values());
+  } finally {
+    db.close();
+  }
+}
+
 // Crash recovery at N>1: a doing card whose claiming session is gone (or
 // that was never stamped) is handed to `sessionId` with a doing -> doing
 // event, so it gets exactly one resumer — without this, every concurrent
