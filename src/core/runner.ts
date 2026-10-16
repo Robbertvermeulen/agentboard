@@ -387,6 +387,9 @@ export function runSession(
             ...parts.slice(1),
             '--mcp-config',
             mcpConfigArg(),
+            // --mcp-config is variadic: without `--` it swallows the prompt
+            // as a second config file and claude exits before doing anything.
+            '--',
             promptOverride ?? buildPrompt(active, card?.id ?? null),
           ],
           {

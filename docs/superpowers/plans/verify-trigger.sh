@@ -104,7 +104,9 @@ SCRATCH="$(mktemp -d)"
 export FAKE_OUT="$SCRATCH/calls.log"
 cat > "$SCRATCH/fake.sh" << 'EOF'
 #!/usr/bin/env bash
-printf 'PROMPT-START\n%s\nPROMPT-END\n' "$1" >> "$FAKE_OUT"
+printf 'PROMPT-START\n%s\nPROMPT-END\n' "${@: -1}" >> "$FAKE_OUT"
+# `claude` options like --mcp-config are variadic: the prompt must sit after `--`.
+[ "${@: -2:1}" = "--" ] || echo "PROMPT-NOT-AFTER-DASHDASH" >> "$FAKE_OUT"
 EOF
 chmod +x "$SCRATCH/fake.sh"
 export AGENTBOARD_SESSION_CMD="$SCRATCH/fake.sh"
@@ -135,6 +137,7 @@ if [ -f "$AGENTBOARD_DATA/session.lock" ]; then fail "dry-run left a lock file";
 $CLI runner >/dev/null
 [ "$(grep -c PROMPT-START "$FAKE_OUT")" = "1" ] || fail "fake session was not spawned exactly once"
 grep -q "main/weekly.md" "$FAKE_OUT" || fail "routine path missing from the prompt"
+if grep -q PROMPT-NOT-AFTER-DASHDASH "$FAKE_OUT"; then fail "prompt not preceded by --"; fi
 grep -q "AGENT.md" "$FAKE_OUT" || fail "AGENT.md path missing from the prompt"
 $CLI routines due --json | python3 -c "
 import json,sys
