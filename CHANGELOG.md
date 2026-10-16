@@ -1,3 +1,10 @@
+## [0.25.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.25.0...v0.25.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **runner:** pass the prompt after -- so --mcp-config does not swallow it ([#116](https://github.com/Robbertvermeulen/agentboard/issues/116)) ([2035ca2](https://github.com/Robbertvermeulen/agentboard/commit/2035ca257354e868655bb28d444ff6eed657ca61))
+
 # [0.25.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.24.0...v0.25.0) (2026-10-15)
 
 
