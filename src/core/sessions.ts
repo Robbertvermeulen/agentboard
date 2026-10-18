@@ -185,6 +185,18 @@ export interface SessionStep {
 const CARD_RE = /\b(?:task|ops)_[0-9a-f]{4}\b/g;
 const firstLine = (s: string) => (s.split('\n')[0] ?? '').slice(0, 120);
 
+// Generic across any tool (built-in or mcp__*): the first string value in
+// the input is usually the one that says what the call is actually about
+// (a command, a file path, a url, ...), so a fixed per-tool field map isn't
+// needed.
+function toolStepLabel(name: string, input: unknown): string {
+  const value = input && typeof input === 'object' ? Object.values(input as object).find((v) => typeof v === 'string' && v.trim()) : undefined;
+  if (typeof value !== 'string') return name;
+  const snippet = firstLine(value).trim();
+  const truncated = snippet.length > 40 ? `${snippet.slice(0, 40)}…` : snippet;
+  return `${name}: ${truncated}`;
+}
+
 // stream-json lines -> flat steps. Unparseable lines stay visible as 'raw',
 // so a session captured with a non-JSON command still renders.
 export function parseSessionSteps(jsonlText: string, baseN = 0): SessionStep[] {
@@ -214,7 +226,8 @@ export function parseSessionSteps(jsonlText: string, baseN = 0): SessionStep[] {
         } else if (b.type === 'thinking' && typeof b.thinking === 'string') {
           push('text', `reasoning · ${b.thinking.trim().split(/\s+/).length} words`, b.thinking);
         } else if (b.type === 'tool_use') {
-          push('tool', String(b.name ?? 'tool'), JSON.stringify(b.input ?? {}).slice(0, 500));
+          const name = String(b.name ?? 'tool');
+          push('tool', toolStepLabel(name, b.input), JSON.stringify(b.input ?? {}).slice(0, 500));
         } else if (b.type === 'tool_result') {
           let content: string;
           if (typeof b.content === 'string') {
@@ -278,6 +291,18 @@ export function sessionStepsSince(
     detail: redact(s.detail),
   }));
   return { steps, offset: offset + Buffer.byteLength(complete, 'utf8'), n: n + steps.length };
+}
+
+// The single most recent step of a session — the card detail view's
+// live-step poll only ever needs the last line, not the full transcript.
+export function latestStep(id: number): SessionStep | null {
+  const file = sessionJsonlPath(id);
+  if (!fs.existsSync(file)) return null;
+  const steps = parseSessionSteps(fs.readFileSync(file, 'utf8'));
+  const last = steps.at(-1);
+  if (!last) return null;
+  const redact = secretRedactor();
+  return { ...last, label: redact(last.label), detail: redact(last.detail) };
 }
 
 function rowToMeta(db: Database.Database, row: any): SessionMeta {

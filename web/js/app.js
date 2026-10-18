@@ -5,7 +5,7 @@ import { esc } from './util.js';
 import { closeOverlay, openAccountSettingsDialog, openOverlay } from './components.js';
 import { renderAllBoards, boardDot } from './views/allboards.js';
 import { renderBoard, needYouCount, openCount } from './views/board.js';
-import { renderCard, stopCardPolling, pokeCardRefresh, retryCardRefresh } from './views/card.js';
+import { renderCard, stopCardPolling, pokeCardRefresh, pokeCardLiveStep, retryCardRefresh } from './views/card.js';
 import { renderSession, stopSessionPolling, pokeSessionRefresh } from './views/session.js';
 import { renderSessions } from './views/sessions.js';
 import { renderCtx } from './views/ctx.js';
@@ -331,15 +331,19 @@ async function tick() {
     const name = parseRoute().name;
     if (!changed) {
       cursor = res.cursor;
-      if (name === 'card') await retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no extra fetch; awaited so the busy flag covers it)
-      else if (name === 'session') await pokeSessionRefresh(); // live tail pulls its increment even on quiet ticks — new steps advance no cursor component
+      if (name === 'card') {
+        await retryCardRefresh(); // nudge a pending refresh a dirty-guard held back (no extra fetch; awaited so the busy flag covers it)
+        await pokeCardLiveStep(); // live-step text: a tool call advances no cursor component either
+      } else if (name === 'session') await pokeSessionRefresh(); // live tail pulls its increment even on quiet ticks — new steps advance no cursor component
       return;
     }
     const overlay = document.getElementById('overlay');
     if (overlay && !overlay.hidden) return; // keep the old cursor: the next tick re-sees the change after the dialog closes
     cursor = res.cursor;
-    if (name === 'card') await pokeCardRefresh();
-    else if (name === 'session') await pokeSessionRefresh(); // live tail: append-only, no rerender (4b)
+    if (name === 'card') {
+      await pokeCardRefresh();
+      await pokeCardLiveStep();
+    } else if (name === 'session') await pokeSessionRefresh(); // live tail: append-only, no rerender (4b)
     else {
       const saved = captureScroll();
       const savedOpen = captureOpenColumns();

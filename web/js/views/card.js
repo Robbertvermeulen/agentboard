@@ -29,9 +29,14 @@ let retryHook = null;
 // scroll-down button — torn down here too, since a poll-triggered rerender()
 // calls renderCard again without going through the router's stopCardPolling.
 let stopScrollWatch = null;
+// Updates the one-line "what is the agent doing" text in place, every tick,
+// independent of the fingerprint/dirty-guarded refreshHook above — session.js's
+// live tail follows the same pattern (append without a rerender).
+let liveStepHook = null;
 export function stopCardPolling() {
   refreshHook = null;
   retryHook = null;
+  liveStepHook = null;
   stopScrollWatch?.();
   stopScrollWatch = null;
 }
@@ -40,6 +45,9 @@ export function pokeCardRefresh() {
 }
 export function retryCardRefresh() {
   return retryHook?.();
+}
+export function pokeCardLiveStep() {
+  return liveStepHook?.();
 }
 
 function eventLine(e) {
@@ -139,6 +147,11 @@ function fileRow(cardId, f, urlFn) {
   </div>`;
 }
 
+// Same vocabulary as the activity pane's `[type] label` steps — one line,
+// falling back to a generic message for a session that has not written a
+// step yet (just claimed, or a tail read that raced the first write).
+const liveStepText = (step) => (step ? `[${step.type}] ${step.label}` : 'Agent is working on this now — live session');
+
 function relStatusNote(card) {
   if (card.status === 'review') return `<p class="rs review">in review — ready for your approval</p>`;
   if (card.status === 'needs_input') return `<p class="rs needs_input">in needs_input — waiting on you</p>`;
@@ -147,11 +160,11 @@ function relStatusNote(card) {
 
 export async function renderCard(root, { boards, cardId }) {
   const rerender = () => renderCard(root, { boards, cardId });
-  const [{ card, comments, events, blockers = [], blocks = [] }, { artifacts }, { uploads }, sessionStatus] = await Promise.all([
+  const [{ card, comments, events, blockers = [], blocks = [] }, { artifacts }, { uploads }, liveStep] = await Promise.all([
     api.card(cardId),
     api.artifacts(cardId),
     api.uploads(cardId),
-    api.sessionStatus().catch(() => ({ running: false })),
+    api.cardLiveStep(cardId).catch(() => ({ live: false })),
   ]);
   card.blockers = blockers;
   const board = boards.find((b) => b.id === card.board_id);
@@ -458,8 +471,8 @@ export async function renderCard(root, { boards, cardId }) {
           }
           ${
             agentPresence
-              ? sessionStatus.running
-                ? `<div class="event-row queued-line agent-live"><span class="live-dot"></span><p>Agent is working on this now — live session</p></div>`
+              ? liveStep.live
+                ? `<div class="event-row queued-line agent-live"><span class="live-dot"></span><p id="agent-live-line">${esc(liveStepText(liveStep.step))}</p></div>`
                 : `<div class="event-row queued-line agent-dormant">${statusIcon('ready', 14, 'var(--mut-2)')}<p>No live session — resumes at the next run</p></div>`
               : ''
           }
@@ -983,4 +996,17 @@ export async function renderCard(root, { boards, cardId }) {
     await tryRefresh();
   };
   retryHook = tryRefresh;
+  // Only while the live line is already on screen: the transition into or
+  // out of it rides the fingerprint rerender above (card.updated_at moves
+  // with the status change that starts or ends the claim).
+  liveStepHook = async () => {
+    const line = root.querySelector('#agent-live-line');
+    if (!line) return;
+    try {
+      const ls = await api.cardLiveStep(cardId);
+      if (ls.live) line.textContent = liveStepText(ls.step);
+    } catch {
+      /* transient poll failure — the next tick retries */
+    }
+  };
 }

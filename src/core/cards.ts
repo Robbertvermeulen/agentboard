@@ -756,6 +756,13 @@ export function logEvent(id: string, kind: string, actor: string, note: string, 
 
 const heldByLive = (c: Card, live: ReadonlySet<number>) => c.claimed_by !== null && live.has(c.claimed_by);
 
+// The session claiming this one card, if any — the hard claim already
+// lives on the card row, so this just reads it for the card detail view's
+// live-step poll.
+export function cardClaimSession(id: string): number | null {
+  return getCard(id).claimed_by;
+}
+
 // Worklist for an agent. Inside a session it is exactly the cards that
 // session holds (the runner assigned one; `card claim` adds more). Outside
 // one: ready, doing and needs_input, minus cards a live session holds and
