@@ -167,6 +167,14 @@ inbox → ready → doing → needs_input → review → done, plus archived.
 17. The workbench is shared with other sessions running at the same
     time. Temporary files go in `$TMPDIR` only; a test server listens on
     a free random port, never a fixed one.
+18. When a task needs a live web page — checking a deployed site,
+    inspecting rendered or dev-tools state, walking through a flow, or
+    producing a screenshot — use the `browser_*` MCP tools (navigate,
+    click, fill, read, screenshot) instead of guessing from source code
+    or asking the user to look. Screenshots are artifacts (rule 13):
+    save them under `artifacts/<card-id>/` and reference them from the
+    event/comment — there is no inline attachment or preview in
+    comments yet (tracked in issue #67).
 
 ## Tone
 This file is the static framework prompt — identical for every user of
