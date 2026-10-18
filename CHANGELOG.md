@@ -1,3 +1,24 @@
+## [0.25.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.25.0...v0.25.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **runner:** pass the prompt after -- so --mcp-config does not swallow it ([#116](https://github.com/Robbertvermeulen/agentboard/issues/116)) ([2035ca2](https://github.com/Robbertvermeulen/agentboard/commit/2035ca257354e868655bb28d444ff6eed657ca61))
+
+# [0.25.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.24.0...v0.25.0) (2026-10-15)
+
+
+### Features
+
+* **mcp:** native Playwright browser tool, wired into every session ([#109](https://github.com/Robbertvermeulen/agentboard/issues/109)) ([1ecc9ef](https://github.com/Robbertvermeulen/agentboard/commit/1ecc9ef5228258a44926de8a911e702466dc4e3b))
+
+# [0.24.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.23.0...v0.24.0) (2026-10-15)
+
+
+### Features
+
+* **runner:** hard claims, the runner assigns one card per session ([#115](https://github.com/Robbertvermeulen/agentboard/issues/115)) ([c952e28](https://github.com/Robbertvermeulen/agentboard/commit/c952e28b41c668e3b690cfafa7d5e3ee7d0ddac9))
+
 # [0.23.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.22.2...v0.23.0) (2026-10-15)
 
 

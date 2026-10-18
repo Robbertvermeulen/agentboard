@@ -104,7 +104,9 @@ SCRATCH="$(mktemp -d)"
 export FAKE_OUT="$SCRATCH/calls.log"
 cat > "$SCRATCH/fake.sh" << 'EOF'
 #!/usr/bin/env bash
-printf 'PROMPT-START\n%s\nPROMPT-END\n' "$1" >> "$FAKE_OUT"
+printf 'PROMPT-START\n%s\nPROMPT-END\n' "${@: -1}" >> "$FAKE_OUT"
+# `claude` options like --mcp-config are variadic: the prompt must sit after `--`.
+[ "${@: -2:1}" = "--" ] || echo "PROMPT-NOT-AFTER-DASHDASH" >> "$FAKE_OUT"
 EOF
 chmod +x "$SCRATCH/fake.sh"
 export AGENTBOARD_SESSION_CMD="$SCRATCH/fake.sh"
@@ -135,6 +137,7 @@ if [ -f "$AGENTBOARD_DATA/session.lock" ]; then fail "dry-run left a lock file";
 $CLI runner >/dev/null
 [ "$(grep -c PROMPT-START "$FAKE_OUT")" = "1" ] || fail "fake session was not spawned exactly once"
 grep -q "main/weekly.md" "$FAKE_OUT" || fail "routine path missing from the prompt"
+if grep -q PROMPT-NOT-AFTER-DASHDASH "$FAKE_OUT"; then fail "prompt not preceded by --"; fi
 grep -q "AGENT.md" "$FAKE_OUT" || fail "AGENT.md path missing from the prompt"
 $CLI routines due --json | python3 -c "
 import json,sys
@@ -176,11 +179,15 @@ rm -f "$AGENTBOARD_DATA/session.lock"
 # Leg 6: notify -- handback -> NOTIFY line; missing binary -> "notify failed"
 # on stderr; no env -> silent (Task 3, incl. its spawnSync-result fix)
 # ============================================================================
+# The fake sessions above never read WORK, so each one returned it to ready
+# (hard claims, final review); it would win the next pick over NOTE1.
+$CLI card move "$WORK" done --reason t >/dev/null
 NOTE1=$($CLI card new --type task --title "notify-handback" --json | id_of)
 $CLI card move "$NOTE1" ready --reason t >/dev/null
 cat > "$SCRATCH/hand1.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card move $NOTE1 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE1 >/dev/null
+$CLI_ABS card move $NOTE1 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand1.sh"
 cat > "$SCRATCH/notify.sh" << 'EOF'
@@ -197,7 +204,8 @@ NOTE2=$($CLI card new --type task --title "notify-missing-binary" --json | id_of
 $CLI card move "$NOTE2" ready --reason t >/dev/null
 cat > "$SCRATCH/hand2.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card move $NOTE2 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE2 >/dev/null
+$CLI_ABS card move $NOTE2 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand2.sh"
 : > "$SCRATCH/err.log"
@@ -208,7 +216,8 @@ NOTE3=$($CLI card new --type task --title "notify-no-env" --json | id_of)
 $CLI card move "$NOTE3" ready --reason t >/dev/null
 cat > "$SCRATCH/hand3.sh" << EOF
 #!/usr/bin/env bash
-$CLI_ABS card move $NOTE3 review --from ready --as agent --reason done >> "\$FAKE_OUT" 2>&1
+$CLI_ABS card show $NOTE3 >/dev/null
+$CLI_ABS card move $NOTE3 review --from doing --as agent --reason done >> "\$FAKE_OUT" 2>&1
 EOF
 chmod +x "$SCRATCH/hand3.sh"
 : > "$SCRATCH/err.log"
@@ -284,7 +293,7 @@ ids=[c['id'] for c in json.load(sys.stdin)['cards']]
 assert '$STRAND' in ids, ('next missing human-owned doing card', ids)
 " || fail "next does not list a human-owned doing card"
 
-# 8b: the session spawn gets a neutral cwd -- default <data>/work, override
+# 8b: the session spawn gets a neutral cwd -- default <data>/work/cards/<card>, override
 # via AGENTBOARD_WORK -- even when the runner is invoked from elsewhere
 SCRATCH3="$(mktemp -d)"
 export FAKE_OUT="$SCRATCH3/calls.log"
@@ -296,13 +305,13 @@ chmod +x "$SCRATCH3/pwd.sh"
 
 : > "$FAKE_OUT"
 (cd "$SCRATCH3" && AGENTBOARD_SESSION_CMD="$SCRATCH3/pwd.sh" $CLI_ABS runner >/dev/null)
-EXPECTED="$(cd "$AGENTBOARD_DATA/work" && pwd -P)"
-[ "$(tail -1 "$FAKE_OUT")" = "$EXPECTED" ] || fail "session cwd is not <data>/work (got: $(tail -1 "$FAKE_OUT"), want: $EXPECTED)"
+EXPECTED="$(cd "$AGENTBOARD_DATA/work/cards/$STRAND" && pwd -P)"
+[ "$(tail -1 "$FAKE_OUT")" = "$EXPECTED" ] || fail "session cwd is not <data>/work/cards/<card> (got: $(tail -1 "$FAKE_OUT"), want: $EXPECTED)"
 
 $CLI card move "$STRAND" ready --as agent --reason retry >/dev/null   # keep the gate non-empty for a second spawn
 : > "$FAKE_OUT"
 (cd "$SCRATCH3" && AGENTBOARD_WORK="$SCRATCH3/custom" AGENTBOARD_SESSION_CMD="$SCRATCH3/pwd.sh" $CLI_ABS runner >/dev/null)
-EXPECTED="$(cd "$SCRATCH3/custom" && pwd -P)"
+EXPECTED="$(cd "$SCRATCH3/custom/cards/$STRAND" && pwd -P)"
 [ "$(tail -1 "$FAKE_OUT")" = "$EXPECTED" ] || fail "AGENTBOARD_WORK override not honoured (got: $(tail -1 "$FAKE_OUT"), want: $EXPECTED)"
 
 echo "OK: trigger/scheduler verified (gate, check-after, hardenings, runner+lock+notify, serve-hook, doing-any-owner, neutral-cwd)"

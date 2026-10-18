@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { serve } from '@hono/node-server';
@@ -46,7 +45,7 @@ import { listArtifacts, artifactPath } from '../core/artifacts.js';
 import { listUploads, addUpload, uploadPath } from '../core/uploads.js';
 import { contextDiff, listContextFiles, readContext, storeSecretForCard, writeContext } from '../core/context.js';
 import { listRoutines, toggleRoutineContent } from '../core/routines.js';
-import { sessionStatus } from '../core/runner.js';
+import { pokeRunner, sessionStatus } from '../core/runner.js';
 import { cardSessions, latestStep, listSessions, observationPath, sessionDetail, sessionStepsSince } from '../core/sessions.js';
 import { performUpdate, versionInfo } from '../core/update.js';
 
@@ -133,10 +132,7 @@ function webDir(): string {
 // uses; the single-flight lock arbitrates. Opt-in via AGENTBOARD_AUTORUN=1
 // so dev servers and UI tests never start real sessions by accident.
 function maybeAutorun(): void {
-  if (process.env.AGENTBOARD_AUTORUN !== '1') return;
-  const cli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cli/index.js');
-  const child = spawn(process.execPath, [cli, 'runner', '--trigger', 'serve'], { detached: true, stdio: 'ignore' });
-  child.unref();
+  pokeRunner('serve');
 }
 
 export function createApp(): Hono {

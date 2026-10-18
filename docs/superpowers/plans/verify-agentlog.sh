@@ -175,7 +175,7 @@ assert d['session']['live'] is False, d['session']
 " || fail "open session without a lock was reported live on GET /api/sessions/:id"
 
 cat > "$AGENTBOARD_DATA/session.lock" << EOF
-{"pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
+{"session_id": $S3, "pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
 EOF
 
 curl -s "localhost:$PORT/api/sessions" | python3 -c "
@@ -285,7 +285,7 @@ sqlite3 "$AGENTBOARD_DATA/board.db" \
   "INSERT INTO session (started_at, \"trigger\", handed_back) VALUES ('$(date -u +%Y-%m-%dT%H:%M:%S.000Z)', 'manual', '[]')"
 S5B=$(sqlite3 "$AGENTBOARD_DATA/board.db" "SELECT max(id) FROM session")
 cat > "$AGENTBOARD_DATA/session.lock" << EOF
-{"pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
+{"session_id": $S5B, "pid": $$, "hostname": "$(hostname)", "started_at": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"}
 EOF
 
 expect_fail $CLI observe "$S5B"

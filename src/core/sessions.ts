@@ -23,15 +23,19 @@ export const sessionJsonlPath = (id: number) => path.join(sessionsDir(), `${id}.
 export const sessionStderrPath = (id: number) => path.join(sessionsDir(), `${id}.stderr.log`);
 export const observationPath = (id: number) => path.join(sessionsDir(), `${id}-observation.md`);
 
-export function startSessionRecord(trigger: string): { id: number; jsonl: string; stderr: string } {
+// In-transaction variant: the runner creates the session row in the same
+// transaction that claims its card, so a claim never names a missing row.
+export function startSessionRecordIn(db: Database.Database, trigger: string): { id: number; jsonl: string; stderr: string } {
   fs.mkdirSync(sessionsDir(), { recursive: true });
+  const info = db.prepare(`INSERT INTO session (started_at, "trigger", handed_back) VALUES (?, ?, '[]')`).run(now(), trigger);
+  const id = Number(info.lastInsertRowid);
+  return { id, jsonl: sessionJsonlPath(id), stderr: sessionStderrPath(id) };
+}
+
+export function startSessionRecord(trigger: string): { id: number; jsonl: string; stderr: string } {
   const db = openDb();
   try {
-    const info = db
-      .prepare(`INSERT INTO session (started_at, "trigger", handed_back) VALUES (?, ?, '[]')`)
-      .run(now(), trigger);
-    const id = Number(info.lastInsertRowid);
-    return { id, jsonl: sessionJsonlPath(id), stderr: sessionStderrPath(id) };
+    return startSessionRecordIn(db, trigger);
   } finally {
     db.close();
   }

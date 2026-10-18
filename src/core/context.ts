@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import { simpleGit } from 'simple-git';
 import { contextDir, openDb, secretsPath } from './db.js';
 import { addEventIn, assertActor } from './cards.js';
+import { guardAgentWrite } from './claims.js';
 import { assertRoutineFrontmatter } from './routines.js';
 
 // Paths are always relative to context/, e.g. 'acme/webshop.md'.
@@ -81,6 +82,7 @@ export async function writeContext(
   opts: { cardId: string; actor: string; message?: string }
 ): Promise<{ path: string; action: 'add' | 'update'; message: string; commit: string }> {
   const actor = assertActor(opts.actor);
+  guardAgentWrite(opts.cardId, actor);
   // Normalize once so kind-placement rules (and event payloads) can't be
   // sidestepped with './' or 'board/../_global/' spellings.
   relPath = path.posix.normalize(relPath);

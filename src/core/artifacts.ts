@@ -47,3 +47,19 @@ export function artifactPath(cardId: string, name: string): string {
   }
   return abs;
 }
+
+// Same validation as artifactPath, but for a file that's about to be
+// written rather than read: creates the card's artifacts dir and returns
+// the target path without requiring the file to exist yet.
+export function artifactWritePath(cardId: string, name: string): string {
+  const dir = artifactsDir(cardId);
+  if (name !== path.basename(name) || name === '.' || name === '..') {
+    throw new Error(`Invalid artifact name '${name}'`);
+  }
+  const abs = path.resolve(dir, name);
+  if (path.dirname(abs) !== dir) {
+    throw new Error(`Invalid artifact name '${name}'`);
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  return abs;
+}
