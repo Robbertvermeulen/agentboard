@@ -147,10 +147,15 @@ function fileRow(cardId, f, urlFn) {
   </div>`;
 }
 
-// Same vocabulary as the activity pane's `[type] label` steps — one line,
-// falling back to a generic message for a session that has not written a
-// step yet (just claimed, or a tail read that raced the first write).
-const liveStepText = (step) => (step ? `[${step.type}] ${step.label}` : 'Agent is working on this now — live session');
+// One line, prefixed like a sentence ("Agent: Did X") rather than the
+// activity pane's bracketed `[type] label`; falls back to a generic message
+// for a session that has not written a step yet (just claimed, or a tail
+// read that raced the first write).
+const liveStepText = (step) => {
+  if (!step) return 'Agent is working on this now — live session';
+  const label = step.label.charAt(0).toUpperCase() + step.label.slice(1);
+  return `Agent: ${label}`;
+};
 
 function relStatusNote(card) {
   if (card.status === 'review') return `<p class="rs review">in review — ready for your approval</p>`;
