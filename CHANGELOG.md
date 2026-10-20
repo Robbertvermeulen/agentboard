@@ -1,3 +1,10 @@
+## [0.26.1](https://github.com/Robbertvermeulen/agentboard/compare/v0.26.0...v0.26.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **card:** drop [type] prefix on live-step line, add Agent: lead-in ([#118](https://github.com/Robbertvermeulen/agentboard/issues/118)) ([a295629](https://github.com/Robbertvermeulen/agentboard/commit/a295629d1958c87666aee2c326bff44469661e96)), closes [#114](https://github.com/Robbertvermeulen/agentboard/issues/114) [#113](https://github.com/Robbertvermeulen/agentboard/issues/113)
+
 # [0.26.0](https://github.com/Robbertvermeulen/agentboard/compare/v0.25.1...v0.26.0) (2026-10-18)
 
 
