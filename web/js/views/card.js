@@ -333,7 +333,7 @@ export async function renderCard(root, { boards, cardId }) {
   // Vision besluit I: quick actions never target doing — the human always
   // hands back to ready; doing is exclusively the agent's claim.
   const quick = [];
-  if (card.status === 'inbox') quick.push({ label: 'Ready', cls: 'btn-dark', to: 'ready', icon: icons.arrowRight(14, '#fff') });
+  if (card.status === 'inbox') quick.push({ label: 'Hand to agent → ready', cls: 'btn-dark', to: 'ready', icon: icons.arrowRight(14, '#fff') });
   if (card.status === 'review') quick.push({ label: 'Approve → Done', cls: 'btn-green', to: 'done', icon: icons.check(14) });
   const canArchive = card.status !== 'archived';
 
@@ -544,7 +544,7 @@ export async function renderCard(root, { boards, cardId }) {
         card.status === 'review'
           ? `<button type="button" class="m-primary" data-move="done">${icons.check(18)}Approve → Done</button>`
           : card.status === 'inbox'
-            ? `<button type="button" class="m-primary dark" data-move="ready">${icons.arrowRight(16, '#fff')}Ready</button>`
+            ? `<button type="button" class="m-primary dark" data-move="ready">${icons.arrowRight(16, '#fff')}Hand to agent → ready</button>`
             : card.status === 'needs_input'
               ? `<button type="button" class="m-primary amber" id="m-hand-back">${icons.arrowRight(16, '#fff')}Hand back → ready</button>`
               : `<button type="button" class="m-primary dark" id="m-change-status">Change status</button>`
