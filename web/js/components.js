@@ -28,11 +28,15 @@ export const isWaitingExternal = (card) =>
   card.status === 'needs_input' && !!card.wait_check && card.wait_check > new Date().toISOString();
 
 // Status pill: filled for the active states, quiet for inbox/ready/done.
+// 'ready' gets a title tooltip: it's the one status whose name alone doesn't
+// say what happens next (the agent claims it).
+const STATUS_HINT = { ready: 'Agent picks this up next' };
 export function statusPill(status, { chevron = false, id = '' } = {}) {
   const meta = STATUS_META[status];
   const filled = meta.chip !== 'neutral';
   const icon = statusIcon(status, 12, filled ? '#fff' : undefined);
-  return `<span ${id ? `id="${id}"` : ''} class="status-pill ${meta.chip}${chevron ? ' clickable' : ''}">${icon}${esc(status)}${
+  const hint = STATUS_HINT[status];
+  return `<span ${id ? `id="${id}"` : ''}${hint ? ` title="${esc(hint)}"` : ''} class="status-pill ${meta.chip}${chevron ? ' clickable' : ''}">${icon}${esc(status)}${
     chevron ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${filled ? '#fff' : 'currentColor'}" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>` : ''
   }</span>`;
 }
@@ -369,6 +373,7 @@ export function openCreateDialog({ boards, boardId, targetStatus }, onCreated) {
       <div class="field">
         <span class="field-label">Type</span>
         ${typeCards}
+        ${!needsReason ? '<span class="field-hint">New cards start in inbox. Move to ready when you want the agent on it.</span>' : ''}
       </div>
       <div class="field">
         <span class="field-label">Title</span>
